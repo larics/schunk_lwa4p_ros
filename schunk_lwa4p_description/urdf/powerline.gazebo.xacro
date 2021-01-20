@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lwa4p">
+
+    <gazebo reference="powerline_link1">
+        <material value="Gazebo/WoodFloor" />
+    </gazebo>
+    <gazebo reference="powerline_link2">
+        <material value="Gazebo/WoodFloor" />
+    </gazebo>
+    <gazebo reference="powerline_link3">
+        <material value="Gazebo/WoodFloor" />
+    </gazebo>
+    <gazebo reference="powerline_link4">
+        <material value="Gazebo/WoodFloor" />
+    </gazebo>
+     <gazebo reference="powerline_cable1">
+        <material value="Gazebo/Black " />
+    </gazebo>
+     <gazebo reference="powerline_cable2">
+        <material value="Gazebo/Black " />
+    </gazebo>
+
+
+</robot>

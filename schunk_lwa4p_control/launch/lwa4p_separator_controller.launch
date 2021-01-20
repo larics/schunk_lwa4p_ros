@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Load joint controller configurations from YAML file to parameter server -->
+    <rosparam file="$(find schunk_lwa4p_control)/config/lwa4p_controller.yaml"/>
+    <!--rosparam file="$(find schunk_lwa4p_control)/config/trajectory_controller.yaml"/-->
+
+    <!-- Load the controllers -->
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+        output="screen" ns="lwa4p" args="joint_state_controller
+                                    joint1_position_controller
+                                    joint2_position_controller
+                                    joint3_position_controller
+                                    joint4_position_controller
+                                    joint5_position_controller
+                                    joint6_position_controller
+                                    "/>
+
+</launch>

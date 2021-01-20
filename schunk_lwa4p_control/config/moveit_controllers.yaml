@@ -1,0 +1,5 @@
+controller_list: 
+  - name: ""
+    action_ns: joint_trajectory_action
+    type: FollowJointTrajectory
+    joints: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, lwa4p_joint6]
