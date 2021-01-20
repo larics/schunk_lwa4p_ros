@@ -2,7 +2,7 @@
 <launch>
   <arg name="paused" default="false"/>
   <arg name="gazebo_gui" default="true"/>
-  <arg name="urdf_path" default="$(find schunk_lwa4p_description)/urdf/lwa4p/lwa4p_arm.urdf.xacro"/>
+  <arg name="urdf_path" default="$(find schunk_lwa4p_description)/urdf/lwa4p/lwa4p_arm_separator.urdf.xacro"/>
 
   <!-- startup simulated world -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">

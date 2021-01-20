@@ -1,11 +1,11 @@
 moveit_setup_assistant_config:
   URDF:
     package: schunk_lwa4p_description
-    relative_path: urdf/lwa4p/lwa4p_arm.urdf.xacro
+    relative_path: urdf/lwa4p/lwa4p_arm_separator.urdf.xacro
     xacro_args: "--inorder "
   SRDF:
     relative_path: config/lwa4p.srdf
   CONFIG:
     author_name: Filip Zoric
     author_email: filip.zoric@fer.hr
-    generated_timestamp: 1611130831
+    generated_timestamp: 1611148461

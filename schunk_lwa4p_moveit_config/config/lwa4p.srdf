@@ -13,17 +13,43 @@
         <joint name="lwa4p_joint1" />
         <joint name="lwa4p_joint2" />
         <joint name="lwa4p_joint3" />
-        <joint name="lwa4p_joint5" />
         <joint name="lwa4p_joint4" />
+        <joint name="lwa4p_joint5" />
         <joint name="lwa4p_joint6" />
     </group>
+    <group name="gripper">
+        <joint name="separator_base_main_joint" />
+        <joint name="separator_main_left_head_joint" />
+        <joint name="separator_main_right_head_joint" />
+        <joint name="separator_left_front_joint" />
+        <joint name="separator_left_back_joint" />
+        <joint name="separator_right_back_joint" />
+        <joint name="separator_right_front_joint" />
+    </group>
+    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <end_effector name="separator" parent_link="lwa4p_link6" group="gripper" parent_group="arm" />
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
-    <virtual_joint name="FixedFrame" type="fixed" parent_frame="base_link" child_link="base_link" />
+    <virtual_joint name="FixedBase" type="fixed" parent_frame="world" child_link="world" />
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="lwa4p_link1" reason="Default" />
     <disable_collisions link1="base_link" link2="lwa4p_link2" reason="Never" />
     <disable_collisions link1="base_link" link2="lwa4p_link3" reason="Never" />
     <disable_collisions link1="base_link" link2="lwa4p_podest_link" reason="Adjacent" />
+    <disable_collisions link1="left_back_holder" link2="left_front_holder" reason="Never" />
+    <disable_collisions link1="left_back_holder" link2="lwa4p_link5" reason="Never" />
+    <disable_collisions link1="left_back_holder" link2="lwa4p_link6" reason="Never" />
+    <disable_collisions link1="left_back_holder" link2="right_back_holder" reason="Never" />
+    <disable_collisions link1="left_back_holder" link2="right_front_holder" reason="Never" />
+    <disable_collisions link1="left_back_holder" link2="separator_base" reason="Adjacent" />
+    <disable_collisions link1="left_back_holder" link2="separator_left_head" reason="Never" />
+    <disable_collisions link1="left_back_holder" link2="separator_right_head" reason="Never" />
+    <disable_collisions link1="left_front_holder" link2="lwa4p_link5" reason="Never" />
+    <disable_collisions link1="left_front_holder" link2="lwa4p_link6" reason="Never" />
+    <disable_collisions link1="left_front_holder" link2="right_back_holder" reason="Never" />
+    <disable_collisions link1="left_front_holder" link2="right_front_holder" reason="Never" />
+    <disable_collisions link1="left_front_holder" link2="separator_base" reason="Adjacent" />
+    <disable_collisions link1="left_front_holder" link2="separator_left_head" reason="Never" />
+    <disable_collisions link1="left_front_holder" link2="separator_right_head" reason="Never" />
     <disable_collisions link1="lwa4p_link1" link2="lwa4p_link2" reason="Adjacent" />
     <disable_collisions link1="lwa4p_link1" link2="lwa4p_link3" reason="Never" />
     <disable_collisions link1="lwa4p_link1" link2="lwa4p_podest_link" reason="Adjacent" />
@@ -39,4 +65,27 @@
     <disable_collisions link1="lwa4p_link4" link2="lwa4p_link5" reason="Adjacent" />
     <disable_collisions link1="lwa4p_link4" link2="lwa4p_link6" reason="Never" />
     <disable_collisions link1="lwa4p_link5" link2="lwa4p_link6" reason="Adjacent" />
+    <disable_collisions link1="lwa4p_link5" link2="right_back_holder" reason="Never" />
+    <disable_collisions link1="lwa4p_link5" link2="right_front_holder" reason="Never" />
+    <disable_collisions link1="lwa4p_link5" link2="separator_base" reason="Never" />
+    <disable_collisions link1="lwa4p_link5" link2="separator_left_head" reason="Never" />
+    <disable_collisions link1="lwa4p_link5" link2="separator_right_head" reason="Never" />
+    <disable_collisions link1="lwa4p_link6" link2="right_back_holder" reason="Never" />
+    <disable_collisions link1="lwa4p_link6" link2="right_front_holder" reason="Never" />
+    <disable_collisions link1="lwa4p_link6" link2="separator_base" reason="Adjacent" />
+    <disable_collisions link1="lwa4p_link6" link2="separator_left_head" reason="Never" />
+    <disable_collisions link1="lwa4p_link6" link2="separator_right_head" reason="Never" />
+    <disable_collisions link1="right_back_holder" link2="right_front_holder" reason="Never" />
+    <disable_collisions link1="right_back_holder" link2="separator_base" reason="Adjacent" />
+    <disable_collisions link1="right_back_holder" link2="separator_left_head" reason="Never" />
+    <disable_collisions link1="right_back_holder" link2="separator_right_head" reason="Never" />
+    <disable_collisions link1="right_front_holder" link2="separator_base" reason="Adjacent" />
+    <disable_collisions link1="right_front_holder" link2="separator_left_head" reason="Never" />
+    <disable_collisions link1="right_front_holder" link2="separator_right_head" reason="Never" />
+    <disable_collisions link1="separator_base" link2="separator_left_head" reason="Default" />
+    <disable_collisions link1="separator_base" link2="separator_main" reason="Adjacent" />
+    <disable_collisions link1="separator_base" link2="separator_right_head" reason="Default" />
+    <disable_collisions link1="separator_left_head" link2="separator_main" reason="Adjacent" />
+    <disable_collisions link1="separator_left_head" link2="separator_right_head" reason="Never" />
+    <disable_collisions link1="separator_main" link2="separator_right_head" reason="Adjacent" />
 </robot>

@@ -7,3 +7,12 @@ controller_list:
       - lwa4p_joint4
       - lwa4p_joint5
       - lwa4p_joint6
+  - name: fake_gripper_controller
+    joints:
+      - separator_base_main_joint
+      - separator_main_left_head_joint
+      - separator_main_right_head_joint
+      - separator_left_back_joint
+      - separator_left_front_joint
+      - separator_right_back_joint
+      - separator_right_front_joint

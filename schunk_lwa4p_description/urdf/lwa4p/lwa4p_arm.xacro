@@ -4,13 +4,13 @@
 
   <xacro:macro name="lwa4p_arm" params="parent arm_id *origin has_podest">
 
-    <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/common.xacro"/> 
+    <xacro:include filename="$(find schunk_lwa4p_description)/urdf/common.xacro"/> 
     <xacro:property name="safety_offset" value="0.02"/>
 
     <xacro:arg name="gazebo" default="true"/>
     <xacro:if value="$(arg gazebo)">
       <!-- Gazebo Tags -->      
-      <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/lwa4p/lwa4p_arm.gazebo.xacro"/>
+      <xacro:include filename="$(find schunk_lwa4p_description)/urdf/lwa4p/lwa4p_arm.gazebo.xacro"/>
     </xacro:if>
 
      <xacro:if value="${has_podest}">
@@ -26,7 +26,7 @@
         <visual>
           <origin xyz="0 0 0" rpy="0 ${M_PI} 0" />
           <geometry>
-            <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_base_link.stl" />
+            <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_base_link.stl" />
           </geometry>
            <material name="Schunk/DarkGrey" />
         </visual>
@@ -34,7 +34,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 ${M_PI} 0" />
           <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_base_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_base_link.stl" />
           </geometry>
         </collision>
       </link>
@@ -70,14 +70,14 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_1_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_1_link.stl" />
         </geometry>
         <material name="Schunk/Blue" />
       </visual>    
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_1_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_1_link.stl" />
         </geometry>
       </collision>
     </link>
@@ -103,14 +103,14 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_2_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_2_link.stl" />
         </geometry>
         <material name="Schunk/LightGrey" />
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_2_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_2_link.stl" />
         </geometry>
       </collision>
     </link> 
@@ -137,14 +137,14 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_3_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_3_link.stl" />
         </geometry>
         <material name="Schunk/LightGrey" />
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_3_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_3_link.stl" />
         </geometry>
       </collision>
     </link>  
@@ -171,14 +171,14 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_4_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_4_link.stl" />
         </geometry>
         <material name="Schunk/LightGrey" />
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_4_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_4_link.stl" />
         </geometry>
       </collision>
     </link>
@@ -205,14 +205,14 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_5_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_5_link.stl" />
         </geometry>
         <material name="Schunk/Blue" />
       </visual>      
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_5_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_5_link.stl" />
         </geometry>
       </collision>
     </link>
@@ -239,14 +239,14 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_6_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_6_link.stl" />
         </geometry>
         <material name="Schunk/LightGrey" />
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="package://schunk_lwa4p_moveit/meshes/lwa4p/stl/arm_6_link.stl" />
+          <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_6_link.stl" />
         </geometry>
       </collision>
     </link>

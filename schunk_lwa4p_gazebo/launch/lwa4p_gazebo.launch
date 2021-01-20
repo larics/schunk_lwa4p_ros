@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <launch>
+    <param name="/use_sim_time" value="true"/>
+
     <arg name="paused" default="false" doc="Started gazebo in pauzed mode" />
     <arg name="gui" default="true" doc="Starts gazebo gui" />
+    <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
 
     <!-- Startup simulation world -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">   
@@ -11,16 +14,34 @@
     </include>
 
     <!-- Send robot URDF to param server -->
-    <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_upload.launch"/>
+    <group if="$(arg gripper)">
+        <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_upload.launch"/>
+    </group>
+    <group unless="$(arg gripper)">
+        <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_upload.launch"/>
+    </group>
 
     <!-- Push robot description to factory and spawn robot in gazebo -->
     <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model lwa4p -z 0" respawn="false" output="screen" />
 
+    <!-- Starts robot state publisher and joint state controller -->
     <include file="$(find schunk_lwa4p_gazebo)/launch/controller_utils.launch"/>
 
-    <!-- start this controller -->
-    <rosparam file="$(find schunk_lwa4p_gazebo)/controller/arm_controller.yaml" command="load"/>
-    <node name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
+    <!-- Send robot URDF to param server -->
+    <group if="$(arg gripper)">
+    <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_upload.launch"/>
+        <!-- start arm + gripper controller -->
+        <rosparam file="$(find schunk_lwa4p_gazebo)/controller/separator_controller.yaml" command="load"/>
+        <node name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller gripper_controller" respawn="false" output="screen"/>
+    </group>
+
+    <group unless="$(arg gripper)">
+        <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_upload.launch"/>
+        <!-- start arm controller -->
+        <rosparam file="$(find schunk_lwa4p_gazebo)/controller/arm_controller.yaml" command="load"/>
+        <node name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
+    </group>
+   
 
     <!-- Load other controllers -->
     <node name="ros_control_controller_manager" ns="lwa4p" pkg="controller_manager" type="controller_manager" respawn="false" args="load joint_group_position_controller" />

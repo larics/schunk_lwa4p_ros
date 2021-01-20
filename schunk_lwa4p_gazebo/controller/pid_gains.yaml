@@ -1,0 +1,8 @@
+gazebo_ros_control:
+  pid_gains:
+    lwa4p_joint1: {p: 2000.0, i: 0.1, d: 10, i_clamp: 10}
+    lwa4p_joint2: {p: 2000.0, i: 0.1, d: 10, i_clamp: 10}
+    lwa4p_joint3: {p: 2000.0, i: 0.1, d: 10, i_clamp: 10}
+    lwa4p_joint4: {p: 2020.0, i: 0.1, d: 10, i_clamp: 10}
+    lwa4p_joint5: {p: 2030.0, i: 0.1, d: 10, i_clamp: 10}
+    lwa4p_joint6: {p: 3050.0, i: 0.1, d: 01, i_clamp: 10}

@@ -1,0 +1,146 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lwa4p">
+  
+  <xacro:include filename="$(find schunk_lwa4p_description)/urdf/materials.urdf.xacro"/>
+
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/lwa4p</robotNamespace>
+      <legacyModeNS>true</legacyModeNS>
+    </plugin>
+  </gazebo>
+
+  <gazebo reference="${arm_id}_link1">
+    <gravity>true</gravity>
+      <self_collide>false</self_collide>
+      <material value="Gazebo/LightGrey" />
+  </gazebo>
+
+  <gazebo reference="${arm_id}_link2">
+    <gravity>true</gravity>
+    <self_collide>false</self_collide>
+    <material value="Gazebo/Blue" />
+  </gazebo>
+
+  <gazebo reference="${arm_id}_link3">
+    <gravity>true</gravity>
+    <self_collide>false</self_collide>
+    <material value="Gazebo/LightGrey" />
+  </gazebo>
+
+  <gazebo reference="${arm_id}_link4">
+    <gravity>true</gravity>
+    <self_collide>false</self_collide>
+    <material value="Gazebo/Blue" />
+  </gazebo>
+
+  <gazebo reference="${arm_id}_link5">
+    <gravity>true</gravity>
+    <self_collide>false</self_collide>
+    <material value="Gazebo/LightGrey" />
+  </gazebo>
+
+  <gazebo reference="${arm_id}_link6">
+    <gravity>true</gravity>
+    <self_collide>false</self_collide>
+    <material value="Gazebo/Blue" />
+  </gazebo>
+
+  <gazebo reference="${arm_id}_link7">
+    <gravity>true</gravity>
+    <self_collide>false</self_collide>
+    <material value="Gazebo/LightGrey" />
+  </gazebo>
+
+  <gazebo reference="separator_base">
+        <material value="Gazebo/Red " />
+    </gazebo>
+    <gazebo reference="separator_main">
+        <material value="Gazebo/ZincYellow" />
+    </gazebo>
+    <gazebo reference="separator_right_back_holder">
+        <material value="Gazebo/Green" />
+    </gazebo>    
+    <gazebo reference="separator_right_front_holder">
+        <material value="Gazebo/Green" />
+    </gazebo>
+    <gazebo reference="separator_right_front_holder">
+        <material value="Gazebo/Green" />
+    </gazebo>    
+    <gazebo reference="separator_left_front_holder">
+        <material value="Gazebo/Green" /> 
+    </gazebo>
+    <gazebo reference="separator_right_head">
+        <material value="Gazebo/YellowGlow" /> 
+    </gazebo>
+    <gazebo reference="separator_left_head">
+        <material value="Gazebo/YellowGlow" /> 
+    </gazebo>
+
+
+  <transmission name="${arm_id}_joint1_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${arm_id}_joint1">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->
+    </joint>
+    <actuator name="${arm_id}_joint1_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="${arm_id}_joint2_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${arm_id}_joint2">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->    </joint>
+    <actuator name="${arm_id}_joint2_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="${arm_id}_joint3_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${arm_id}_joint3">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->
+    </joint>
+    <actuator name="${arm_id}_joint3_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="${arm_id}_joint4_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${arm_id}_joint4">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->
+    </joint>
+    <actuator name="${arm_id}_joint4_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="${arm_id}_joint5_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${arm_id}_joint5">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->
+    </joint>
+    <actuator name="${arm_id}_joint5_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="${arm_id}_joint6_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${arm_id}_joint6">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->
+    </joint>
+    <actuator name="${arm_id}_joint6_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+</robot>
