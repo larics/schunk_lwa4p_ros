@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lwa4p">
   
-  <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/materials.urdf.xacro"/>
+  <xacro:include filename="$(find schunk_lwa4p_description)/urdf/materials.urdf.xacro"/>
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
