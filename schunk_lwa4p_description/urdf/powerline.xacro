@@ -6,7 +6,7 @@
       <xacro:arg name="gazebo" default="true"/>
             <xacro:if value="$(arg gazebo)">
             <!-- Gazebo Tags -->
-                <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/tools/separator.gazebo.xacro"/>
+                <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/powerline.gazebo.xacro"/>
             </xacro:if>
    
 
