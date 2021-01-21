@@ -5,6 +5,7 @@
         <material value="Gazebo/Red " />
     </gazebo>
     <gazebo reference="separator_main">
+        <gravity>false</gravity>
         <material value="Gazebo/ZincYellow" />
     </gazebo>
     <gazebo reference="separator_right_back_holder">
@@ -27,12 +28,12 @@
     </gazebo>
 
     <transmission name="separator_base_main_trans">
-    <type>transmission_interface/SimpleTransmission</type>
+        <type>transmission_interface/SimpleTransmission</type>
         <joint name="separator_base_main_joint">
             <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
         </joint>
         <actuator name="separator_base_main_joint_motor">
-            <mechanicalReduction>1</mechanicalReduction>  
+            <mechanicalReduction>1</mechanicalReduction>
         </actuator>
     </transmission>
 
@@ -54,6 +55,47 @@
         <actuator name="separator_main_left_head_joint_motor">
             <mechanicalReduction>1</mechanicalReduction>  
         </actuator>
-    </transmission>s
+    </transmission>
+
+    <transmission name="separator_right_front_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="separator_right_front_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="separator_right_front_joint_motor">
+            <mechanicalReduction>1</mechanicalReduction>  
+        </actuator>
+    </transmission>
+
+    <transmission name="separator_right_back_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="separator_right_back_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="separator_right_back_joint_motor">
+            <mechanicalReduction>1</mechanicalReduction>  
+        </actuator>
+    </transmission>
+
+    <transmission name="separator_left_front_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="separator_left_front_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="separator_left_front_joint_motor">
+            <mechanicalReduction>1</mechanicalReduction>  
+        </actuator>
+    </transmission>    
+
+    <transmission name="separator_left_back_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="separator_left_back_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="separator_left_back_joint_motor">
+            <mechanicalReduction>1</mechanicalReduction>  
+        </actuator>
+    </transmission>   
+
 
 </robot>

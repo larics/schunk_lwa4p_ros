@@ -6,6 +6,7 @@
   <xacro:include filename="$(find schunk_lwa4p_description)/urdf/lwa4p/lwa4p_arm.xacro" >
   	<xacro:arg name="gazebo" value="${gazebo}"/>
   </xacro:include>
+
   <xacro:include filename="$(find schunk_lwa4p_description)/urdf/tools/separator.xacro" >
 	<xacro:arg name="gazebo" value="${gazebo}"/>
   </xacro:include>
@@ -17,7 +18,6 @@
 		<parent link="world"/>
 		<child link="base_link"/>
 	</joint>
-
 
    <!-- foot for arm -->
 	<link name="base_link">

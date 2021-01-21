@@ -13,7 +13,7 @@
         <xacro:arg name="gazebo" default="true"/>
             <xacro:if value="$(arg gazebo)">
             <!-- Gazebo Tags -->
-            <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/tools/separator.gazebo.xacro"/>
+            <xacro:include filename="$(find schunk_lwa4p_description)/urdf/tools/separator.gazebo.xacro"/>
         </xacro:if>
 
         <xacro:property name="scale_factor" value="3.937007"/>
@@ -39,14 +39,14 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/baza2.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/baza2.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
                 <material name="blue"/>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/baza2.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/baza2.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>
@@ -60,14 +60,14 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/separator3.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/separator3.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
                 <material name="white"/>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/separator3.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/separator3.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>
@@ -75,8 +75,9 @@
         <joint name="separator_base_main_joint" type="prismatic">
             <parent link="separator_base"/>
             <child link="separator_main"/>
-            <origin xyz="0 0 ${0.19685/scale_factor}" rpy="0 0 0"/>
-            <limit effort="1000" velocity="0.05" lower="-0.5" upper="0.5"/>
+            <!-- Here is BUG FIX FOR SEPARATOR MAIN, at loading somehow Gazebo forgots to take podest into consideration -->
+            <origin xyz="0 0 ${0.19685/scale_factor + 0.5}" rpy="0 0 0"/>
+            <limit effort="1000" velocity="0.00" lower="-0.5" upper="0.5"/>
             <axis xyz="0 0 1"/>
         </joint>
 
@@ -89,13 +90,13 @@
             <visual>
                 <origin rpy="0 0 0" xyz="-${0.032/scale_factor} -${0.385443/scale_factor} -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/desni_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/desni_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="-${0.032/scale_factor} -${0.385443/scale_factor} -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/desni_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/desni_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>
@@ -117,13 +118,13 @@
             <visual>
                 <origin rpy="0 0 0" xyz="-${0.032/scale_factor} ${0.385443/scale_factor} -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/desni_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/desni_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="-${0.032/scale_factor} ${0.385443/scale_factor} -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/desni_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/desni_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>
@@ -145,13 +146,13 @@
             <visual>
                 <origin rpy="0 0 0" xyz="${0.032/scale_factor} -${0.385443/scale_factor} -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/lijevi_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/lijevi_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="${0.032/scale_factor} -${0.385443/scale_factor} -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/lijevi_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/lijevi_prednji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>
@@ -173,13 +174,13 @@
             <visual>
                 <origin rpy="0 0 0" xyz="${0.032/scale_factor} ${0.385443/scale_factor}  -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/lijevi_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/lijevi_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="${0.032/scale_factor} ${0.385443/scale_factor} -${0.16/scale_factor}"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/lijevi_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/lijevi_zadnji_drzac.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>
@@ -201,14 +202,14 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 ${0.545/scale_factor} -0.01"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/separator1.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/separator1.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
                 <material name="custom"/>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="0 ${0.545/scale_factor} -0.01"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/separator1.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/separator1.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>
@@ -231,14 +232,14 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 -${0.545/scale_factor} -0.01"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/separator2.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/separator2.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
                 <material name="custom"/>
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="0 -${0.545/scale_factor} -0.01"/>
                 <geometry>
-                    <mesh filename="package://schunk_lwa4p_moveit/meshes/separator/separator2.STL" scale="0.0254 0.0254 0.0254"/>
+                    <mesh filename="package://schunk_lwa4p_description/meshes/separator/separator2.STL" scale="0.0254 0.0254 0.0254"/>
                 </geometry>
             </collision>
         </link>

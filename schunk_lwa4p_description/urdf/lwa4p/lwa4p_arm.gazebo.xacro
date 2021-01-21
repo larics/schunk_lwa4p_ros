@@ -10,10 +10,11 @@
     </plugin>
   </gazebo>
 
+
   <gazebo reference="${arm_id}_link1">
     <gravity>true</gravity>
       <self_collide>false</self_collide>
-      <material value="Gazebo/LightGrey" />
+      <material value="Gazebo/Grey" />
   </gazebo>
 
   <gazebo reference="${arm_id}_link2">
@@ -25,7 +26,7 @@
   <gazebo reference="${arm_id}_link3">
     <gravity>true</gravity>
     <self_collide>false</self_collide>
-    <material value="Gazebo/LightGrey" />
+    <material value="Gazebo/Grey" />
   </gazebo>
 
   <gazebo reference="${arm_id}_link4">
@@ -37,19 +38,13 @@
   <gazebo reference="${arm_id}_link5">
     <gravity>true</gravity>
     <self_collide>false</self_collide>
-    <material value="Gazebo/LightGrey" />
+    <material value="Gazebo/Grey" />
   </gazebo>
 
   <gazebo reference="${arm_id}_link6">
     <gravity>true</gravity>
     <self_collide>false</self_collide>
     <material value="Gazebo/Blue" />
-  </gazebo>
-
-  <gazebo reference="${arm_id}_link7">
-    <gravity>true</gravity>
-    <self_collide>false</self_collide>
-    <material value="Gazebo/LightGrey" />
   </gazebo>
 
   <transmission name="${arm_id}_joint1_trans">

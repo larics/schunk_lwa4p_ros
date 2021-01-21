@@ -6,4 +6,4 @@ controller_list:
   - name: lwa4p/gripper_controller
     action_ns: "follow_joint_trajectory"
     type: FollowJointTrajectory
-    joints: [separator_main_left_head_joint, separator_main_right_head_joint, separator_main_left_head_joint]
+    joints: [separator_main_left_head_joint, separator_main_right_head_joint]

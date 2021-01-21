@@ -46,36 +46,30 @@
     <material value="Gazebo/Blue" />
   </gazebo>
 
-  <gazebo reference="${arm_id}_link7">
-    <gravity>true</gravity>
-    <self_collide>false</self_collide>
-    <material value="Gazebo/LightGrey" />
-  </gazebo>
-
   <gazebo reference="separator_base">
-        <material value="Gazebo/Red " />
-    </gazebo>
-    <gazebo reference="separator_main">
-        <material value="Gazebo/ZincYellow" />
-    </gazebo>
-    <gazebo reference="separator_right_back_holder">
-        <material value="Gazebo/Green" />
-    </gazebo>    
-    <gazebo reference="separator_right_front_holder">
-        <material value="Gazebo/Green" />
-    </gazebo>
-    <gazebo reference="separator_right_front_holder">
-        <material value="Gazebo/Green" />
-    </gazebo>    
-    <gazebo reference="separator_left_front_holder">
-        <material value="Gazebo/Green" /> 
-    </gazebo>
-    <gazebo reference="separator_right_head">
-        <material value="Gazebo/YellowGlow" /> 
-    </gazebo>
-    <gazebo reference="separator_left_head">
-        <material value="Gazebo/YellowGlow" /> 
-    </gazebo>
+    <material value="Gazebo/Red" />
+  </gazebo>
+  <gazebo reference="separator_main">
+    <material value="Gazebo/ZincYellow" />
+  </gazebo>
+  <gazebo reference="separator_right_back_holder">
+    <material value="Gazebo/Green" />
+  </gazebo>    
+  <gazebo reference="separator_right_front_holder">
+    <material value="Gazebo/Green" />
+  </gazebo>
+  <gazebo reference="separator_right_front_holder">
+    <material value="Gazebo/Green" />
+  </gazebo>    
+  <gazebo reference="separator_left_front_holder">
+    <material value="Gazebo/Green" /> 
+  </gazebo>
+  <gazebo reference="separator_right_head">
+    <material value="Gazebo/YellowGlow" /> 
+  </gazebo>
+  <gazebo reference="separator_left_head">
+    <material value="Gazebo/YellowGlow" /> 
+  </gazebo>
 
 
   <transmission name="${arm_id}_joint1_trans">
