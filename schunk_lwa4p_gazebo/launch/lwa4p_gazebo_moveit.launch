@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <param name="/use_sim_time" value="true"/>
+    <!--arg name="remap" value="true"/-->
 
     <rosparam file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml" command="load"/>
 
@@ -8,5 +9,8 @@
         <arg name="gripper" value="true" />
     <include file="$(find schunk_lwa4p_moveit_config)/launch/demo_planning_execution.launch">
         <arg name="respawn_robot" value="false" />
+        <!-- joint remapping is done in move_group.launch -->
     </include>
+
+    
 </launch>

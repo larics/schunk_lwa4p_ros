@@ -6,6 +6,8 @@
 
     <xacro:include filename="$(find schunk_lwa4p_description)/urdf/common.xacro"/> 
     <xacro:property name="safety_offset" value="0.02"/>
+    <xacro:property name="dynamics_damping" value="0.5"/>
+    <xacro:property name="dynamics_friction" value="0.5"/>
 
     <xacro:arg name="gazebo" default="true"/>
     <xacro:if value="$(arg gazebo)">
@@ -72,7 +74,7 @@
         <geometry>
           <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_1_link.stl" />
         </geometry>
-        <material name="Schunk/Blue" />
+        <!--material name="Schunk/Blue" /-->
       </visual>    
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -88,6 +90,7 @@
       <parent link="${arm_id}_base_link"/>
       <child link="${arm_id}_link1"/>
       <axis xyz="0 0 1"/>
+      <dynamics damping="${dynamics_damping}" friction="${dynamics_friction}"/>
       <limit effort="370" velocity="1.26" lower="${-2.967 + safety_offset}" upper="${2.967 - safety_offset}"/>
       <safety_controller k_position="20" k_velocity="50" soft_lower_limit="${-6.28 + 0.01}" soft_upper_limit="${6.28 - 0.01}"/>
     </joint>
@@ -105,7 +108,7 @@
         <geometry>
           <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_2_link.stl" />
         </geometry>
-        <material name="Schunk/LightGrey" />
+        <!--material name="Schunk/LightGrey" /-->
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -119,9 +122,10 @@
     <!-- joint between arm_1_link and arm_2_link -->  
     <joint name="${arm_id}_joint2" type="revolute">
       <origin xyz="0 0 0" rpy="1.5708 0 0"/>
->      <parent link="${arm_id}_link1"/>
+      <parent link="${arm_id}_link1"/>
       <child link="${arm_id}_link2"/>
       <axis xyz="0 0 1"/>
+      <dynamics damping="${dynamics_damping}" friction="${dynamics_friction}"/>
       <limit effort="370" velocity="1.26" lower="${-2.967 + safety_offset}" upper="${2.967 - safety_offset}"/>
       <safety_controller k_position="20" k_velocity="50" soft_lower_limit="${-2.09 + 0.01}" soft_upper_limit="${2.09 - 0.01}" />
     </joint>
@@ -139,7 +143,7 @@
         <geometry>
           <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_3_link.stl" />
         </geometry>
-        <material name="Schunk/LightGrey" />
+        <!--material name="Schunk/LightGrey" /-->
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -156,6 +160,7 @@
       <parent link="${arm_id}_link2"/>
       <child link="${arm_id}_link3"/>
       <axis xyz="0 0 1"/>
+      <dynamics damping="${dynamics_damping}" friction="${dynamics_friction}"/>
       <limit effort="176" velocity="1.26" lower="${-2.714 + safety_offset}" upper="${2.714 - safety_offset}"/>
       <safety_controller k_position="20" k_velocity="25" soft_lower_limit="${-6.28 + 0.01}" soft_upper_limit="${6.28 - 0.01}" />
     </joint>  
@@ -173,7 +178,7 @@
         <geometry>
           <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_4_link.stl" />
         </geometry>
-        <material name="Schunk/LightGrey" />
+        <!--material name="Schunk/LightGrey" /-->
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -190,6 +195,7 @@
       <parent link="${arm_id}_link3"/>
       <child link="${arm_id}_link4"/>
       <axis xyz="0 0 1" />
+      <dynamics damping="${dynamics_damping}" friction="${dynamics_friction}"/>
       <limit effort="176" velocity="1.26" lower="${-2.967 + safety_offset}" upper="${2.967 - safety_offset}"/>
       <safety_controller k_position="20" k_velocity="25" soft_lower_limit="${-2.09 + 0.01}" soft_upper_limit="${2.09 - 0.01}" />
     </joint>
@@ -207,7 +213,7 @@
         <geometry>
           <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_5_link.stl" />
         </geometry>
-        <material name="Schunk/Blue" />
+        <!--material name="Schunk/Blue" /-->
       </visual>      
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -224,6 +230,7 @@
       <parent link="${arm_id}_link4"/>
       <child link="${arm_id}_link5"/>
       <axis xyz="0 0 1" />
+      <dynamics damping="${dynamics_damping}" friction="${dynamics_friction}"/>
       <limit effort="41.6" velocity="1.26" lower="${-2.967 + safety_offset}" upper="${2.967 - safety_offset}" />
       <safety_controller k_position="20" k_velocity="25" soft_lower_limit="${-6.28 + 0.01}" soft_upper_limit="${6.28 - 0.01}" />
     </joint>
@@ -241,7 +248,7 @@
         <geometry>
           <mesh filename="package://schunk_lwa4p_description/meshes/lwa4p/stl/arm_6_link.stl" />
         </geometry>
-        <material name="Schunk/LightGrey" />
+        <!--material name="Schunk/LightGrey" /-->
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -258,6 +265,7 @@
       <parent link="${arm_id}_link5"/>
       <child link="${arm_id}_link6"/>
       <axis xyz="0 0 1" />
+      <dynamics damping="${dynamics_damping}" friction="${dynamics_friction}"/>
       <limit effort="20.1" velocity="1.26" lower="${-2.967 + safety_offset}" upper="${2.967 - safety_offset}" />
       <safety_controller k_position="20" k_velocity="25" soft_lower_limit="${-2.09 + 0.01}" soft_upper_limit="${2.09 - 0.01}" />
     </joint>
