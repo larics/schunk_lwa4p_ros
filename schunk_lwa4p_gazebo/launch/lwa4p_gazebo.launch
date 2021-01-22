@@ -6,11 +6,14 @@
     <arg name="gui" default="true" doc="Starts gazebo gui" />
     <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
 
+    <!-- Load joint pid gains -->
+    <rosparam file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml" command="load"/>
+
     <!-- Startup simulation world -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">   
         <arg name="world_name" default="worlds/empty.world"/>
         <arg name="paused" value="$(arg paused)"/>
-        <arg name="gui" value="$(arg gui)"/>    
+        <arg name="gui" value="$(arg gui)"/>       
     </include>
 
     <!-- Send robot URDF to param server -->

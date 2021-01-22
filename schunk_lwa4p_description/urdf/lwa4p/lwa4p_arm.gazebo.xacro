@@ -3,14 +3,6 @@
   
   <xacro:include filename="$(find schunk_lwa4p_description)/urdf/materials.urdf.xacro"/>
 
-  <gazebo>
-    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <robotNamespace>/lwa4p</robotNamespace>
-      <legacyModeNS>true</legacyModeNS>
-    </plugin>
-  </gazebo>
-
-
   <gazebo reference="${arm_id}_link1">
     <gravity>true</gravity>
       <self_collide>false</self_collide>
@@ -45,6 +37,23 @@
     <gravity>true</gravity>
     <self_collide>false</self_collide>
     <material value="Gazebo/Blue" />
+  </gazebo>
+
+  <!-- To have fully consistent Gazebo simulation it should have 2 IMUs for 1 power cable and 3 IMUs for 2 power cables -->
+  <!--xacro:if value=$(arg init_imu)>
+      <gazebo>
+      <plugin name="gazebo_ros_control" filename="libgazebo_ros_magnetometer.so">
+        <robotNamespace>/lwa4p</robotNamespace>
+        <legacyModeNS>true</legacyModeNS>
+      </plugin>
+    </gazebo>
+  </xacro:if-->
+
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/lwa4p</robotNamespace>
+      <legacyModeNS>true</legacyModeNS>
+    </plugin>
   </gazebo>
 
   <transmission name="${arm_id}_joint1_trans">

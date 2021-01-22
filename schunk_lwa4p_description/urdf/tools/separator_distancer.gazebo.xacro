@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lwa4p">
+
+    <gazebo reference="separator_main">
+        <material value="Gazebo/ZincYellow" />
+        <gravity>false</gravity>
+    </gazebo>
+    <gazebo reference="separator_right_head">
+        <material value="Gazebo/YellowGlow" /> 
+    </gazebo>
+    <gazebo reference="separator_left_head">
+        <material value="Gazebo/YellowGlow" /> 
+    </gazebo>
+
+    <transmission name="separator_right_head_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="separator_main_right_head_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="separator_main_right_head_joint_motor">
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <transmission name="separator_left_head_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="separator_main_left_head_joint">
+            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="separator_main_left_head_joint_motor">
+            <mechanicalReduction>1</mechanicalReduction>  
+        </actuator>
+    </transmission>
+
+</robot>

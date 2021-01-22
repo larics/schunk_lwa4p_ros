@@ -7,8 +7,7 @@
             <xacro:if value="$(arg gazebo)">
             <!-- Gazebo Tags -->
                 <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/powerline.gazebo.xacro"/>
-            </xacro:if>
-   
+            </xacro:if>   
 
         <joint name="base_powerline_link1" type="fixed">
             <origin xyz="${x_distance} -${y_distance} 0.375" rpy="0 0 0"/>
@@ -28,7 +27,7 @@
 		    <collision>
 		        <origin xyz="0 0 0" rpy="0 0 0" />
 		        <geometry>
-		            <cylinder radius="0.05" length="0.75"/>
+		            <cylinder radius="0.1" length="0.75"/>
 		        </geometry>
 		    </collision>
 		    <inertial>
@@ -38,7 +37,7 @@
 		    </inertial>
 	    </link>
 
-        <joint name="base_powerline_link2" type="fixed">
+        <joint name="base_powerline_link2"  type="fixed">
             <origin xyz="${x_distance} ${y_distance} 0.375" rpy="0 0 0"/>
             <parent link="base_link"/>
             <child link="powerline_link2"/>

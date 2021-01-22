@@ -1,0 +1,6 @@
+lwa4p:
+  distancer_controller:
+    type: position_controllers/JointTrajectoryController
+    joints: 
+      - separator_main_right_head_joint
+      - separator_main_left_head_joint

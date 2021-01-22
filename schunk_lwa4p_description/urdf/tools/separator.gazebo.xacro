@@ -4,10 +4,6 @@
     <gazebo reference="separator_base">
         <material value="Gazebo/Red " />
     </gazebo>
-    <gazebo reference="separator_main">
-        <gravity>false</gravity>
-        <material value="Gazebo/ZincYellow" />
-    </gazebo>
     <gazebo reference="separator_right_back_holder">
         <material value="Gazebo/Green" />
     </gazebo>    
@@ -20,43 +16,7 @@
     <gazebo reference="separator_left_front_holder">
         <material value="Gazebo/Green" /> 
     </gazebo>
-    <gazebo reference="separator_right_head">
-        <material value="Gazebo/YellowGlow" /> 
-    </gazebo>
-    <gazebo reference="separator_left_head">
-        <material value="Gazebo/YellowGlow" /> 
-    </gazebo>
-
-    <transmission name="separator_base_main_trans">
-        <type>transmission_interface/SimpleTransmission</type>
-        <joint name="separator_base_main_joint">
-            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-        </joint>
-        <actuator name="separator_base_main_joint_motor">
-            <mechanicalReduction>1</mechanicalReduction>
-        </actuator>
-    </transmission>
-
-    <transmission name="separator_right_head_trans">
-        <type>transmission_interface/SimpleTransmission</type>
-        <joint name="separator_main_right_head_joint">
-            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-        </joint>
-        <actuator name="separator_main_right_head_joint_motor">
-            <mechanicalReduction>1</mechanicalReduction>
-        </actuator>
-    </transmission>
-
-    <transmission name="separator_left_head_trans">
-        <type>transmission_interface/SimpleTransmission</type>
-        <joint name="separator_main_left_head_joint">
-            <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-        </joint>
-        <actuator name="separator_main_left_head_joint_motor">
-            <mechanicalReduction>1</mechanicalReduction>  
-        </actuator>
-    </transmission>
-
+   
     <transmission name="separator_right_front_trans">
         <type>transmission_interface/SimpleTransmission</type>
         <joint name="separator_right_front_joint">
