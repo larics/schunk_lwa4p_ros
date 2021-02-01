@@ -32,11 +32,6 @@ joint_limits:
     max_velocity: 1.26
     has_acceleration_limits: false
     max_acceleration: 0
-  separator_base_main_joint:
-    has_velocity_limits: true
-    max_velocity: 0.05
-    has_acceleration_limits: false
-    max_acceleration: 0
   separator_left_back_joint:
     has_velocity_limits: true
     max_velocity: 0.5

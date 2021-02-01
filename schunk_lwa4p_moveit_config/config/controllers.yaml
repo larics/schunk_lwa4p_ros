@@ -7,3 +7,7 @@ controller_list:
     action_ns: "follow_joint_trajectory"
     type: FollowJointTrajectory
     joints: [separator_main_left_head_joint, separator_main_right_head_joint]
+  - name: lwa4p/separator_controller
+    action_ns: "follow_joint_trajectory"
+    type: FollowJointTrajectory 
+    joints: [separator_left_back_joint, separator_right_back_joint, separator_left_front_joint, separator_right_front_joint]
