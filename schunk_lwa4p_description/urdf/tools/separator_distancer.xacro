@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="separator_distancer"> 
 
-    <xacro:macro name="separator_distancer" params="rpy:='0 0 0' ns:='' xyz:='2 2 0.1'">
+    <xacro:macro name="separator_distancer" params="rpy:='0 0 0' ns:='' xyz:='0 0 0.01' ">
 
         <xacro:property name="scale_factor" value="3.937007"/>
 
@@ -11,11 +11,12 @@
             <xacro:include filename="$(find schunk_lwa4p_description)/urdf/tools/separator_distancer.gazebo.xacro"/>
         </xacro:if>
 
-        <!--joint name="separator_distancer_joint" type="floating" />
-            <origin xyz="0 0 0" rpy="0 0 0"/>
+        <joint name="separator_distancer_joint" type="fixed" >
+            <origin xyz="${xyz}" rpy="${rpy}"/>
+            <!--parent link="lwa4p_link6"/-->
             <parent link="separator_base"/>
-            <child link="spearator_main"/>
-        </joint-->
+            <child link="separator_main"/>
+        </joint>
 
         <link name="separator_main">
             <inertial>
@@ -38,12 +39,7 @@
             </collision>
         </link>
 
-        <joint name="world_separator" type="fixed">
-            <parent link="separator_base"/>
-            <child link="separator_main"/>
-            <origin rpy="${rpy}" xyz="${xyz}"/>
-        </joint>
-        
+
         <link name="separator_right_head">
             <inertial>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
