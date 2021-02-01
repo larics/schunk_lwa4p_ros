@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Load the controllers -->
+    <node name="lwa4p_arm_control" pkg="schunk_lwa4p_control" type="control_arm.py" respawn="false" 
+        output="screen" />
+
+</launch>
