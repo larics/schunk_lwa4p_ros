@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="hand">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="separator_distancer">
     <xacro:include filename="separator_distancer.xacro"/>
 </robot>

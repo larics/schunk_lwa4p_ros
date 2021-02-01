@@ -9,7 +9,11 @@
   <xacro:include filename="$(find schunk_lwa4p_description)/urdf/tools/separator.xacro">
 	<xacro:arg name="gazebo" value="${gazebo}"/>
   </xacro:include>  
+  <xacro:include filename="$(find schunk_lwa4p_description)/urdf/tools/separator_distancer.xacro">
+	<xacro:arg name="gazebo" value="${gazebo}"/>
+  </xacro:include>
   <xacro:include filename="$(find schunk_lwa4p_description)/urdf/powerline.xacro"/>
+
 
   
   <xacro:include filename="$(find schunk_lwa4p_description)/urdf/common.xacro"/>
@@ -44,6 +48,9 @@
   <!-- tool -->
   <xacro:separator ns="lwa4p" rpy="0 0 0" connected_to="lwa4p_link6" safety_distance="0.03"/>
 
+  <!-- distancer -->
+  <!--xacro:separator_distancer ns="lwa4p" rpy="0 0 0" xyz="0 0 0.05"/-->
+  
   <!-- powerline --> 
   <xacro:powerline base_x="0" base_y="0" base_z="0.25" x_distance="0.5" y_distance="1.25" gazebo="true" two_cables="true" cable_distance="0.3"/>
 
