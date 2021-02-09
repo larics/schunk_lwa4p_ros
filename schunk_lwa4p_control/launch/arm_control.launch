@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+    <!-- Start arm control --> 
+    <node pkg="schunk_lwa4p_ros" type="arm_control" name="arm_control" output="screen">
+        <param name="config_path" value="$(arg config_path)" />
+    </node>
+
+</launch>

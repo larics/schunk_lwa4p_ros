@@ -7,10 +7,13 @@
 
     <include file="$(find schunk_lwa4p_gazebo)/launch/lwa4p_gazebo.launch"/>
         <arg name="gripper" value="true" />
+    
     <include file="$(find schunk_lwa4p_moveit_config)/launch/demo_planning_execution.launch">
         <arg name="respawn_robot" value="false" />
         <!-- joint remapping is done in move_group.launch -->
     </include>
+
+    <include file="$(find schunk_lwa4p_control)/launch/lwa4p_moveit_control.launch"></include>
 
     
 </launch>

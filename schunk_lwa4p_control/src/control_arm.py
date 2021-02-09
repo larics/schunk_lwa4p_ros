@@ -18,10 +18,12 @@ class ControlArm():
     def __init__(self):
 
         moveit_commander.roscpp_initialize(sys.argv)
-        rospy.init_node('move_group_python_interface', anonymous=True)
-        timeout_s = 60
+        rospy.init_node('move_group_python_interface', anonymous=True, log_level=rospy.DEBUG)
+        
+        # Timeout used to wait for all move groups to be initialized (Max time neccessary for move groups to initialize)
+        timeout_s = 25
         rospy.sleep(timeout_s)
-        self.rate = rospy.Rate(20)
+        self.rate = rospy.Rate(45)
 
         # Instantiate a RobotCommander object (outer-level interface to the robot)
         self.robot = moveit_commander.RobotCommander()
@@ -61,7 +63,8 @@ class ControlArm():
     ## Callbacks
     def pose_cmd_cb(self, msg):
         
-        rospy.loginfo(colored("Received pose command!", "green"))
+        rospy.logdebug(colored("Received pose command!", "green"))
+        rospy.logdebug(colored("Goal pose cmd is: {}".format(msg.pose)))
         self.received_commanded_pose = True
         poseMsg = PoseStamped()
         poseMsg.header = msg.header
@@ -89,21 +92,33 @@ class ControlArm():
         print("============")
 
     def plan_pose_goal(self):
+
+        current_pose = self.group.get_current_pose(end_effector_link="lwa4p_link6")
+
+        rospy.logdebug((type(current_pose)))
         
-        print("Planned pose goal!")
+        rospy.logdebug((colored("Planning pose goal!", "green")))
         if  self.interactive_planning and self.received_commanded_pose:
-            pose_goal = self.commanded_pose
+            rospy.logdebug(colored("Changed pose goal to: {}".format(self.commanded_pose), "green"))
+            rospy.logdebug(colored("Current pose is: {}".format(self.group.get_current_pose(end_effector_link="lwa4p_link6"))))
+            rospy.logdebug(colored("Current ee link is: {}".format(self.group.get_end_effector_link())))
+            pose_goal = self.commanded_pose            
+            
+            #rospy.logdebug("Known constraints are: {}".format(self.group.get_known_constraints()))
         else: 
+            rospy.logdebug("Sending robot to pose!")
             pose_goal = geometry_msgs.msg.Pose()
             pose_goal.orientation.w = 1.0
             pose_goal.orientation.z = 0
             pose_goal.orientation.y = 0
             pose_goal.orientation.x = 0
-            pose_goal.position.x = 0.4 
-            pose_goal.position.y = 0.2
+            pose_goal.position.x = -0.4 
+            pose_goal.position.y = -0.2
             pose_goal.position.z = 1 
 
-        self.group.set_pose_target(pose_goal)
+
+        self.group.set_start_state_to_current_state()
+        self.group.set_pose_target(pose_goal, end_effector_link="lwa4p_link6")
 
     def call_planner(self):        
         plan = self.group.go(wait=True)
@@ -126,10 +141,9 @@ class ControlArm():
         self.display_trajectory_pub.publish(displayTrajectoryMsg)
 
     def run(self):
-        rospy.sleep(20)
 
         while not rospy.is_shutdown():
-            rospy.loginfo(colored("Planning pose goal", "red"))
+            #rospy.loginfo(colored("Planning pose goal", "red"))
             self.rate.sleep()
             #self.get_basic_info()
             if self.plan_changed:
