@@ -1,0 +1,16 @@
+subscribers:
+
+  cmd_pose_topic:
+    topic: /arm/command/pose
+    queue_size: 1
+
+#actions:
+#
+#  camera_reading:
+#    name: /darknet_ros/check_for_objects
+
+publishers:
+
+  display_trajectory_topic:
+    topic: /move_group/display_planned_path
+    queue_size: 1

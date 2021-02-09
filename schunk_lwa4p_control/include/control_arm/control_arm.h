@@ -18,7 +18,7 @@
 // MoveIt
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <moveit_msgs/DisplayRobotState.h
+#include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/DisplayTrajectory.h>
@@ -30,30 +30,28 @@ class ControlArm{
     public:
 
         // Constructor
-        explicit ControlArm(ros::NodeHandle *nh); 
+        ControlArm(ros::NodeHandle nh); 
 
         // Destructor 
         ~ControlArm(); 
-
-        // Everything under is possibly redundant 
 
         // Variables
         geometry_msgs::Point currentEEPosition; 
         geometry_msgs::Pose currentEEPose; 
         
         // Setters 
-        bool setCmdPose();
-        bool setPlanningGroup(); 
+        bool setCmdPose(); 
         bool setMoveGroup(); 
+        bool setPlanningScene();
 
         // Getters
         void getBasicInfo(); 
         bool getCmdPose(); 
-        std::string getMoveGroupName();
         geometry_msgs::Point getCurrentEEPosition(); 
         geometry_msgs::Pose getCurrentEEPose(); 
 
-        /
+        // Pointer to move group (https://answers.ros.org/question/344598/cant-create-movegroupinterface-object-in-my-own-class/)
+        moveit::planning_interface::MoveGroupInterface *m_moveGroupPtr;  
 
 
     private: 
@@ -61,32 +59,29 @@ class ControlArm{
         // Reads and verifies ROS parameters 
         bool readParameters(); 
 
-        void init();      
+        // Initialization method
+        void init();     
 
         // ROS node handle  
-        ros::NodeHandle nodeHandle_; 
+        ros::NodeHandle nodeHandle_;         
 
-        // Control arm on thread
-        std::thread controlArmThread_; 
-
-        // MoveIt objects!
-        moveit::planning_interface::MoveGroupInterface armMoveGroup_; 
-        moveit::planning_interface::PlanningSceneInterface planningScene_; 
-
+        // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_; 
 
         // Private variables
-        std::string m_planningGroup;  
-        geometry_msgs::Pose m_cmdPose; 
-
+        bool isNodeRunning_; 
+        bool enableVisualization_;      
+        bool moveGroupInitialized_;   
+        bool planningSceneInitialized_; 
+        geometry_msgs::Pose m_cmdPose;        
         
-
         // Private methods  
         bool sendToCmdPose(); 
         bool sendToZeroPose();
         bool planPathToCmdPose();
         bool planPathToZeroPose(); 
         bool isNodeRunning(); 
+        void run(); 
 
        
 };
