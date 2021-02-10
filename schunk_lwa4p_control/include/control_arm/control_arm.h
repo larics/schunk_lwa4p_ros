@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 #include <thread>
+#include <unistd.h>
 
 // ROS
 #include <ros/ros.h>
@@ -53,6 +54,9 @@ class ControlArm{
         // Pointer to move group (https://answers.ros.org/question/344598/cant-create-movegroupinterface-object-in-my-own-class/)
         moveit::planning_interface::MoveGroupInterface *m_moveGroupPtr;  
 
+        // Run method
+        void run(); 
+
 
     private: 
         
@@ -65,14 +69,23 @@ class ControlArm{
         // ROS node handle  
         ros::NodeHandle nodeHandle_;         
 
+        // ROS Publishers and subscribers
+        ros::Publisher displayTrajectoryPublisher_; 
+        ros::Subscriber armCmdPoseSubscriber_;
+
+        // ROS Subscriber Callback
+        void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
+
         // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_; 
 
         // Private variables
+        int sleepMs_;
         bool isNodeRunning_; 
         bool enableVisualization_;      
         bool moveGroupInitialized_;   
         bool planningSceneInitialized_; 
+        bool moveReady_;
         geometry_msgs::Pose m_cmdPose;        
         
         // Private methods  
@@ -81,7 +94,8 @@ class ControlArm{
         bool planPathToCmdPose();
         bool planPathToZeroPose(); 
         bool isNodeRunning(); 
-        void run(); 
+
+
 
        
 };
