@@ -1,6 +1,7 @@
 <launch>
 
   <arg name="respawn_robot" default="true"/> 
+  <arg name="rate" default="10" />>
 
   <rosparam command="load" file="$(find schunk_lwa4p_moveit_config)/config/joint_names.yaml"/>
 
@@ -10,7 +11,8 @@
 
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="/use_gui" value="false"/>
-    <rosparam param="/source_list">[/joint_states]</rosparam>
+    <param name="/rate" value="$(arg rate)"/>
+    <rosparam param="/source_list">[/joint_states, /lwa4p/joint_states]</rosparam>
   </node>
 
   <include file="$(find schunk_lwa4p_moveit_config)/launch/move_group.launch">

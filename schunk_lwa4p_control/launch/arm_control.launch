@@ -3,10 +3,12 @@
 <launch>
 
     <arg name="config_path" value="$(find schunk_lwa4p_control)/config/topics.yaml"/>
+    <param name="use_sim_time" value="false"/>
 
     <!-- Start arm control --> 
-    <node pkg="schunk_lwa4p_control" type="schunk_lwa4p_control_node" name="control_arm_node" output="screen">
+    <node pkg="schunk_lwa4p_control"  type="schunk_lwa4p_control_node" name="control_arm_node" output="screen">
         <param name="config_path" value="$(arg config_path)" />
+        <!--remap from="joint_states" to="/lwa4p/joint_states"/-->
     </node>
 
 </launch>

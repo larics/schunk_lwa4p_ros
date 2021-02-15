@@ -78,9 +78,15 @@ bool ControlArm::setMoveGroup() {
     m_moveGroupPtr = new moveit::planning_interface::MoveGroupInterface(groupName); 
 
 
+    // Get current robot arm state
+    getCurrentArmState(); 
+
+
+
     return true;
 
 }
+
 
 
 bool ControlArm::setPlanningScene() {
@@ -114,10 +120,6 @@ void ControlArm::getBasicInfo() {
 
 }
 
-void ControlArm::getCurrentEEPose() {
-    
-}
-
 void ControlArm::cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg) {
 
     ROS_INFO("[ControlArm] Recieved cmd_pose...");
@@ -141,7 +143,6 @@ bool ControlArm::sendToCmdPose(){
     setCmdPose(); 
 
     // Call planner, compute plan and visualize it
-
     moveit::planning_interface::MoveGroupInterface::Plan plannedPath; 
 
     // plan Path   
@@ -158,13 +159,86 @@ bool ControlArm::sendToCmdPose(){
     return success; 
 }
 
+
+void ControlArm::getCurrentArmState(){
+
+    // method is more like refresh current kinematic state (getCurrentKinematicState)
+
+    m_currentRobotStatePtr = m_moveGroupPtr->getCurrentState(); 
+
+}
+
+void ControlArm::getCurrentEndEffectorState(const std::string endEffectorLinkName){
+
+    m_endEffectorState = m_currentRobotStatePtr->getGlobalLinkTransform(endEffectorLinkName); 
+
+    bool debug = true; 
+    if (debug){
+
+        ROS_INFO_STREAM("Translation: \n" << m_endEffectorState.translation() << "\n"); 
+        ROS_INFO_STREAM("Rotation: \n" << m_endEffectorState.rotation() << "\n"); 
+
+    }
+
+}
+
+void ControlArm::getJointPositions(const std::vector<std::string>& jointNames) {
+    std::vector<double> jointGroupPositions; 
+    m_currentRobotStatePtr->copyJointGroupPositions(m_jointModelGroupPtr, jointGroupPositions);
+
+    bool debug = false; 
+    if (debug){
+        for (std::size_t i = 0; i < jointNames.size(); ++i)
+        {
+            ROS_INFO("Joint %s: %f", jointNames[i].c_str(), jointGroupPositions[i]);
+        }
+
+    }
+  
+}
+
+bool ControlArm::getIK(const std::size_t attempts, double timeout) {
+
+    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, m_endEffectorState, attempts, timeout);
+
+    bool debug = true; 
+    if (debug){
+        ROS_INFO("Found IK solution!"); 
+
+    }
+
+    return found_ik; 
+
+}
+
 void ControlArm::run() {
 
-    ros::Rate r(50);
+    ros::Rate r(100);
 
     while(ros::ok)
     {
-        ROS_INFO("[ControlArm] Running...");
+        //ROS_INFO("[ControlArm] Running...");
+        //getCurrentArmState(); 
+        //ROS_INFO("[ControlArm] Current arm state is ", *m_currentRobotStatePtr);
+        // ROS_INFO("Running!");
+
+        getCurrentArmState(); 
+
+        // Get all joints 
+        m_jointModelGroupPtr = m_currentRobotStatePtr->getJointModelGroup("arm"); 
+
+        // Get current joint positions 
+        getJointPositions(m_jointModelGroupPtr->getVariableNames());  
+
+        // Call get current end effector state to setup pointer of variable which is used in get Inverse Kinematics
+        getCurrentEndEffectorState("lwa4p_link6"); 
+
+        std::size_t attempts = 10; 
+        double timeout = 1; 
+        bool successIK; 
+        successIK = getIK(attempts, timeout); 
+
+    
         r.sleep(); 
     }
 

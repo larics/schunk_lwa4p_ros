@@ -52,7 +52,10 @@ class ControlArm{
         geometry_msgs::Pose getCurrentEEPose(); 
 
         // Pointer to move group (https://answers.ros.org/question/344598/cant-create-movegroupinterface-object-in-my-own-class/)
-        moveit::planning_interface::MoveGroupInterface *m_moveGroupPtr;  
+        moveit::planning_interface::MoveGroupInterface  *m_moveGroupPtr;  
+        const robot_state::JointModelGroup              *m_jointModelGroupPtr; 
+        moveit::core::RobotStatePtr                      m_currentRobotStatePtr; 
+        Eigen::Affine3d                                  m_endEffectorState; 
 
         // Run method
         void run(); 
@@ -77,7 +80,7 @@ class ControlArm{
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
 
         // DisplayTrajectory
-        moveit_msgs::DisplayTrajectory displayTrajectory_; 
+        moveit_msgs::DisplayTrajectory displayTrajectory_;         
 
         // Private variables
         int sleepMs_;
@@ -87,15 +90,17 @@ class ControlArm{
         bool planningSceneInitialized_; 
         bool moveReady_;
         geometry_msgs::Pose m_cmdPose;        
-        
+
         // Private methods  
         bool sendToCmdPose(); 
         bool sendToZeroPose();
         bool planPathToCmdPose();
         bool planPathToZeroPose(); 
         bool isNodeRunning(); 
-
-
+        void getCurrentArmState(); 
+        void getCurrentEndEffectorState(const std::string linkName); 
+        void getJointPositions(const std::vector<std::string>& jointNames); 
+        bool getIK(const std::size_t attempts, double timeout);
 
        
 };

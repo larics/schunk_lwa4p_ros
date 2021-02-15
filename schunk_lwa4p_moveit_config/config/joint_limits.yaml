@@ -4,34 +4,34 @@
 joint_limits:
   lwa4p_joint1:
     has_velocity_limits: true
-    max_velocity: 1.26
-    has_acceleration_limits: false
-    max_acceleration: 0
+    max_velocity: 0.5
+    has_acceleration_limits: true
+    max_acceleration: 0.2
   lwa4p_joint2:
     has_velocity_limits: true
-    max_velocity: 1.26
-    has_acceleration_limits: false
-    max_acceleration: 0
+    max_velocity: 0.5
+    has_acceleration_limits: true
+    max_acceleration: 0.2
   lwa4p_joint3:
     has_velocity_limits: true
-    max_velocity: 1.26
-    has_acceleration_limits: false
-    max_acceleration: 0
+    max_velocity: 0.5
+    has_acceleration_limits: true
+    max_acceleration: 0.2
   lwa4p_joint4:
     has_velocity_limits: true
-    max_velocity: 1.26
-    has_acceleration_limits: false
-    max_acceleration: 0
+    max_velocity: 0.5
+    has_acceleration_limits: true
+    max_acceleration: 0.2
   lwa4p_joint5:
     has_velocity_limits: true
-    max_velocity: 1.26
-    has_acceleration_limits: false
-    max_acceleration: 0
+    max_velocity: 0.5
+    has_acceleration_limits: true
+    max_acceleration: 0.2
   lwa4p_joint6:
     has_velocity_limits: true
-    max_velocity: 1.26
+    max_velocity: 0.5
     has_acceleration_limits: false
-    max_acceleration: 0
+    max_acceleration: 0.2
   separator_left_back_joint:
     has_velocity_limits: true
     max_velocity: 0.5
