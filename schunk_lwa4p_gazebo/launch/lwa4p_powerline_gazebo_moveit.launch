@@ -12,5 +12,8 @@
         <!-- joint remapping is done in move_group.launch -->
     </include>
 
+    <include file="$(find schunk_lwa4p_control)/launch/arm_control.launch"></include>
+
+
     
 </launch>

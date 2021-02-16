@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="powerline">
 
-    <xacro:macro name="powerline" params="base_x:=0 base_y:=0 base_z:=0 x_distance:=0.75 y_distance:=1 two_cables:=true gazebo:=true cable_distance=0.25">
+    <xacro:macro name="powerline" params="base_x:=0 base_y:=0 powerline_height:=0 x_distance:=0.75 y_distance:=1 two_cables:=true gazebo:=true cable_distance=0.25">
 
       <xacro:arg name="gazebo" default="true"/>
             <xacro:if value="$(arg gazebo)">
             <!-- Gazebo Tags -->
-                <xacro:include filename="$(find schunk_lwa4p_moveit)/urdf/powerline.gazebo.xacro"/>
+                <xacro:include filename="$(find schunk_lwa4p_description)/urdf/powerline.gazebo.xacro"/>
             </xacro:if>   
 
         <joint name="base_powerline_link1" type="fixed">
-            <origin xyz="${x_distance} -${y_distance} 0.375" rpy="0 0 0"/>
+            <origin xyz="${x_distance} -${y_distance} ${powerline_height/2}" rpy="0 0 0"/>
             <parent link="base_link"/>
             <child link="powerline_link1"/>
         </joint>
@@ -20,14 +20,14 @@
 		    <visual>
 		        <origin xyz="0 0 0" rpy="0 0 0" />
 		        <geometry>
-			        <cylinder radius="0.05" length="0.75"/>
+			        <cylinder radius="0.05" length="${powerline_height}"/>
 		        </geometry>
 		        <material name="Gazebo/WoodFloor" />
 		    </visual>
 		    <collision>
 		        <origin xyz="0 0 0" rpy="0 0 0" />
 		        <geometry>
-		            <cylinder radius="0.1" length="0.75"/>
+		            <cylinder radius="0.01" length="${powerline_height}"/>
 		        </geometry>
 		    </collision>
 		    <inertial>
@@ -38,7 +38,7 @@
 	    </link>
 
         <joint name="base_powerline_link2"  type="fixed">
-            <origin xyz="${x_distance} ${y_distance} 0.375" rpy="0 0 0"/>
+            <origin xyz="${x_distance} ${y_distance} ${powerline_height/2}" rpy="0 0 0"/>
             <parent link="base_link"/>
             <child link="powerline_link2"/>
         </joint>
@@ -47,14 +47,14 @@
 		<visual>
 		   <origin xyz="0 0 0" rpy="0 0 0" />
 		   <geometry>
-			  <cylinder radius="0.05" length="0.75"/>
+			  <cylinder radius="0.05" length="${powerline_height}"/>
 		   </geometry>
 		   <material name="Gazebo/WoodFloor" />
 		</visual>
 		<collision>
 		   <origin xyz="0 0 0" rpy="0 0 0" />
 		   <geometry>
-			  <cylinder radius="0.05" length="0.75"/>
+			  <cylinder radius="0.05" length="${powerline_height}"/>
 		   </geometry>
 		</collision>
 		<inertial>
@@ -65,7 +65,7 @@
 	</link>
 
     <joint name="base_powerline_cable1" type="fixed">
-        <origin xyz="${x_distance} 0 0.75" rpy="0 0 0"/>
+        <origin xyz="${x_distance} 0 ${powerline_height}" rpy="0 0 0"/>
         <parent link="base_link"/>
         <child link="powerline_cable1"/>
     </joint>
@@ -94,7 +94,7 @@
     <xacro:if value="${two_cables}">
 
         <joint name="base_powerline_link3" type="fixed">
-            <origin xyz="${x_distance + cable_distance} -${y_distance} 0.375" rpy="0 0 0"/>
+            <origin xyz="${x_distance + cable_distance} -${y_distance} ${powerline_height/2}" rpy="0 0 0"/>
             <parent link="base_link"/>
             <child link="powerline_link3"/>
         </joint>
@@ -103,14 +103,14 @@
 		    <visual>
 		        <origin xyz="0 0 0" rpy="0 0 0" />
 		        <geometry>
-			        <cylinder radius="0.05" length="0.75"/>
+			        <cylinder radius="0.05" length="${powerline_height}"/>
 		        </geometry>
 		        <material name="Gazebo/WoodFloor" />
 		    </visual>
 		    <collision>
 		        <origin xyz="0 0 0" rpy="0 0 0" />
 		        <geometry>
-		            <cylinder radius="0.05" length="0.75"/>
+		            <cylinder radius="0.05" length="${powerline_height}"/>
 		        </geometry>
 		    </collision>
 		    <inertial>
@@ -121,7 +121,7 @@
 	    </link>
 
         <joint name="base_powerline_link4" type="fixed">
-            <origin xyz="${x_distance + cable_distance} ${y_distance} 0.375" rpy="0 0 0"/>
+            <origin xyz="${x_distance + cable_distance} ${y_distance} ${powerline_height/2}" rpy="0 0 0"/>
             <parent link="base_link"/>
             <child link="powerline_link4"/>
         </joint>
@@ -130,14 +130,14 @@
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
-                    <cylinder radius="0.05" length="0.75"/>
+                    <cylinder radius="0.05" length="${powerline_height}"/>
                 </geometry>
                 <material name="Gazebo/WoodFloor" />
             </visual>
                 <collision>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
-                    <cylinder radius="0.05" length="0.75"/>
+                    <cylinder radius="0.05" length="${powerline_height}"/>
                 </geometry>
             </collision>
             <inertial>
@@ -148,7 +148,7 @@
 	    </link>
 
         <joint name="base_powerline_cable2" type="fixed">
-            <origin xyz="${x_distance + cable_distance} 0 0.75" rpy="0 0 0"/>
+            <origin xyz="${x_distance + cable_distance} 0 ${powerline_height}" rpy="0 0 0"/>
             <parent link="base_link"/>
             <child link="powerline_cable2"/>
         </joint>

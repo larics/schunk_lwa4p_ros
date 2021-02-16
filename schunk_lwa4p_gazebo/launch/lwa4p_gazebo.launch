@@ -2,7 +2,7 @@
 <launch>
     <param name="/use_sim_time" value="true"/>
 
-    <arg name="paused" default="false" doc="Started gazebo in pauzed mode" />
+    <arg name="paused" default="false" doc="Started gazebo in paused mode" />
     <arg name="gui" default="true" doc="Starts gazebo gui" />
     <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
 

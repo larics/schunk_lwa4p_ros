@@ -48,10 +48,10 @@
   <!-- tool -->
   <xacro:separator ns="lwa4p" rpy="0 0 0" connected_to="lwa4p_link6" safety_distance="0.03"/>
 
-  <!-- distancer -->
-  <!--xacro:separator_distancer ns="lwa4p" rpy="0 0 0" xyz="0 0 0.05"/-->
+  <!-- separator distancer -->
+  <xacro:separator_distancer ns="lwa4p" rpy="0 0 0" xyz="0 0 0.05"/>
   
   <!-- powerline --> 
-  <xacro:powerline base_x="0" base_y="0" base_z="0.25" x_distance="0.5" y_distance="1.25" gazebo="true" two_cables="true" cable_distance="0.3"/>
+  <xacro:powerline base_x="0" base_y="0" powerline_height="1.0" x_distance="0.5" y_distance="1.25" gazebo="true" two_cables="true" cable_distance="0.3"/>
 
 </robot>
