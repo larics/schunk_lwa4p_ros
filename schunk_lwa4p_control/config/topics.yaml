@@ -4,6 +4,10 @@ subscribers:
     topic: /arm/command/pose
     queue_size: 1
 
+  cmd_tool_orientation_topic:
+    topic: /tool/command/orientation
+    queue_size: 1
+
 #actions:
 #
 #  camera_reading:

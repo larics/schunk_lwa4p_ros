@@ -9,7 +9,7 @@ lwa4p:
       - lwa4p_joint5
       - lwa4p_joint6
     constraints:
-        goal_time: 0.6
+        goal_time: 5.0
         stopped_velocity_tolerance: 0.05
         lwa4p_joint1: {trajectory: 0.1, goal: 0.1}
         lwa4p_joint2: {trajectory: 0.1, goal: 0.1}

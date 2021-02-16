@@ -24,6 +24,9 @@
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 
+// Utils
+#include <tf2/LinearMath/Quaternion.h>
+
 
 
 class ControlArm{
@@ -75,9 +78,11 @@ class ControlArm{
         // ROS Publishers and subscribers
         ros::Publisher displayTrajectoryPublisher_; 
         ros::Subscriber armCmdPoseSubscriber_;
+        ros::Subscriber armCmdToolOrientationSubscriber_; 
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
+        void cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg); 
 
         // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_;         
@@ -101,6 +106,7 @@ class ControlArm{
         void getCurrentEndEffectorState(const std::string linkName); 
         void getJointPositions(const std::vector<std::string>& jointNames); 
         bool getIK(const std::size_t attempts, double timeout);
+        Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution
 
        
 };

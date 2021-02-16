@@ -46,25 +46,26 @@ void ControlArm::init() {
 
     planningSceneInitialized_ = setPlanningScene(); 
 
-
     // Initialize publishers and subscribers;
     std::string displayTrajectoryTopicName; 
     int displayTrajectoryQueueSize; 
     std::string cmdPoseTopicName; 
     int cmdPoseTopicQueueSize; 
-    std::string armCmdSendToPoseTopicName; 
-    int armCmdSendToPoseTopicQueueSize;
+    std::string cmdToolOrientationTopicName; 
+    int cmdToolOrientationTopicQueueSize; 
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1); 
     nodeHandle_.param("subscribers/cmd_pose_topic", cmdPoseTopicName, std::string("arm/command/pose"));
     nodeHandle_.param("subscribers/queue_size", cmdPoseTopicQueueSize, 1); 
+    nodeHandle_.param("subscribers/cmd_tool_orientation_topic",  cmdToolOrientationTopicName, std::string("tool/command/orientation")); 
+    nodeHandle_.param("subscribers/queue_size", cmdToolOrientationTopicQueueSize, 1);
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers." );
 
-
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
+    armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
     //armCmdSendToPoseSubscriber_ = nodeHandle_.subscribe<std_msgs::bool>(armCmdSendToPoseTopicName, armCmdSendToPoseTopicQueueSize, &ControlArm::cmdSendToPoseCallback, this); 
     
 }
@@ -77,11 +78,8 @@ bool ControlArm::setMoveGroup() {
     static const std::string groupName = "arm"; 
     m_moveGroupPtr = new moveit::planning_interface::MoveGroupInterface(groupName); 
 
-
     // Get current robot arm state
     getCurrentArmState(); 
-
-
 
     return true;
 
@@ -103,6 +101,7 @@ bool ControlArm::setPlanningScene() {
 bool ControlArm::setCmdPose() {
 
     if (moveGroupInitialized_) {
+
         m_moveGroupPtr->setPoseTarget(m_cmdPose);
     }
 
@@ -113,7 +112,6 @@ void ControlArm::getBasicInfo() {
     if (moveGroupInitialized_) {
 
         ROS_INFO("[ControlArm] Reference planning frame: %s", m_moveGroupPtr->getPlanningFrame().c_str());
-
         ROS_INFO("[ControlArm] Reference end effector frame: %s", m_moveGroupPtr->getEndEffectorLink().c_str());
 
     }
@@ -132,11 +130,34 @@ void ControlArm::cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg) {
 
 }
 
+void ControlArm::cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg) {
 
-// Would have more sense to create it as service 
-//void ControlArm::cmdSendToPoseCallback(const std_msgs::Bool::ConstPtr& msg) {
-    //    moveReady_ = msg->data; 
-//}
+    ROS_INFO("[ControlArm] Received cmd tool orientation..."); 
+
+    // Get current end effector state 
+    getCurrentEndEffectorState("lwa4p_link6"); 
+
+    geometry_msgs::Pose cmdPose; 
+    tf2::Quaternion cmdQuaternion; 
+
+    // Set current end effector position as command
+    cmdPose.position.x = m_endEffectorState(0, 3);
+    cmdPose.position.y = m_endEffectorState(1, 3);
+    cmdPose.position.z = m_endEffectorState(2, 3);
+
+    // Set commanded roll, pitch, yaw as quaternion 
+    cmdQuaternion.setRPY(msg->x, msg->y, msg->z); 
+    cmdPose.orientation.x = cmdQuaternion.x(); 
+    cmdPose.orientation.y = cmdQuaternion.y(); 
+    cmdPose.orientation.z = cmdQuaternion.z(); 
+    cmdPose.orientation.w = cmdQuaternion.w(); 
+
+    // set CMD pose
+    m_cmdPose = cmdPose; 
+
+    sendToCmdPose();  
+
+}
 
 bool ControlArm::sendToCmdPose(){
 
@@ -147,7 +168,6 @@ bool ControlArm::sendToCmdPose(){
 
     // plan Path   
     bool success = (m_moveGroupPtr->plan(plannedPath) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-
 
     ROS_INFO("[ControlArm] Visualizing plan 1 (pose goal) %s", success ? "" : "FAILED");
     
@@ -160,15 +180,14 @@ bool ControlArm::sendToCmdPose(){
 }
 
 
-void ControlArm::getCurrentArmState(){
+void ControlArm::getCurrentArmState() {
 
     // method is more like refresh current kinematic state (getCurrentKinematicState)
-
     m_currentRobotStatePtr = m_moveGroupPtr->getCurrentState(); 
 
 }
 
-void ControlArm::getCurrentEndEffectorState(const std::string endEffectorLinkName){
+void ControlArm::getCurrentEndEffectorState(const std::string endEffectorLinkName) {
 
     m_endEffectorState = m_currentRobotStatePtr->getGlobalLinkTransform(endEffectorLinkName); 
 
@@ -211,17 +230,30 @@ bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
 }
 
+Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
+
+    Eigen::MatrixXd jacobianMatrix; 
+    m_currentRobotStatePtr->getJacobian(m_jointModelGroupPtr, 
+                                        m_currentRobotStatePtr->getLinkModel(m_jointModelGroupPtr->getLinkModelNames().back()),
+                                        refPointPosition, 
+                                        jacobianMatrix);
+
+    return jacobianMatrix; 
+
+}
+
 void ControlArm::run() {
 
-    ros::Rate r(100);
+    ros::Rate r(50);
 
     while(ros::ok)
     {
-        //ROS_INFO("[ControlArm] Running...");
-        //getCurrentArmState(); 
-        //ROS_INFO("[ControlArm] Current arm state is ", *m_currentRobotStatePtr);
+        // ROS_INFO("[ControlArm] Running...");
+        // getCurrentArmState(); 
+        // ROS_INFO("[ControlArm] Current arm state is ", *m_currentRobotStatePtr);
         // ROS_INFO("Running!");
 
+        // Get current joint position for every joint in robot arm 
         getCurrentArmState(); 
 
         // Get all joints 
@@ -231,13 +263,18 @@ void ControlArm::run() {
         getJointPositions(m_jointModelGroupPtr->getVariableNames());  
 
         // Call get current end effector state to setup pointer of variable which is used in get Inverse Kinematics
-        getCurrentEndEffectorState("lwa4p_link6"); 
+        // getCurrentEndEffectorState("lwa4p_link6"); 
 
-        std::size_t attempts = 10; 
-        double timeout = 1; 
-        bool successIK; 
-        successIK = getIK(attempts, timeout); 
+        // Call to get IK 
+        //std::size_t attempts = 10; 
+        //double timeout = 1; 
+        //bool successIK; 
+        //successIK = getIK(attempts, timeout); 
 
+        //Eigen::MatrixXd m_; 
+        //Eigen::Vector3d testVector(0.0, 0.0, 0.0);
+        //m_ = getJacobian(testVector);
+        //ROS_INFO_STREAM("Jacobian: \n" << m_); 
     
         r.sleep(); 
     }
