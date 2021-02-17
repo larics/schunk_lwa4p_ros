@@ -249,7 +249,7 @@ void ControlArm::executeDummyCartesianPath(){
 
 bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
-    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, m_endEffectorState, attempts, timeout);
+//    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, m_endEffectorState, attempts, timeout);
 
     bool debug = true; 
     if (debug){
@@ -257,6 +257,7 @@ bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
     }
 
+    bool found_ik = false; 
     return found_ik; 
 
 }
