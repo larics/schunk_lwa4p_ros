@@ -18,27 +18,35 @@
   
   <xacro:include filename="$(find schunk_lwa4p_description)/urdf/common.xacro"/>
 
-    <!-- foot for arm -->
-	<link name="base_link">
-		<visual>
-		   <origin xyz="0 0 0.25" rpy="0 0 0" />
-		   <geometry>
-			  <cylinder radius="0.1" length="0.5"/>
-		   </geometry>
-		   <material name="Gazebo/Black" />
-		</visual>
-		<collision>
-		   <origin xyz="0 0 0.25" rpy="0 0 0" />
-		   <geometry>
-			  <cylinder radius="0.1" length="0.5"/>
-		   </geometry>
-		</collision>
-		<inertial>
-		   <origin xyz="0 0 0.25" rpy="0 0 0"/>
-		   <mass value="10000.0"/>
-		   <inertia ixx="10000.0"  ixy="0"  ixz="0" iyy="10000.0" iyz="0" izz="10000.0" />
-		</inertial>
-	</link>
+  <link name="world">
+  </link>
+
+  <joint name="world_base_joint" type="fixed">
+	<parent link="world"/>
+	<child link="base_link"/>
+  </joint>
+
+  <!-- foot for arm -->
+  <link name="base_link">
+	<visual>
+		<origin xyz="0 0 0.25" rpy="0 0 0" />
+		<geometry>
+			<cylinder radius="0.1" length="0.5"/>
+		</geometry>
+		<material name="Gazebo/Black" />
+	</visual>
+	<collision>
+		<origin xyz="0 0 0.25" rpy="0 0 0" />
+		<geometry>
+			<cylinder radius="0.1" length="0.5"/>
+		</geometry>
+	</collision>
+	<inertial>
+		<origin xyz="0 0 0.25" rpy="0 0 0"/>
+		<mass value="10000.0"/>
+		<inertia ixx="10000.0"  ixy="0"  ixz="0" iyy="10000.0" iyz="0" izz="10000.0" />
+	</inertial>
+  </link>
  
   <!-- arm -->
   <xacro:lwa4p_arm arm_id="lwa4p" parent="base_link" has_podest="true" >
@@ -52,6 +60,6 @@
   <xacro:separator_distancer ns="lwa4p" rpy="0 0 0" xyz="0 0 0.05"/>
   
   <!-- powerline --> 
-  <xacro:powerline base_x="0" base_y="0" powerline_height="1.0" x_distance="0.5" y_distance="1.25" gazebo="true" two_cables="true" cable_distance="0.3"/>
+  <xacro:powerline base_x="0" base_y="0" powerline_height="1.1" x_distance="0.25" y_distance="1.25" gazebo="true" two_cables="true" cable_distance="0.3"/>
 
 </robot>

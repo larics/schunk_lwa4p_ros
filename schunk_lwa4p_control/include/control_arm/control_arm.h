@@ -96,12 +96,12 @@ class ControlArm{
         bool moveReady_;
         geometry_msgs::Pose m_cmdPose;        
 
-        // Private methods  
         bool sendToCmdPose(); 
         bool sendToZeroPose();
         bool planPathToCmdPose();
         bool planPathToZeroPose(); 
         bool isNodeRunning(); 
+        void executeDummyCartesianPath(); 
         void getCurrentArmState(); 
         void getCurrentEndEffectorState(const std::string linkName); 
         void getJointPositions(const std::vector<std::string>& jointNames); 

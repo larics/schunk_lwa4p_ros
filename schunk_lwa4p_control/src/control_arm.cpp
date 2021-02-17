@@ -4,8 +4,6 @@
 ControlArm::ControlArm(ros::NodeHandle nh) : nodeHandle_(nh)
 {
 
-
-
         ROS_INFO("[ControlArm] Node started."); 
 
         // Read parameters from config file. 
@@ -39,7 +37,6 @@ bool ControlArm::readParameters() {
 void ControlArm::init() {
 
     ROS_INFO("[ControlArm] Started node initialization.");
-
 
     // Set main move group
     moveGroupInitialized_ = setMoveGroup(); 
@@ -191,7 +188,7 @@ void ControlArm::getCurrentEndEffectorState(const std::string endEffectorLinkNam
 
     m_endEffectorState = m_currentRobotStatePtr->getGlobalLinkTransform(endEffectorLinkName); 
 
-    bool debug = true; 
+    bool debug = false; 
     if (debug){
 
         ROS_INFO_STREAM("Translation: \n" << m_endEffectorState.translation() << "\n"); 
@@ -214,6 +211,40 @@ void ControlArm::getJointPositions(const std::vector<std::string>& jointNames) {
 
     }
   
+}
+
+void ControlArm::executeDummyCartesianPath(){
+    geometry_msgs::Pose startPose = m_moveGroupPtr->getCurrentPose().pose; 
+    
+    std::vector<geometry_msgs::Pose> waypoints;
+    startPose.position.z -= 0.5; 
+    waypoints.push_back(startPose);
+
+    startPose.position.x += 0.4; 
+    waypoints.push_back(startPose); 
+
+    startPose.position.z += 0.35; 
+    waypoints.push_back(startPose); 
+
+    // set moveGroup scaling factor
+    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);  
+
+    moveit_msgs::RobotTrajectory trajectory; 
+    double eefStep = 0.01; double jumpTreshold = 0.0; // in real-world applications this jump Threshold must be > 0; 
+    double fraction = m_moveGroupPtr->computeCartesianPath(waypoints,
+                                                           eefStep, 
+                                                           jumpTreshold, 
+                                                           trajectory);
+
+    sleep(15);
+
+    ROS_INFO ("Starting Cartesian path planning execution.");
+    
+    // Call planner, compute plan and visualize it
+    moveit::planning_interface::MoveGroupInterface::Plan plannedPath; 
+    plannedPath.trajectory_ = trajectory; 
+    m_moveGroupPtr->execute(plannedPath); 
+
 }
 
 bool ControlArm::getIK(const std::size_t attempts, double timeout) {
@@ -261,6 +292,9 @@ void ControlArm::run() {
 
         // Get current joint positions 
         getJointPositions(m_jointModelGroupPtr->getVariableNames());  
+
+        executeDummyCartesianPath(); 
+
 
         // Call get current end effector state to setup pointer of variable which is used in get Inverse Kinematics
         // getCurrentEndEffectorState("lwa4p_link6"); 
