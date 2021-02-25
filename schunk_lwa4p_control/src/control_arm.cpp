@@ -2,7 +2,7 @@
 
 
 ControlArm::ControlArm(ros::NodeHandle nh) : nodeHandle_(nh)
-{
+{       
 
         ROS_INFO("[ControlArm] Node started."); 
 
@@ -213,37 +213,74 @@ void ControlArm::getJointPositions(const std::vector<std::string>& jointNames) {
   
 }
 
-void ControlArm::executeDummyCartesianPath(){
+bool ControlArm::executeDummyCartesianPath(){
     geometry_msgs::Pose startPose = m_moveGroupPtr->getCurrentPose().pose; 
     
     std::vector<geometry_msgs::Pose> waypoints;
-    startPose.position.z -= 0.5; 
+    startPose.position.z -= 0.45; 
     waypoints.push_back(startPose);
 
-    startPose.position.x += 0.4; 
+    startPose.position.x += 0.35; 
     waypoints.push_back(startPose); 
 
     startPose.position.z += 0.35; 
     waypoints.push_back(startPose); 
 
     // set moveGroup scaling factor
-    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);  
+    m_moveGroupPtr->setMaxVelocityScalingFactor(0.10);  
 
     moveit_msgs::RobotTrajectory trajectory; 
-    double eefStep = 0.01; double jumpTreshold = 0.0; // in real-world applications this jump Threshold must be > 0; 
+    double eefStep = 0.01; double jumpTreshold = 0.00; // in real-world applications this jump Threshold must be > 0; 
     double fraction = m_moveGroupPtr->computeCartesianPath(waypoints,
                                                            eefStep, 
                                                            jumpTreshold, 
                                                            trajectory);
 
-    sleep(15);
 
     ROS_INFO ("Starting Cartesian path planning execution.");
     
     // Call planner, compute plan and visualize it
     moveit::planning_interface::MoveGroupInterface::Plan plannedPath; 
-    plannedPath.trajectory_ = trajectory; 
+
+    bool tracIK = true; 
+    // Remove first element if tracIK used for this 
+    if (tracIK){
+        //Nothing for now
+    }
+
+    plannedPath.trajectory_.joint_trajectory.header = trajectory.joint_trajectory.header; 
+    plannedPath.trajectory_.joint_trajectory.joint_names = trajectory.joint_trajectory.joint_names;
+    plannedPath.trajectory_.multi_dof_joint_trajectory.header = trajectory.multi_dof_joint_trajectory.header;
+    plannedPath.trajectory_.multi_dof_joint_trajectory.joint_names = trajectory.multi_dof_joint_trajectory.joint_names; 
+
+    std::vector<int>::size_type size = trajectory.joint_trajectory.points.size(); 
+    ROS_INFO("Number of points for trajectory is: %i", size); 
+    
+    bool descartesPlanning = true; 
+    // Remove first element (https://answers.ros.org/question/253004/moveit-problem-error-trajectory-message-contains-waypoints-that-are-not-strictly-increasing-in-time/)    
+    if (descartesPlanning) {
+        for (std::size_t i = 0; i < trajectory.joint_trajectory.points.size() ; ++i) {
+            if ( i > 0 ) {
+                plannedPath.trajectory_.joint_trajectory.points.push_back(trajectory.joint_trajectory.points[i]);   
+
+            }
+        } 
+        for (std::size_t i = 0; i < trajectory.multi_dof_joint_trajectory.points.size() ; ++i) {   
+            if ( i > 0 ) {
+            plannedPath.trajectory_.multi_dof_joint_trajectory.points.push_back(trajectory.multi_dof_joint_trajectory.points[i]);            
+            } 
+        }    
+    }else {
+        plannedPath.trajectory_.joint_trajectory.points = trajectory.joint_trajectory.points; 
+        plannedPath.trajectory_.multi_dof_joint_trajectory.points = trajectory.multi_dof_joint_trajectory.points; 
+    }
+
     m_moveGroupPtr->execute(plannedPath); 
+
+    sleep(15);
+
+
+    return true; 
 
 }
 
@@ -294,7 +331,9 @@ void ControlArm::run() {
         // Get current joint positions 
         getJointPositions(m_jointModelGroupPtr->getVariableNames());  
 
-        executeDummyCartesianPath(); 
+        if (!firstTrajectoryExecution_) {
+            firstTrajectoryExecution_ =  executeDummyCartesianPath(); 
+        }
 
 
         // Call get current end effector state to setup pointer of variable which is used in get Inverse Kinematics

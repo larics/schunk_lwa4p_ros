@@ -94,6 +94,7 @@ class ControlArm{
         bool moveGroupInitialized_;   
         bool planningSceneInitialized_; 
         bool moveReady_;
+        bool firstTrajectoryExecution_ = false; 
         geometry_msgs::Pose m_cmdPose;        
 
         bool sendToCmdPose(); 
@@ -101,7 +102,7 @@ class ControlArm{
         bool planPathToCmdPose();
         bool planPathToZeroPose(); 
         bool isNodeRunning(); 
-        void executeDummyCartesianPath(); 
+        bool executeDummyCartesianPath(); 
         void getCurrentArmState(); 
         void getCurrentEndEffectorState(const std::string linkName); 
         void getJointPositions(const std::vector<std::string>& jointNames); 

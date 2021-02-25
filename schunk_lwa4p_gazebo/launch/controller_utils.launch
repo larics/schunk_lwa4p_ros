@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 
+<!-- Add PID gains for joint group position controller -->
+<!-- https://answers.gazebosim.org//question/25578/what-does-jointgroupposition-controller-do-when-it-does-not-have-pid-gains-set/ -->
+<rosparam command="load" file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml"/>
+
 <!-- Robot state publisher -->
 <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
     <param name="publish_frequency" type="double" value="50.0" />

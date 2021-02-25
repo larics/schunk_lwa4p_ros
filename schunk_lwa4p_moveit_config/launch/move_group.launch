@@ -23,19 +23,12 @@
   <arg name="publish_monitored_planning_scene" default="true"/>
 
   <!-- Descartes capability-->
+  <arg name="descartes" default="true" />  
+  <arg if="$(arg descartes)" name="disable_capabilities" default="move_group/MoveGroupCartesianPathService"/>
+  <arg if="$(arg descartes)" name="capabilities" default="descartes_capability/MoveGroupDescartesPathService"/> 
 
-  <arg name="descartes" default="1" />
-
-  <!--group if="$(arg descartes)"-->
-    <arg name="disable_capabilities" default="move_group/MoveGroupCartesianPathService"/>
-    <arg name="capabilities" default="descartes_capability/MoveGroupDescartesPathService"/>
-  <!--/group--> 
-  <group unless="$(arg descartes)">
-    <arg name="disable_capabilities" default=""/>
-    <arg name="capabilities" default=""/>  
-  </group>
-
-  
+  <arg unless="$(arg descartes)" name="disable_capabilities" default=""/>
+  <arg unless="$(arg descartes)" name="capabilities" default=""/>    
 
   <!-- load these non-default MoveGroup capabilities (space seperated) -->
   <!--

@@ -26,16 +26,21 @@ Currently is not used!
  - [x] Fix model coloring
  - [x] Plan and move arm from RVIZ in Gazebo
  - [x] Decouple models for separator tool and separator distancer to enable setting it up  
- - [ ] Reconfigure separator holder collisions 
- - [ ] Init separator distancer in separator holder
+ - [x] Reconfigure separator holder collisions 
+ - [x] Init separator distancer in separator holder
  - [/] Add powerline and magnetic field --> Simulation postponed
  - [ ] Add powerline and magnetic field to possible moveit collisions (no camera = no octomap) 
- - [ ] Write node for dummy pose sending (send pose, reach goal, hardcode at first)
- - [ ] Create action server for moveToLine, rotateTool, setUpDistancer
- - [ ] Think of a way to decouple separator from holder after setting it up (prismatic joint, possible move arm freely, dynamically change robot description? not advised).
+ - [x] Write node for dummy pose sending (send pose, reach goal, hardcode at first)
+ - [x] Create action server for moveToLine, rotateTool, setUpDistancer -> moveGroup already has those
+ - [x] Think of a way to decouple separator from holder after setting it up (prismatic joint, possible move arm freely, dynamically change robot description? not advised).
  - [x] Check Path Tolerance Violated (Changed dynamic joint params, error reduced) 
+ - [ ] Create Gazebo world with powerlines 
+ - [x] Integrate descartes cartesian planner
+ - [x] use TracIK for IK
+ - [x] Build and use OpenRAVE
+ - [ ] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
  - [ ] Create node for continuous replanning 
-
+ 
 # Possible improvements 
 
  - [ ] Add powerline as Git submodule into schunk_ros_package, and use it if neccessary
