@@ -1,5 +1,7 @@
 <launch>
 
+
+
   <include file="$(find schunk_lwa4p_moveit_config)/launch/planning_context.launch" />
 
   <!-- GDB Debug Option -->
@@ -20,8 +22,21 @@
   <arg name="jiggle_fraction" default="0.05" />
   <arg name="publish_monitored_planning_scene" default="true"/>
 
-  <arg name="capabilities" default=""/>
-  <arg name="disable_capabilities" default=""/>
+  <!-- Descartes capability-->
+
+  <arg name="descartes" default="1" />
+
+  <!--group if="$(arg descartes)"-->
+    <arg name="disable_capabilities" default="move_group/MoveGroupCartesianPathService"/>
+    <arg name="capabilities" default="descartes_capability/MoveGroupDescartesPathService"/>
+  <!--/group--> 
+  <group unless="$(arg descartes)">
+    <arg name="disable_capabilities" default=""/>
+    <arg name="capabilities" default=""/>  
+  </group>
+
+  
+
   <!-- load these non-default MoveGroup capabilities (space seperated) -->
   <!--
   <arg name="capabilities" value="
@@ -67,9 +82,9 @@
     <param name="allow_trajectory_execution" value="$(arg allow_trajectory_execution)"/>
     <param name="max_safe_path_cost" value="$(arg max_safe_path_cost)"/>
     <param name="jiggle_fraction" value="$(arg jiggle_fraction)" />
+
     <param name="capabilities" value="$(arg capabilities)"/>
     <param name="disable_capabilities" value="$(arg disable_capabilities)"/>
-
 
     <!-- Publish the planning scene of the physical robot so that rviz plugin can know actual robot -->
     <param name="planning_scene_monitor/publish_planning_scene" value="$(arg publish_monitored_planning_scene)" />
