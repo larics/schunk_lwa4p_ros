@@ -20,6 +20,9 @@ find_package(catkin REQUIRED COMPONENTS
     moveit_ros_planning
     moveit_ros_planning_interface
     moveit_ros_move_group
+    trajectory_msgs
+    tf_conversions
+    eigen_conversions
 )
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
@@ -39,6 +42,9 @@ catkin_package(
     moveit_ros_planning_interface
     moveit_ros_move_group
     tf
+    tf_conversions
+    trajectory_msgs
+    eigen_conversions 
   DEPENDS
     Eigen3
 )

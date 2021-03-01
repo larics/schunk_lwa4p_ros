@@ -58,7 +58,10 @@
   <build_depend>moveit_ros_planning</build_depend>
   <build_depend>moveit_ros_planning_interface</build_depend>
   <build_depend>moveit_ros_move_group</build_depend>
-  <build_depend>tf</build_depend>t
+  <build_depend>tf</build_depend>
+  <build_depend>tf_conversions</build_depend>
+  <build_depend>eigen_conversions</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
@@ -69,6 +72,9 @@
   <exec_depend>moveit_ros_planning</exec_depend>
   <exec_depend>moveit_ros_planning_interface</exec_depend>
   <exec_depend>tf</exec_depend>
+  <exec_depend>tf_conversions</exec_depend>
+  <exec_depend>eigen_conversions</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
 
 
 

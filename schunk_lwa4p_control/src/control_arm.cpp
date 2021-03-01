@@ -20,6 +20,7 @@ ControlArm::ControlArm(ros::NodeHandle nh) : nodeHandle_(nh)
         // Find out basic info
         getBasicInfo(); 
 
+
 }
     
 ControlArm::~ControlArm() {
@@ -74,6 +75,9 @@ bool ControlArm::setMoveGroup() {
     // MoveIt move group
     static const std::string groupName = "arm"; 
     m_moveGroupPtr = new moveit::planning_interface::MoveGroupInterface(groupName); 
+
+    // Allow replanning 
+    m_moveGroupPtr->allowReplanning(true); 
 
     // Get current robot arm state
     getCurrentArmState(); 
@@ -254,7 +258,7 @@ bool ControlArm::executeDummyCartesianPath(){
     plannedPath.trajectory_.multi_dof_joint_trajectory.joint_names = trajectory.multi_dof_joint_trajectory.joint_names; 
 
     std::vector<int>::size_type size = trajectory.joint_trajectory.points.size(); 
-    ROS_INFO("Number of points for trajectory is: %i", size); 
+    //ROS_INFO("Number of points for trajectory is: %i", size); 
     
     bool descartesPlanning = true; 
     // Remove first element (https://answers.ros.org/question/253004/moveit-problem-error-trajectory-message-contains-waypoints-that-are-not-strictly-increasing-in-time/)    
@@ -286,15 +290,19 @@ bool ControlArm::executeDummyCartesianPath(){
 
 bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
-//    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, m_endEffectorState, attempts, timeout);
+    // Or use EndEffector link 
+    Eigen::Affine3d currentPose_ = m_moveGroupPtr->getCurrentState()->getFrameTransform("lwa4p_link6");
+    geometry_msgs::Pose currentROSPose_; 
+    tf::poseEigenToMsg(currentPose_, currentROSPose_);
+
+    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, currentROSPose_);
 
     bool debug = true; 
     if (debug){
         ROS_INFO("Found IK solution!"); 
 
     }
-
-    bool found_ik = false; 
+    
     return found_ik; 
 
 }
@@ -340,10 +348,10 @@ void ControlArm::run() {
         // getCurrentEndEffectorState("lwa4p_link6"); 
 
         // Call to get IK 
-        //std::size_t attempts = 10; 
-        //double timeout = 1; 
-        //bool successIK; 
-        //successIK = getIK(attempts, timeout); 
+        std::size_t attempts = 10; 
+        double timeout = 1; 
+        bool successIK; 
+        successIK = getIK(attempts, timeout); 
 
         //Eigen::MatrixXd m_; 
         //Eigen::Vector3d testVector(0.0, 0.0, 0.0);

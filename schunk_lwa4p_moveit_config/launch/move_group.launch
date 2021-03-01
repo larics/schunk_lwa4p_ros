@@ -23,7 +23,7 @@
   <arg name="publish_monitored_planning_scene" default="true"/>
 
   <!-- Descartes capability-->
-  <arg name="descartes" default="true" />  
+  <arg name="descartes" default="false" />  
   <arg if="$(arg descartes)" name="disable_capabilities" default="move_group/MoveGroupCartesianPathService"/>
   <arg if="$(arg descartes)" name="capabilities" default="descartes_capability/MoveGroupDescartesPathService"/> 
 

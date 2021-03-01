@@ -6,6 +6,6 @@ arm:
   #kinematics_solver_attempts: 3
   
   #TracIK
-  #kinematics_solver: trac_ik_kinematics_plugin/TRAC_IKKinematicsPlugin
+  kinematics_solver: trac_ik_kinematics_plugin/TRAC_IKKinematicsPlugin
   
-  kinematics_solver: lwa4p_arm_separator_arm/IKFastKinematicsPlugin
+  #kinematics_solver: lwa4p_arm_separator_arm/IKFastKinematicsPlugin

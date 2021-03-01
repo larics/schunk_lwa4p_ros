@@ -24,6 +24,11 @@
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 
+// Conversions 
+#include <tf/tf.h>
+#include <tf_conversions/tf_eigen.h>
+#include <eigen_conversions/eigen_msg.h>
+
 // Utils
 #include <tf2/LinearMath/Quaternion.h>
 
@@ -94,7 +99,7 @@ class ControlArm{
         bool moveGroupInitialized_;   
         bool planningSceneInitialized_; 
         bool moveReady_;
-        bool firstTrajectoryExecution_ = false; 
+        bool firstTrajectoryExecution_ = true; 
         geometry_msgs::Pose m_cmdPose;        
 
         bool sendToCmdPose(); 
