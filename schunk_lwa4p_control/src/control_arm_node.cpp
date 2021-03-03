@@ -6,7 +6,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nodeHandle("~"); 
     ControlArm controlArm(nodeHandle); 
 
-    int num_threads = 4;     
+    int num_threads = 6;     
     ros::AsyncSpinner spinner(num_threads);
     spinner.start(); 
     controlArm.run(); 

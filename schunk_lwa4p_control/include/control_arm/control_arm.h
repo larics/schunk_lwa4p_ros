@@ -83,10 +83,12 @@ class ControlArm{
         // ROS Publishers and subscribers
         ros::Publisher displayTrajectoryPublisher_; 
         ros::Subscriber armCmdPoseSubscriber_;
+        ros::Subscriber armCmdDeltaPoseSubscriber_; 
         ros::Subscriber armCmdToolOrientationSubscriber_; 
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
+        void cmdDeltaPoseCallback(const geometry_msgs::Pose::ConstPtr& msg); 
         void cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg); 
 
         // DisplayTrajectory
@@ -100,9 +102,13 @@ class ControlArm{
         bool planningSceneInitialized_; 
         bool moveReady_;
         bool firstTrajectoryExecution_ = true; 
-        geometry_msgs::Pose m_cmdPose;        
+        bool blockingMovement = false; 
+        geometry_msgs::Pose m_cmdPose;    
+        geometry_msgs::Pose m_cmdDeltaPose;     
 
+        float round(float var); 
         bool sendToCmdPose(); 
+        bool sendToDeltaCmdPose(); 
         bool sendToZeroPose();
         bool planPathToCmdPose();
         bool planPathToZeroPose(); 

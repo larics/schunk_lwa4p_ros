@@ -1,6 +1,5 @@
 #include "control_arm/control_arm.h"
 
-
 ControlArm::ControlArm(ros::NodeHandle nh) : nodeHandle_(nh)
 {       
 
@@ -51,6 +50,9 @@ void ControlArm::init() {
     int cmdPoseTopicQueueSize; 
     std::string cmdToolOrientationTopicName; 
     int cmdToolOrientationTopicQueueSize; 
+    std::string cmdDeltaPoseTopicName; 
+    int cmdDeltaPoseTopicQueueSize; 
+
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1); 
@@ -58,13 +60,15 @@ void ControlArm::init() {
     nodeHandle_.param("subscribers/queue_size", cmdPoseTopicQueueSize, 1); 
     nodeHandle_.param("subscribers/cmd_tool_orientation_topic",  cmdToolOrientationTopicName, std::string("tool/command/orientation")); 
     nodeHandle_.param("subscribers/queue_size", cmdToolOrientationTopicQueueSize, 1);
+    nodeHandle_.param("subscribers/cmd_delta_pose_topic", cmdDeltaPoseTopicName, std::string("arm/command/delta_pose")); 
+    nodeHandle_.param("subscribers/queue_size", cmdDeltaPoseTopicQueueSize, 1); 
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers." );
 
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
     armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
-    //armCmdSendToPoseSubscriber_ = nodeHandle_.subscribe<std_msgs::bool>(armCmdSendToPoseTopicName, armCmdSendToPoseTopicQueueSize, &ControlArm::cmdSendToPoseCallback, this); 
+    armCmdDeltaPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdDeltaPoseTopicName, cmdDeltaPoseTopicQueueSize, &ControlArm::cmdDeltaPoseCallback, this); 
     
 }
 
@@ -85,8 +89,6 @@ bool ControlArm::setMoveGroup() {
     return true;
 
 }
-
-
 
 bool ControlArm::setPlanningScene() {
 
@@ -131,6 +133,18 @@ void ControlArm::cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg) {
 
 }
 
+void ControlArm::cmdDeltaPoseCallback(const geometry_msgs::Pose::ConstPtr& msg) {
+
+    ROS_INFO("[ControlArm] Recieved cmd_delta_pose...");
+
+    // Set delta CMD pose
+    m_cmdDeltaPose.position = msg->position; 
+    m_cmdDeltaPose.orientation = msg->orientation; 
+
+    sendToDeltaCmdPose(); 
+
+}
+
 void ControlArm::cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg) {
 
     ROS_INFO("[ControlArm] Received cmd tool orientation..."); 
@@ -172,14 +186,54 @@ bool ControlArm::sendToCmdPose(){
 
     ROS_INFO("[ControlArm] Visualizing plan 1 (pose goal) %s", success ? "" : "FAILED");
     
-    // Requires async spinner to
+    // Requires async spinner to work (Added asyncMove/non-blocking)
     if (success){
-        m_moveGroupPtr->move(); 
+        if (blockingMovement){
+            m_moveGroupPtr->move(); 
+        }else {
+            m_moveGroupPtr->asyncMove(); 
+        }
+        
     }
+
 
     return success; 
 }
 
+bool ControlArm::sendToDeltaCmdPose() {
+
+    // populate m_cmd pose
+    Eigen::Affine3d currentPose_ = m_moveGroupPtr->getCurrentState()->getFrameTransform("lwa4p_link6"); // Currently lwa4p_link6, possible to use end effector link 
+    geometry_msgs::Pose currentROSPose_; 
+    tf::poseEigenToMsg(currentPose_, currentROSPose_);
+
+    ROS_INFO_STREAM("[ControlArm] currentROSPose_:" << currentROSPose_);
+
+    geometry_msgs::Pose cmdPose; 
+    cmdPose.position.x = currentROSPose_.position.x + m_cmdDeltaPose.position.x;
+    cmdPose.position.y = currentROSPose_.position.y + m_cmdDeltaPose.position.y;   
+    cmdPose.position.z = currentROSPose_.position.z + m_cmdDeltaPose.position.z;
+    cmdPose.orientation.x = currentROSPose_.orientation.x + m_cmdDeltaPose.orientation.x;
+    cmdPose.orientation.y = currentROSPose_.orientation.y + m_cmdDeltaPose.orientation.y;    
+    cmdPose.orientation.z = currentROSPose_.orientation.z + m_cmdDeltaPose.orientation.z;    
+    cmdPose.orientation.w = currentROSPose_.orientation.w + m_cmdDeltaPose.orientation.w;   
+
+    ROS_INFO_STREAM("[ControlArm] currentPose: " << cmdPose);  
+
+
+    // set CMD pose
+    m_cmdPose = cmdPose; 
+
+    sendToCmdPose();      
+
+}
+
+float ControlArm::round(float var){
+
+    float value = (int)(var * 1000 + .5); 
+    return (float) value/1000; 
+
+}
 
 void ControlArm::getCurrentArmState() {
 
@@ -297,7 +351,7 @@ bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
     bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, currentROSPose_);
 
-    bool debug = true; 
+    bool debug = false; 
     if (debug){
         ROS_INFO("Found IK solution!"); 
 
@@ -360,8 +414,11 @@ void ControlArm::run() {
     
         r.sleep(); 
     }
-
 }
+
+
+
+
 
 
 

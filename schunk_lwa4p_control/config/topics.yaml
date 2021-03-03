@@ -8,6 +8,10 @@ subscribers:
     topic: /tool/command/orientation
     queue_size: 1
 
+  cmd_delta_pose_topic: 
+    topic: /arm/command/delta_pose
+    queue_size: 1  
+
 #actions:
 #
 #  camera_reading:
