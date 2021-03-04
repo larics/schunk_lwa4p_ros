@@ -11,4 +11,7 @@
         <!--remap from="joint_states" to="/lwa4p/joint_states"/-->
     </node>
 
+    <node pkg="schunk_lwa4p_control" type="magnetic_pose_simulator_publisher.py" name="magnetic_pose_publisher_node" output="screen" args="1">
+    </node>
+
 </launch>
