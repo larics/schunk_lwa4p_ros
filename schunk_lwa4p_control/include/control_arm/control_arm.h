@@ -81,7 +81,8 @@ class ControlArm{
         ros::NodeHandle nodeHandle_;         
 
         // ROS Publishers and subscribers
-        ros::Publisher displayTrajectoryPublisher_; 
+        ros::Publisher displayTrajectoryPublisher_;
+        ros::Publisher currentPosePublisher_;
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
         ros::Subscriber armCmdToolOrientationSubscriber_; 

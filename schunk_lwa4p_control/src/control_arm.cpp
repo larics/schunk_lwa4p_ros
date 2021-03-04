@@ -45,7 +45,9 @@ void ControlArm::init() {
 
     // Initialize publishers and subscribers;
     std::string displayTrajectoryTopicName; 
-    int displayTrajectoryQueueSize; 
+    int displayTrajectoryQueueSize;
+    std::string currentPoseTopicName;
+    int currentPoseTopicQueueSize;
     std::string cmdPoseTopicName; 
     int cmdPoseTopicQueueSize; 
     std::string cmdToolOrientationTopicName; 
@@ -55,7 +57,9 @@ void ControlArm::init() {
 
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
-    nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1); 
+    nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
+    nodeHandle_.param("publishers/current_pose", currentPoseTopicName, std::string("tool/current_pose"));
+    nodeHandle_.param("publishers/queue_size", currentPoseTopicQueueSize, 1);
     nodeHandle_.param("subscribers/cmd_pose_topic", cmdPoseTopicName, std::string("arm/command/pose"));
     nodeHandle_.param("subscribers/queue_size", cmdPoseTopicQueueSize, 1); 
     nodeHandle_.param("subscribers/cmd_tool_orientation_topic",  cmdToolOrientationTopicName, std::string("tool/command/orientation")); 
@@ -66,6 +70,7 @@ void ControlArm::init() {
     ROS_INFO("[ControlArm] Initializing subscribers/publishers." );
 
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
+    currentPosePublisher_ = nodeHandle_.advertise<geometry_msgs::Pose>(currentPoseTopicName, currentPoseTopicQueueSize);
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
     armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
     armCmdDeltaPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdDeltaPoseTopicName, cmdDeltaPoseTopicQueueSize, &ControlArm::cmdDeltaPoseCallback, this); 
@@ -337,7 +342,6 @@ bool ControlArm::executeDummyCartesianPath(){
 
     sleep(15);
 
-
     return true; 
 
 }
@@ -350,6 +354,9 @@ bool ControlArm::getIK(const std::size_t attempts, double timeout) {
     tf::poseEigenToMsg(currentPose_, currentROSPose_);
 
     bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, currentROSPose_);
+
+    // publish current pose
+    currentPosePublisher_.publish(currentROSPose_);
 
     bool debug = false; 
     if (debug){
@@ -375,7 +382,7 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
 
 void ControlArm::run() {
 
-    ros::Rate r(50);
+    ros::Rate r(25);
 
     while(ros::ok)
     {
