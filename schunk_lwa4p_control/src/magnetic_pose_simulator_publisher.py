@@ -6,6 +6,8 @@ import numpy as np
 from math import sqrt
 from geometry_msgs.msg import Pose
 from moveit_msgs.msg import MoveGroupActionFeedback
+import copy
+import random
 
 class MangeticPoseSimulatorPublisher():
 
@@ -14,8 +16,12 @@ class MangeticPoseSimulatorPublisher():
         self.frequency = int(frequency)
         self.current_pose = Pose()
         self.final_pose = MangeticPoseSimulatorPublisher.set_final_pose(0.2, 0., 1.2, 0, 0, -1, 0)
-        self.delta_control = False
+
+        # Different dummy control flags
+        self.delta_control = False                      # Delta control, continuously send little deltas for end effector
+        self.magnetic_simulation_control = True         # Simulate noisy measurements of pose estimation based on magnetic measurements
         self.first_trajectory_published = False
+        self.received_first_pose_measurement = False    # Becomes true when we get first ee pose measurement from IK
         self.trajectory_execution_state = "NONE"
 
         init_sleep_time = 30
@@ -26,6 +32,10 @@ class MangeticPoseSimulatorPublisher():
 
     def _initialize_publishers(self):
         self.cmd_pose_pub = rospy.Publisher("/tool/cmd_pose", Pose, queue_size=1)
+
+        if self.magnetic_simulation_control:
+            # Better to remap in launch file for subber in control node than to publish directly on that topic
+            self.magnetic_estimation_pub = rospy.Publisher("/magnetic_est/pose", Pose, queue_size=1)
 
         if self.delta_control:
             self.cmd_delta_pose_pub = rospy.Publisher("/control_arm_node/arm/command/delta_pose", Pose, queue_size=1)
@@ -46,6 +56,13 @@ class MangeticPoseSimulatorPublisher():
         self.current_pose.orientation.y = msg.orientation.y
         self.current_pose.orientation.z = msg.orientation.z
         self.current_pose.orientation.w = msg.orientation.w
+
+        if self.magnetic_simulation_control and not self.received_first_pose_measurement:
+            self.received_first_pose_measurement = True
+            self.final_pose.orientation.x = msg.orientation.x
+            self.final_pose.orientation.y = msg.orientation.y
+            self.final_pose.orientation.z = msg.orientation.z
+            self.final_pose.orientation.w = msg.orientation.w
 
     def create_white_noise(self, mean, std, num_samples):
 
@@ -133,7 +150,17 @@ class MangeticPoseSimulatorPublisher():
                 dist = self.check_dist(self.current_pose, self.final_pose)
                 # rospy.loginfo("Current distance is: {}".format(dist))
 
-                
+                ### ---> Simulate magnetic pose estimation <-- ###
+                if self.magnetic_simulation_control:
+                    self.est_magnetic_pose = copy.deepcopy(self.final_pose)
+                    noise = self.create_white_noise(0, 0.1, 1000)
+                    self.est_magnetic_pose.position.x = self.est_magnetic_pose.position.x + noise[random.randint(0, 1000)]
+                    self.est_magnetic_pose.position.y = self.est_magnetic_pose.position.y + noise[random.randint(0, 1000)]
+                    self.est_magnetic_pose.position.z = self.est_magnetic_pose.position.z + noise[random.randint(0, 1000)]
+
+                    rospy.loginfo("Publishing estimated goal pose: {}".format(self.est_magnetic_pose))
+                    self.magnetic_estimation_pub.publish(self.est_magnetic_pose)
+
 
                 ### ---> Delta control <---- ####
                 if self.delta_control:

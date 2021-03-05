@@ -3,15 +3,24 @@
 <launch>
 
     <arg name="config_path" value="$(find schunk_lwa4p_control)/config/topics.yaml"/>
+    <arg name="simulate_determined_pose" value="true"/>
+    <arg name="propagate_pose_ctl" value="true"/>
+    <arg name="pose_detection_frequency" value="1"/>
+
     <param name="use_sim_time" value="false"/>
+
 
     <!-- Start arm control --> 
     <node pkg="schunk_lwa4p_control"  type="schunk_lwa4p_control_node" name="control_arm_node" output="screen">
         <param name="config_path" value="$(arg config_path)" />
-        <!--remap from="joint_states" to="/lwa4p/joint_states"/-->
+        <remap if="$(arg propagate_pose_ctl)" from="/control_arm_node/arm/command/pose" to="/magnetic_est/pose"/>
     </node>
 
-    <node pkg="schunk_lwa4p_control" type="magnetic_pose_simulator_publisher.py" name="magnetic_pose_publisher_node" output="screen" args="1">
-    </node>
+    <!-- Simulate magentic pose detection publisher -->
+    <group if="$(arg simulate_determined_pose)">
+        <node pkg="schunk_lwa4p_control" type="magnetic_pose_simulator_publisher.py" name="magnetic_pose_publisher_node" output="screen" args="$(arg pose_detection_frequency)">
+        </node>
+    </group>
+
 
 </launch>
