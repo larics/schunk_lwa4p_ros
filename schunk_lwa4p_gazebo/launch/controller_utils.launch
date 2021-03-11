@@ -1,21 +1,27 @@
 <?xml version="1.0"?>
 <launch>
 
-<!-- Add PID gains for joint group position controller -->
-<!-- https://answers.gazebosim.org//question/25578/what-does-jointgroupposition-controller-do-when-it-does-not-have-pid-gains-set/ -->
-<rosparam command="load" file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml"/>
+    <!-- Add PID gains for joint group position controller -->
+    <!-- https://answers.gazebosim.org//question/25578/what-does-jointgroupposition-controller-do-when-it-does-not-have-pid-gains-set/ -->
+    <rosparam command="load" file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml"/>
+    <arg name="real_robot" value="true"/>
 
-<!-- Robot state publisher -->
-<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-    <param name="publish_frequency" type="double" value="50.0" />
-    <param name="tf_prefix" type="string" value="" />
-</node>
+    <!-- Robot state publisher -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="50.0" />
+        <param name="tf_prefix" type="string" value="" />
+    </node>
 
-<!-- Fake calibration -->
-<node pkg="rostopic" type="rostopic" name="fake_joint_calibration" args="pub /calibrated std_msgs/Bool true"/>
+    <!-- Fake calibration -->
+    <node pkg="rostopic" type="rostopic" name="fake_joint_calibration" args="pub /calibrated std_msgs/Bool true"/>
 
-<!-- joint_state_controller --> <!-- Removed ns --> <!-- After removing ns fails loading of controllers -->
-<rosparam file="$(find schunk_lwa4p_gazebo)/controller/joint_state_controller.yaml" command="load"/>
-<node name="joint_state_controller_spawner"  ns="lwa4p" pkg="controller_manager" type="spawner" args="joint_state_controller" respawn="false" output="screen"/>
+    <!-- joint_state_controller --> <!-- Removed ns --> <!-- After removing ns fails loading of controllers -->
+    <group unless="$(arg real_robot)">
+        <rosparam file="$(find schunk_lwa4p_gazebo)/controller/joint_state_controller.yaml" command="load"/>
+        <node name="joint_state_controller_spawner"  ns="lwa4p" pkg="controller_manager" type="spawner" args="joint_state_controller" respawn="false" output="screen"/>
+    </group>
+
+
+
 
 </launch>

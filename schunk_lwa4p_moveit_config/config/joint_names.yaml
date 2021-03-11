@@ -1,2 +1,4 @@
 lwa4p:
-  controller_joint_names: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, law4p_joint6]
+# Change joint names to match real robot!
+ controller_joint_names: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, law4p_joint6]
+# controller_joint_names: [arm_1_joint, arm_2_joint, arm_3_joint, arm_4_joint, arm_5_joint, arm_6_joint]

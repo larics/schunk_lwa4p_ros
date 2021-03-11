@@ -1,7 +1,6 @@
 <launch>
 
 
-
   <include file="$(find schunk_lwa4p_moveit_config)/launch/planning_context.launch" />
 
   <!-- GDB Debug Option -->
@@ -28,7 +27,10 @@
   <arg if="$(arg descartes)" name="capabilities" default="descartes_capability/MoveGroupDescartesPathService"/> 
 
   <arg unless="$(arg descartes)" name="disable_capabilities" default=""/>
-  <arg unless="$(arg descartes)" name="capabilities" default=""/>    
+  <arg unless="$(arg descartes)" name="capabilities" default=""/>
+
+  <!-- Launch controllers if real robot -->
+  <!--include file="$(find schunk_lwa4p)/launch/schunk_blue.launch" if="(arg real_robot)"/-->
 
   <!-- load these non-default MoveGroup capabilities (space seperated) -->
   <!--
@@ -62,6 +64,8 @@
   <include ns="move_group" file="$(find schunk_lwa4p_moveit_config)/launch/sensor_manager.launch.xml" if="$(arg allow_trajectory_execution)">
     <arg name="moveit_sensor_manager" value="lwa4p" />
   </include>
+
+  <!--include ns="move_group" file="$(find schunk_lwa4p_moveit_config)/launch/lwa4p_moveit_controller_manager.launch.xml" if="$(arg real_robot)"/-->
 
   <!-- Start the actual move_group node/action server -->
   <node name="move_group" launch-prefix="$(arg launch_prefix)" pkg="moveit_ros_move_group" type="move_group" respawn="false" output="screen" args="$(arg command_args)">

@@ -9,19 +9,19 @@ generic_hw_control_loop:
 # Settings for ros_control hardware interface
 hardware_interface:
   joints:
-    - lwa4p_joint1
-    - lwa4p_joint2
-    - lwa4p_joint3
-    - lwa4p_joint4
-    - lwa4p_joint5
-    - lwa4p_joint6
-    - separator_main_left_head_joint
-    - separator_main_right_head_joint
-    - separator_left_back_joint
-    - separator_left_front_joint
-    - separator_right_back_joint
-    - separator_right_front_joint
-  sim_control_mode: 1  # 0: position, 1: velocity
+    - arm_1_joint
+    - arm_2_joint
+    - arm_3_joint
+    - arm_4_joint
+    - arm_5_joint
+    - arm_6_joint
+#    - separator_main_left_head_joint
+#    - separator_main_right_head_joint
+#    - separator_left_back_joint
+#    - separator_left_front_joint
+#    - separator_right_back_joint
+#    - separator_right_front_joint
+  sim_control_mode: 0  # 0: position, 1: velocity
 # Publish all joint states
 # Creates the /joint_states topic necessary in ROS
 joint_state_controller:
@@ -39,19 +39,31 @@ controller_list:
       - lwa4p_joint4
       - lwa4p_joint5
       - lwa4p_joint6
-  - name: lwa4p/separator_controller
-    action_ns: follow_joint_trajectory
-    default: True
-    type: FollowJointTrajectory
-    joints:
-      - separator_left_back_joint
-      - separator_left_front_joint
-      - separator_right_back_joint
-      - separator_right_front_joint
-  - name: lwa4p/distancer_controller
-    action_ns: follow_joint_trajectory
-    default: True
-    type: FollowJointTrajectory
-    joints:
-      - separator_main_left_head_joint
-      - separator_main_right_head_joint
+#controller_list:
+#  - name: lwa4p/arm_controller
+#    action_ns: follow_joint_trajectory
+#    default: True
+#    type: FollowJointTrajectory
+#    joints:
+#      - lwa4p_joint1
+#      - lwa4p_joint2
+#      - lwa4p_joint3
+#      - lwa4p_joint4
+#      - lwa4p_joint5
+#      - lwa4p_joint6
+#  - name: lwa4p/separator_controller
+#    action_ns: follow_joint_trajectory
+#    default: True
+#    type: FollowJointTrajectory
+#    joints:
+#      - separator_left_back_joint
+#      - separator_left_front_joint
+#      - separator_right_back_joint
+#      - separator_right_front_joint
+#  - name: lwa4p/distancer_controller
+#    action_ns: follow_joint_trajectory
+#    default: True
+#    type: FollowJointTrajectory
+#    joints:
+#      - separator_main_left_head_joint
+#      - separator_main_right_head_joint

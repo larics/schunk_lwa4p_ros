@@ -1,13 +1,18 @@
-controller_list: 
-  - name: lwa4p/arm_controller 
-    action_ns: "follow_joint_trajectory"
-    type: FollowJointTrajectory 
-    joints: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, lwa4p_joint6]
-  - name: lwa4p/gripper_controller
+#controller_list:
+#  - name: lwa4p/arm_controller
+#    action_ns: "follow_joint_trajectory"
+#    type: FollowJointTrajectory
+#    joints: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, lwa4p_joint6]
+#  - name: lwa4p/gripper_controller
+#    action_ns: "follow_joint_trajectory"
+#    type: FollowJointTrajectory
+#    joints: [separator_main_left_head_joint, separator_main_right_head_joint]
+#  - name: lwa4p/separator_controller
+#    action_ns: "follow_joint_trajectory"
+#    type: FollowJointTrajectory
+#    joints: [separator_left_back_joint, separator_right_back_joint, separator_left_front_joint, separator_right_front_joint]
+controller_list:
+  - name: schunk_blue/arm_controller
     action_ns: "follow_joint_trajectory"
     type: FollowJointTrajectory
-    joints: [separator_main_left_head_joint, separator_main_right_head_joint]
-  - name: lwa4p/separator_controller
-    action_ns: "follow_joint_trajectory"
-    type: FollowJointTrajectory 
-    joints: [separator_left_back_joint, separator_right_back_joint, separator_left_front_joint, separator_right_front_joint]
+    joints: [arm_1_joint, arm_2_joint, arm_3_joint, arm_4_joint, arm_5_joint, arm_6_joint]

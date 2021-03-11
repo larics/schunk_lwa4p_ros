@@ -12,7 +12,10 @@
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="/use_gui" value="false"/>
     <param name="/rate" value="$(arg rate)"/>
-    <rosparam param="/source_list">[/joint_states, /lwa4p/joint_states]</rosparam>
+    <!-- Simulation -->
+    <!--rosparam param="/source_list">[/joint_states, /lwa4p/joint_states]</rosparam-->
+    <!-- Real robot -->
+    <rosparam param="/source_list">[/lwa4p/joint_states]</rosparam>
   </node>
 
   <include file="$(find schunk_lwa4p_moveit_config)/launch/move_group.launch">
