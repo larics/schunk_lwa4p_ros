@@ -23,8 +23,8 @@
   </include>
 
   <!-- Laggy stuff -->
-  <!--include file="$(find schunk_lwa4p_moveit_config)/launch/moveit_rviz.launch">
+  <include file="$(find schunk_lwa4p_moveit_config)/launch/moveit_rviz.launch">
     <arg name="config" value="true"/>
-  </include-->
+  </include>
 
 </launch>

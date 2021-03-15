@@ -1,7 +1,11 @@
 <launch>
 
 
-  <include file="$(find schunk_lwa4p_moveit_config)/launch/planning_context.launch" />
+  <include file="$(find schunk_lwa4p_moveit_config)/launch/planning_context.launch">
+    <arg name="load_robot_description" value="false"/>
+  </include>
+
+  <arg name="real_robot" default="true"/>
 
   <!-- GDB Debug Option -->
   <arg name="debug" default="false" />
@@ -65,7 +69,7 @@
     <arg name="moveit_sensor_manager" value="lwa4p" />
   </include>
 
-  <!--include ns="move_group" file="$(find schunk_lwa4p_moveit_config)/launch/lwa4p_moveit_controller_manager.launch.xml" if="$(arg real_robot)"/-->
+  <include ns="move_group" file="$(find schunk_lwa4p_moveit_config)/launch/lwa4p_moveit_controller_manager.launch.xml" if="$(arg real_robot)"/>
 
   <!-- Start the actual move_group node/action server -->
   <node name="move_group" launch-prefix="$(arg launch_prefix)" pkg="moveit_ros_move_group" type="move_group" respawn="false" output="screen" args="$(arg command_args)">
