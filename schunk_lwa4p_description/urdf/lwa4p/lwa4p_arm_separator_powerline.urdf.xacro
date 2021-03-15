@@ -54,7 +54,7 @@
   </xacro:lwa4p_arm>
 
   <!-- tool -->
-  <xacro:separator ns="lwa4p" rpy="0 0 0" connected_to="lwa4p_link6" safety_distance="0.03"/>
+  <xacro:separator ns="lwa4p" rpy="0 0 ${pi/2}" connected_to="lwa4p_link6" safety_distance="0.03"/>
 
   <!-- separator distancer -->
   <xacro:separator_distancer ns="lwa4p" rpy="0 0 0" xyz="0 0 0.05"/>

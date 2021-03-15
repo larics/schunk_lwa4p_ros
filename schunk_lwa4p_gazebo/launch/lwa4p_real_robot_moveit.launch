@@ -7,28 +7,6 @@
     <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
     <arg name="real_robot" default="true"/>
 
-    <!-- Startup simulation world -->
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" default="worlds/empty.world"/>
-        <arg name="paused" value="$(arg paused)"/>
-        <arg name="gui" value="$(arg gui)"/>
-    </include>
-
-    <!-- Send robot URDF to param server -->
-    <group if="$(arg gripper)">
-        <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_powerline_upload.launch"/>
-    </group>
-
-    <group unless="$(arg gripper)">
-        <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_upload.launch"/>
-    </group>
-
-    <!-- Push robot description to factory and spawn robot in gazebo -->
-    <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model lwa4p -z 0" respawn="false" output="screen" />
-
-    <!-- Starts robot state publisher and joint state controller -->
-    <!--include file="$(find schunk_lwa4p_gazebo)/launch/controller_utils.launch" /-->
-
     <!-- Send robot URDF to param server -->
     <group if="$(arg gripper)">
         <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_powerline_upload.launch"/>
@@ -37,22 +15,16 @@
             <rosparam file="$(find schunk_lwa4p)/config/schunk_blue_controller.yaml" command="load"/>
             <!--node name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller joint_state_controller" respawn="false" output="screen"/-->
         </group>
-
     </group>
-
     <group unless="$(arg gripper)">
         <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_upload.launch"/>
         <!-- Start arm controller -->
         <rosparam file="$(find schunk_lwa4p_gazebo)/controller/arm_controller.yaml" command="load"/>
-        <node name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
+        <!--node name="arm_controller_spawner"  pkg="controller_manager" type="controller_manager" args="load arm_controller joint_state_controller" respawn="false" output="screen"/-->
     </group>
-
 
     <!-- Launch driver and some controllers if real robot-->
     <include file="$(find schunk_lwa4p)/launch/schunk_blue.launch" /> <!--if="$(arg real_robot)"/-->
-
-    <!-- Load other controllers -->
-    <!--node name="ros_control_controller_manager" ns="lwa4p" pkg="controller_manager" type="controller_manager" respawn="false" args="load joint_group_position_controller" /-->
 
     <!-- Start MoveIt! -->
     <include file="$(find schunk_lwa4p_moveit_config)/launch/demo_planning_execution.launch">
