@@ -53,8 +53,9 @@ void ControlArm::init() {
     std::string cmdToolOrientationTopicName; 
     int cmdToolOrientationTopicQueueSize; 
     std::string cmdDeltaPoseTopicName; 
-    int cmdDeltaPoseTopicQueueSize; 
+    int cmdDeltaPoseTopicQueueSize;
 
+    std::string disableCollisionServiceName;
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
@@ -65,7 +66,8 @@ void ControlArm::init() {
     nodeHandle_.param("subscribers/cmd_tool_orientation_topic",  cmdToolOrientationTopicName, std::string("tool/command/orientation")); 
     nodeHandle_.param("subscribers/queue_size", cmdToolOrientationTopicQueueSize, 1);
     nodeHandle_.param("subscribers/cmd_delta_pose_topic", cmdDeltaPoseTopicName, std::string("arm/command/delta_pose")); 
-    nodeHandle_.param("subscribers/queue_size", cmdDeltaPoseTopicQueueSize, 1); 
+    nodeHandle_.param("subscribers/queue_size", cmdDeltaPoseTopicQueueSize, 1);
+    nodeHandle_.param("client/disable_collision_service", disableCollisionServiceName, std::string("tool/disable_collision"));
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers." );
 
@@ -74,7 +76,9 @@ void ControlArm::init() {
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
     armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
     armCmdDeltaPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdDeltaPoseTopicName, cmdDeltaPoseTopicQueueSize, &ControlArm::cmdDeltaPoseCallback, this); 
-    
+
+    // Client for disable collisions service
+    disableCollisionService_ = nodeHandle_.advertiseService(disableCollisionServiceName, &ControlArm::disableCollisionServiceCallback, this);
 }
 
 bool ControlArm::setMoveGroup() {
@@ -97,11 +101,12 @@ bool ControlArm::setMoveGroup() {
 
 bool ControlArm::setPlanningScene() {
 
-    ROS_INFO("[ControlArm] Setting planning scene."); 
+    ROS_INFO("[ControlArm] Setting planning scene.");
 
-
-    // MoveIt planning scene
-    moveit::planning_interface::PlanningSceneInterface m_planningScene; 
+    // MoveIt planning scene setup as seen (http://docs.ros.org/en/melodic/api/moveit_tutorials/html/doc/planning_scene/planning_scene_tutorial.html)
+    robot_model_loader::RobotModelLoader m_robotLoader("robot_description");
+    robot_model::RobotModelPtr kinematic_model = m_robotLoader.getModel();
+    m_planningScenePtr = new planning_scene::PlanningScene(kinematic_model);
 
     return true; 
 }
@@ -230,6 +235,20 @@ bool ControlArm::sendToDeltaCmdPose() {
     m_cmdPose = cmdPose; 
 
     sendToCmdPose();      
+
+}
+
+bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
+
+    if (planningSceneInitialized_){
+        bool debugOut = true;
+        collision_detection::AllowedCollisionMatrix acm = m_planningScenePtr->getAllowedCollisionMatrix();
+        acm.print(std::cout);
+        return true;
+    }
+    else{
+        return false;
+    }
 
 }
 

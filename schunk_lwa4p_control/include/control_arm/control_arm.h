@@ -15,10 +15,16 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
+#include <std_srvs/TriggerRequest.h>
+#include <std_srvs/TriggerResponse.h>
+#include <std_srvs/Trigger.h>
 
 // MoveIt
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit/collision_detection/collision_matrix.h>
+#include <moveit/robot_model_loader/robot_model_loader.h>
+#include <moveit/planning_scene/planning_scene.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
@@ -60,10 +66,12 @@ class ControlArm{
         geometry_msgs::Pose getCurrentEEPose(); 
 
         // Pointer to move group (https://answers.ros.org/question/344598/cant-create-movegroupinterface-object-in-my-own-class/)
-        moveit::planning_interface::MoveGroupInterface  *m_moveGroupPtr;  
-        const robot_state::JointModelGroup              *m_jointModelGroupPtr; 
-        moveit::core::RobotStatePtr                      m_currentRobotStatePtr; 
-        Eigen::Affine3d                                  m_endEffectorState; 
+        moveit::planning_interface::MoveGroupInterface      *m_moveGroupPtr;
+        const robot_state::JointModelGroup                  *m_jointModelGroupPtr;
+        planning_scene::PlanningScene                       *m_planningScenePtr;
+        moveit::core::RobotStatePtr                         m_currentRobotStatePtr;
+        robot_model_loader::RobotModelLoader                m_robotModelLoader;
+        Eigen::Affine3d                                     m_endEffectorState;
 
         // Run method
         void run(); 
@@ -85,12 +93,18 @@ class ControlArm{
         ros::Publisher currentPosePublisher_;
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
-        ros::Subscriber armCmdToolOrientationSubscriber_; 
+        ros::Subscriber armCmdToolOrientationSubscriber_;
+
+        // ROS Services
+        ros::ServiceServer disableCollisionService_;
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
         void cmdDeltaPoseCallback(const geometry_msgs::Pose::ConstPtr& msg); 
         void cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg); 
+
+        // ROS Services callbacks
+        bool disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_;         
