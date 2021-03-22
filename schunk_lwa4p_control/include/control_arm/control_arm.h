@@ -29,6 +29,7 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/DisplayTrajectory.h>
+#include <moveit_msgs/ApplyPlanningScene.h>
 
 // Conversions 
 #include <tf/tf.h>
@@ -98,6 +99,10 @@ class ControlArm{
         // ROS Services
         ros::ServiceServer disableCollisionService_;
 
+        // ROS Service clients
+        ros::ServiceClient applyPlanningSceneServiceClient_;
+        ros::ServiceClient realRobotDriverInitServiceClient_;
+
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
         void cmdDeltaPoseCallback(const geometry_msgs::Pose::ConstPtr& msg); 
@@ -111,8 +116,8 @@ class ControlArm{
 
         // Private variables
         int sleepMs_;
-        bool isNodeRunning_; 
-        bool enableVisualization_;      
+        bool realRobot_;
+        bool enableVisualization_;
         bool moveGroupInitialized_;   
         bool planningSceneInitialized_; 
         bool moveReady_;

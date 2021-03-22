@@ -69,16 +69,30 @@ void ControlArm::init() {
     nodeHandle_.param("subscribers/queue_size", cmdDeltaPoseTopicQueueSize, 1);
     nodeHandle_.param("client/disable_collision_service", disableCollisionServiceName, std::string("tool/disable_collision"));
 
-    ROS_INFO("[ControlArm] Initializing subscribers/publishers." );
-
+    ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
     currentPosePublisher_ = nodeHandle_.advertise<geometry_msgs::Pose>(currentPoseTopicName, currentPoseTopicQueueSize);
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
     armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
     armCmdDeltaPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdDeltaPoseTopicName, cmdDeltaPoseTopicQueueSize, &ControlArm::cmdDeltaPoseCallback, this); 
+    ROS_INFO("[ControlArm] Initialized subscribers/publishers.");
 
     // Client for disable collisions service
+    ROS_INFO("[ControlArm] Initializing services...");
     disableCollisionService_ = nodeHandle_.advertiseService(disableCollisionServiceName, &ControlArm::disableCollisionServiceCallback, this);
+
+    // Client for refreshing planning scene
+    ros::NodeHandle nodeHandleWithoutNs_;
+    applyPlanningSceneServiceClient_ = nodeHandleWithoutNs_.serviceClient<moveit_msgs::ApplyPlanningScene>("apply_planning_scene");
+    applyPlanningSceneServiceClient_.waitForExistence();
+
+    if (realRobot_){
+        realRobotDriverInitServiceClient_ = nodeHandleWithoutNs_.serviceClient<std_srvs::Trigger>("/lwa4p/driver/init");
+        realRobotDriverInitServiceClient_.waitForExistence();
+    }
+
+
+
 }
 
 bool ControlArm::setMoveGroup() {
@@ -241,9 +255,26 @@ bool ControlArm::sendToDeltaCmdPose() {
 bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
 
     if (planningSceneInitialized_){
-        bool debugOut = true;
         collision_detection::AllowedCollisionMatrix acm = m_planningScenePtr->getAllowedCollisionMatrix();
-        acm.print(std::cout);
+        acm.setEntry("powerlink_cable1", "separator_right_head", true);
+        acm.setEntry("powerlink_cable1", "separator_left_head", true);
+        acm.setEntry("powerlink_cable1", "separator_main", true);
+        acm.setEntry("powerlink_cable2", "separator_right_head", true);
+        acm.setEntry("powerlink_cable2", "separator_left_head", true);
+        acm.setEntry("powerlink_cable2", "separator_main", true);
+
+        moveit_msgs::PlanningScene planningScene;
+        m_planningScenePtr->getPlanningSceneMsg(planningScene);
+        planningScene.is_diff = true;
+        acm.getMessage(planningScene.allowed_collision_matrix);
+        moveit_msgs::ApplyPlanningScene srv;
+        srv.request.scene = planningScene;
+        applyPlanningSceneServiceClient_.call(srv);
+
+        bool debugOut = true;
+        if(debugOut){
+            acm.print(std::cout);
+        }
         return true;
     }
     else{
