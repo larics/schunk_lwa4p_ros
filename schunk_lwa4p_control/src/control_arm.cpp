@@ -303,27 +303,32 @@ bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, 
 
     if (planningSceneInitialized_){
         collision_detection::AllowedCollisionMatrix acm = m_planningScenePtr->getAllowedCollisionMatrix();
-        acm.setEntry("powerlink_cable1", "separator_right_head", true);
-        acm.setEntry("powerlink_cable1", "separator_left_head", true);
-        acm.setEntry("powerlink_cable1", "separator_main", true);
-        acm.setEntry("powerlink_cable2", "separator_right_head", true);
-        acm.setEntry("powerlink_cable2", "separator_left_head", true);
-        acm.setEntry("powerlink_cable2", "separator_main", true);
+
+        // Before setting collisions
+        acm.setEntry("powerline_cable1", "separator_right_head", true);
+        acm.setEntry("powerline_cable1", "separator_left_head", true);
+        acm.setEntry("powerline_cable1", "separator_main", true);
+        acm.setEntry("powerline_cable2", "separator_right_head", true);
+        acm.setEntry("powerline_cable2", "separator_left_head", true);
+        acm.setEntry("powerline_cable2", "separator_main", true);
 
         moveit_msgs::PlanningScene planningScene;
         m_planningScenePtr->getPlanningSceneMsg(planningScene);
-        planningScene.is_diff = true;
+        // Create new collision matrix
         acm.getMessage(planningScene.allowed_collision_matrix);
-        moveit_msgs::ApplyPlanningScene srv;
+        planningScene.is_diff = true;
+        //m_planningScenePtr->setPlanningSceneMsg(planningScene); --> Setting it over mPlanningScenePtr;
 
-        // Add collision objects --> Table in this case
+        moveit_msgs::ApplyPlanningScene srv;
         srv.request.scene = planningScene;
         applyPlanningSceneServiceClient_.call(srv);
 
-        bool debugOut = true;
+        bool debugOut = false;
         if(debugOut){
-            //acm.print(std::cout);
+            acm.print(std::cout);
             ROS_INFO("[ControlArm] Disabled collisions: %d", (bool) srv.response.success);
+            collision_detection::AllowedCollisionMatrix acm_after = m_planningScenePtr->getAllowedCollisionMatrix();
+            acm_after.print(std::cout);
         }
         return true;
     }
@@ -343,7 +348,6 @@ bool ControlArm::addCollisionObjectServiceCallback(std_srvs::TriggerRequest &req
     moveit_msgs::ApplyPlanningScene srv;
     srv.request.scene = planningScene;
     applyPlanningSceneServiceClient_.call(srv);
-
 
     // How to add this to planning scene moveit?
     // http://docs.ros.org/en/melodic/api/moveit_tutorials/html/doc/planning_scene_ros_api/planning_scene_ros_api_tutorial.html
