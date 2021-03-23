@@ -98,10 +98,12 @@ class ControlArm{
 
         // ROS Services
         ros::ServiceServer disableCollisionService_;
+        ros::ServiceServer addCollisionObjectService_;
 
         // ROS Service clients
         ros::ServiceClient applyPlanningSceneServiceClient_;
         ros::ServiceClient realRobotDriverInitServiceClient_;
+        ros::ServiceClient addCollisionObjectServiceClient_;
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
@@ -110,6 +112,7 @@ class ControlArm{
 
         // ROS Services callbacks
         bool disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool addCollisionObjectServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_;         
@@ -120,8 +123,7 @@ class ControlArm{
         bool enableVisualization_;
         bool moveGroupInitialized_;   
         bool planningSceneInitialized_; 
-        bool moveReady_;
-        bool firstTrajectoryExecution_ = true; 
+        bool firstTrajectoryExecution_ = true;
         bool blockingMovement = false; 
         geometry_msgs::Pose m_cmdPose;    
         geometry_msgs::Pose m_cmdDeltaPose;     
@@ -131,12 +133,13 @@ class ControlArm{
         bool sendToDeltaCmdPose(); 
         bool sendToZeroPose();
         bool planPathToCmdPose();
-        bool planPathToZeroPose(); 
-        bool isNodeRunning(); 
-        bool executeDummyCartesianPath(); 
+        bool planPathToZeroPose();
+        bool isNodeRunning();
+        bool executeDummyCartesianPath();
+        void addCollisionObject(moveit_msgs::PlanningScene& planningScene);
         void getCurrentArmState(); 
         void getCurrentEndEffectorState(const std::string linkName); 
-        void getJointPositions(const std::vector<std::string>& jointNames); 
+        void getJointPositions(const std::vector<std::string>& jointNames);
         bool getIK(const std::size_t attempts, double timeout);
         Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution
 

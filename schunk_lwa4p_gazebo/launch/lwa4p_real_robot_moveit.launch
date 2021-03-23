@@ -7,6 +7,9 @@
     <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
     <arg name="real_robot" default="true"/>
 
+    <!-- Currently not useful, service call comes too late, after moveit already initializes controllers -->
+    <param name="real_robot" value="false"/>
+
     <!-- Send robot URDF to param server -->
     <group if="$(arg gripper)">
         <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_powerline_upload.launch"/>

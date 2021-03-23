@@ -56,6 +56,7 @@ void ControlArm::init() {
     int cmdDeltaPoseTopicQueueSize;
 
     std::string disableCollisionServiceName;
+    std::string addCollisionObjectServiceName;
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
@@ -67,7 +68,9 @@ void ControlArm::init() {
     nodeHandle_.param("subscribers/queue_size", cmdToolOrientationTopicQueueSize, 1);
     nodeHandle_.param("subscribers/cmd_delta_pose_topic", cmdDeltaPoseTopicName, std::string("arm/command/delta_pose")); 
     nodeHandle_.param("subscribers/queue_size", cmdDeltaPoseTopicQueueSize, 1);
-    nodeHandle_.param("client/disable_collision_service", disableCollisionServiceName, std::string("tool/disable_collision"));
+    nodeHandle_.param("services/disable_collision_service", disableCollisionServiceName, std::string("tool/disable_collision"));
+    nodeHandle_.param("services/add_collision_object", addCollisionObjectServiceName, std::string("scene/add_collisions"));
+
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
@@ -80,15 +83,24 @@ void ControlArm::init() {
     // Client for disable collisions service
     ROS_INFO("[ControlArm] Initializing services...");
     disableCollisionService_ = nodeHandle_.advertiseService(disableCollisionServiceName, &ControlArm::disableCollisionServiceCallback, this);
+    addCollisionObjectService_ = nodeHandle_.advertiseService(addCollisionObjectServiceName, &ControlArm::addCollisionObjectServiceCallback, this);
 
     // Client for refreshing planning scene
     ros::NodeHandle nodeHandleWithoutNs_;
     applyPlanningSceneServiceClient_ = nodeHandleWithoutNs_.serviceClient<moveit_msgs::ApplyPlanningScene>("apply_planning_scene");
     applyPlanningSceneServiceClient_.waitForExistence();
+    addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
 
+
+    nodeHandleWithoutNs_.getParam("real_robot", realRobot_);
     if (realRobot_){
+        ROS_INFO("[ControlArm] Starting real robot...");
         realRobotDriverInitServiceClient_ = nodeHandleWithoutNs_.serviceClient<std_srvs::Trigger>("/lwa4p/driver/init");
         realRobotDriverInitServiceClient_.waitForExistence();
+        std_srvs::Trigger srv;
+        realRobotDriverInitServiceClient_.call(srv);
+        addCollisionObjectServiceClient_.call(srv);
+
     }
 
 
@@ -252,6 +264,41 @@ bool ControlArm::sendToDeltaCmdPose() {
 
 }
 
+void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
+
+    moveit_msgs::CollisionObject collisionObject;
+    collisionObject.header.frame_id = m_moveGroupPtr->getPlanningFrame();
+
+    // Add table in basement
+    collisionObject.id = "table";
+
+    shape_msgs::SolidPrimitive primitive;
+    primitive.type = primitive.BOX;
+    primitive.dimensions.resize(3);
+    primitive.dimensions[0] = 1.0;
+    primitive.dimensions[1] = 1.0;
+    primitive.dimensions[2] = 0.02;
+
+    // A table pose (specified relative to frame_id)
+    geometry_msgs::Pose table_pose;
+    table_pose.orientation.w = 1.0;
+    table_pose.position.x = -0.6;
+    table_pose.position.y = 0;
+    table_pose.position.z = 0.4;
+
+    collisionObject.primitives.push_back(primitive);
+    collisionObject.primitive_poses.push_back(table_pose);
+    collisionObject.operation = collisionObject.ADD;
+
+    planningScene.world.collision_objects.push_back(collisionObject);
+
+    // If using multiple objects
+    //std::vector<moveit_msgs::CollisionObject> collisionObjects;
+    //collisionObjects.push_back(collisionObject);
+
+
+}
+
 bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
 
     if (planningSceneInitialized_){
@@ -268,12 +315,15 @@ bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, 
         planningScene.is_diff = true;
         acm.getMessage(planningScene.allowed_collision_matrix);
         moveit_msgs::ApplyPlanningScene srv;
+
+        // Add collision objects --> Table in this case
         srv.request.scene = planningScene;
         applyPlanningSceneServiceClient_.call(srv);
 
         bool debugOut = true;
         if(debugOut){
-            acm.print(std::cout);
+            //acm.print(std::cout);
+            ROS_INFO("[ControlArm] Disabled collisions: %d", (bool) srv.response.success);
         }
         return true;
     }
@@ -281,6 +331,22 @@ bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, 
         return false;
     }
 
+}
+
+bool ControlArm::addCollisionObjectServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
+
+    // Initialize planning scene
+    moveit_msgs::PlanningScene planningScene;
+    m_planningScenePtr->getPlanningSceneMsg(planningScene);
+    addCollisionObject(planningScene);
+
+    moveit_msgs::ApplyPlanningScene srv;
+    srv.request.scene = planningScene;
+    applyPlanningSceneServiceClient_.call(srv);
+
+
+    // How to add this to planning scene moveit?
+    // http://docs.ros.org/en/melodic/api/moveit_tutorials/html/doc/planning_scene_ros_api/planning_scene_ros_api_tutorial.html
 }
 
 float ControlArm::round(float var){
