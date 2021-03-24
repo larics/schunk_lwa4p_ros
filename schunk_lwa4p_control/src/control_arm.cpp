@@ -311,6 +311,7 @@ bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, 
         acm.setEntry("powerline_cable2", "separator_right_head", true);
         acm.setEntry("powerline_cable2", "separator_left_head", true);
         acm.setEntry("powerline_cable2", "separator_main", true);
+        acm.setEntry("powerline_cable2", "separator_base", true);
 
         moveit_msgs::PlanningScene planningScene;
         m_planningScenePtr->getPlanningSceneMsg(planningScene);

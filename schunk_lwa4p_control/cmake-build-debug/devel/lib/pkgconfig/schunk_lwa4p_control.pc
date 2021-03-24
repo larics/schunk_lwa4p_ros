@@ -1,0 +1,8 @@
+prefix=/home/developer/moveit_ws/src/schunk_lwa4p_ros/schunk_lwa4p_control/cmake-build-debug/devel
+
+Name: schunk_lwa4p_control
+Description: Description of schunk_lwa4p_control
+Version: 0.0.0
+Cflags: -I/home/developer/moveit_ws/src/schunk_lwa4p_ros/schunk_lwa4p_control/include
+Libs: -L${prefix}/lib -lschunk_lwa4p_control_lib
+Requires: roscpp std_msgs geometry_msgs moveit_msgs moveit_core moveit_visual_tools moveit_ros_planning moveit_ros_planning_interface moveit_ros_move_group tf tf_conversions trajectory_msgs eigen_conversions

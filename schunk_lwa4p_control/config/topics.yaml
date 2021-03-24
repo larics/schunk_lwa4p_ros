@@ -22,3 +22,10 @@ publishers:
   display_trajectory_topic:
     topic: /move_group/display_planned_path
     queue_size: 1
+
+# Check how to add custom key and stuff to yaml configuration file
+#services:
+#
+#  disable_collision_service:
+#    service:
+
