@@ -5,46 +5,54 @@ project(schunk_lwa4p_control)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-    roscpp 
-    std_msgs
-    moveit_msgs
-    geometry_msgs
-)
-## System dependencies are found with CMake's conventions
-find_package(catkin REQUIRED COMPONENTS
     actionlib
-    roscpp
-    tf
+    actionlib_msgs
+    eigen_conversions
+    geometry_msgs
     moveit_core
     moveit_visual_tools
     moveit_ros_planning
     moveit_ros_planning_interface
     moveit_ros_move_group
-    trajectory_msgs
+    moveit_msgs
+    roscpp 
+    std_msgs
+    tf
     tf_conversions
-    eigen_conversions
+    trajectory_msgs
 )
+
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
+
+add_action_files(
+        DIRECTORY action
+        FILES GoToPose.action
+)
+
+generate_messages(
+        DEPENDENCIES actionlib_msgs std_msgs geometry_msgs
+)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
     ${PROJECT_NAME}_lib
-  CATKIN_DEPENDS 
-    roscpp 
-    std_msgs
+  CATKIN_DEPENDS
+    actionlib_msgs
+    eigen_conversions
     geometry_msgs
-    moveit_msgs
     moveit_core
     moveit_visual_tools
     moveit_ros_planning
     moveit_ros_planning_interface
     moveit_ros_move_group
+    moveit_msgs
+    roscpp
+    std_msgs
     tf
     tf_conversions
     trajectory_msgs
-    eigen_conversions 
   DEPENDS
     Eigen3
 )
@@ -58,7 +66,8 @@ include_directories(
 ###########
 
 set(PROJECT_LIB_FILES 
-    src/control_arm.cpp 
+    src/control_arm.cpp
+    src/gotopose_server.cpp
 )
 
 ## Declare a C++ library
@@ -69,17 +78,35 @@ add_library(
 
 add_executable(
     ${PROJECT_NAME}_node
-    src/control_arm_node.cpp 
+    src/control_arm_node.cpp
+)
+
+add_executable(
+    gotopose_server
+    src/gotopose_server.cpp
+)
+
+
+target_link_libraries(
+        gotopose_server
+        ${catkin_LIBRARIES}
+)
+
+add_dependencies(
+        gotopose_server
+        ${schunk_lwa4p_control_EXPOSED_TARGETS}
 )
 
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
+target_link_libraries(
+    ${PROJECT_NAME}_node
     ${PROJECT_NAME}_lib
     ${Boost_LIBRARIES}
     ${EIGEN3_LIBRARIES}
     ${catkin_LIBRARIES}
 )
+
 
 
 
