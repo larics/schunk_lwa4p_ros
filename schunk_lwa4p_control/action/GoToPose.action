@@ -1,5 +1,6 @@
 # Goal
 geometry_msgs/Pose goal_pose
+int32  minimum_deviaton
 ---
 # Result
 bool reached_pose

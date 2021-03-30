@@ -5,10 +5,10 @@ project(schunk_lwa4p_control)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-    actionlib
     actionlib_msgs
     eigen_conversions
     geometry_msgs
+    message_generation
     moveit_core
     moveit_visual_tools
     moveit_ros_planning
@@ -25,6 +25,8 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
 
+#add_message_files()
+#add_service_files()
 add_action_files(
         DIRECTORY action
         FILES GoToPose.action
@@ -35,13 +37,14 @@ generate_messages(
 )
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include action
   LIBRARIES
     ${PROJECT_NAME}_lib
   CATKIN_DEPENDS
     actionlib_msgs
     eigen_conversions
     geometry_msgs
+    message_runtime
     moveit_core
     moveit_visual_tools
     moveit_ros_planning
@@ -55,6 +58,8 @@ catkin_package(
     trajectory_msgs
   DEPENDS
     Eigen3
+    Boost
+    message_runtime
 )
 
 include_directories(
@@ -94,7 +99,7 @@ target_link_libraries(
 
 add_dependencies(
         gotopose_server
-        ${schunk_lwa4p_control_EXPOSED_TARGETS}
+        ${${PROJECT_NAME}_EXPORTED_TARGETS}
 )
 
 

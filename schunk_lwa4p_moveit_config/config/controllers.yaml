@@ -1,8 +1,8 @@
-#controller_list:
-#  - name: lwa4p/arm_controller
-#    action_ns: "follow_joint_trajectory"
-#    type: FollowJointTrajectory
-#    joints: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, lwa4p_joint6]
+controller_list:
+  - name: lwa4p/arm_controller
+    action_ns: "follow_joint_trajectory"
+    type: FollowJointTrajectory
+    joints: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, lwa4p_joint6]
 #  - name: lwa4p/gripper_controller
 #    action_ns: "follow_joint_trajectory"
 #    type: FollowJointTrajectory
@@ -11,8 +11,11 @@
 #    action_ns: "follow_joint_trajectory"
 #    type: FollowJointTrajectory
 #    joints: [separator_left_back_joint, separator_right_back_joint, separator_left_front_joint, separator_right_front_joint]
-controller_list:
-  - name: arm_controller
-    action_ns: "lwa4p/arm_controller/follow_joint_trajectory"
-    type: FollowJointTrajectory
-    joints: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, lwa4p_joint6]
+#controller_list:
+#  - name: arm_controller
+#    action_ns: "lwa4p/arm_controller/follow_joint_trajectory"
+#    type: FollowJointTrajectory
+#    joints: [lwa4p_joint1, lwa4p_joint2, lwa4p_joint3, lwa4p_joint4, lwa4p_joint5, lwa4p_joint6]
+#    - name: lwa4p/arm_1_joint_position_controller
+#      type: "position_controllers/JointPositionController"
+#      joint: lwa4p_joint1
