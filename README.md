@@ -1,10 +1,32 @@
 # Schunk lwa4p moveit 
 
 Repository that contains ROS packages needed for successful running Schunk LWA4P Powerball in Gazebo. 
+Available packages are:  
+ * schunk_lwa4p_control --> arm_control, action servers  
+ * schunk_lwa4p_description --> urdf files  
+ * schunk_lwa4p_gazebo --> launch files + controllers  
+ * schunk_lwa4p_moveit_config --> ROS package for MoveIt configuration  
+
+# How to launch simulation? 
+
+If you want to use robot from simulation run one of the following commands:
+```
+roslaunch schunk_lwa4p_gazebo lwa4p_gazebo_moveit.launch
+```
+
+Lanuch simulation with robotic arm and powerline model:
+```
+roslaunch schunk_lwa4p_gazebo lwa4p_powerline_gazebo_moveit.launch
+```
+
+Launch real robot: 
+```
+roslaunch schunk_lwa4p_gazebo lwa4p_real_robot_moveit.launch
+```
 
 # System requirements 
 Following packages have been used with ROS melodic, Gazebo 11 on Ubuntu 18.04. 
-There is available [Dockerfile](https://github.com/larics/docker_files/blob/master/ros-melodic/moveit_schunk_ros/Dockerfile) for installing all dependencies/requirements.
+There is available [Dockerfile](https://github.com/larics/docker_files/blob/master/ros-melodic/moveit_ros/Dockerfile) for installing all dependencies/requirements.
 
 # Dependencies 
 
