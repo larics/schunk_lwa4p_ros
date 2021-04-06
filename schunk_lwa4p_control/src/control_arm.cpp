@@ -91,7 +91,7 @@ void ControlArm::init() {
     applyPlanningSceneServiceClient_.waitForExistence();
     addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
 
-
+    /* Moved this part to gotopose_server (initializes before/loads controllers
     nodeHandleWithoutNs_.getParam("real_robot", realRobot_);
     if (realRobot_){
         ROS_INFO("[ControlArm] Starting real robot...");
@@ -102,6 +102,7 @@ void ControlArm::init() {
         addCollisionObjectServiceClient_.call(srv);
 
     }
+    */
 
 
 

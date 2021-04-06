@@ -2,6 +2,7 @@
 #include <cmath>
 #include <actionlib/server/simple_action_server.h>
 #include <geometry_msgs/Pose.h>
+#include <std_srvs/Trigger.h>
 #include "schunk_lwa4p_control/GoToPoseAction.h"
 
 
@@ -11,12 +12,26 @@ class GoToPoseActionServer{
         actionlib::SimpleActionServer<schunk_lwa4p_control::GoToPoseAction> as_;
         std::string action_name_;
 
+        // publishers
+        ros::Publisher cmdPosePublisher;
+
         // subscribers
         ros::Subscriber currentPoseSubscriber;
+
+        // service clients
+        ros::ServiceClient realRobotDriverInitServiceClient_;
 
         // action
         schunk_lwa4p_control::GoToPoseFeedback feedback_;
         schunk_lwa4p_control::GoToPoseResult result_;
+        schunk_lwa4p_control::GoToPoseGoal goal_;
+
+        // msgs
+        geometry_msgs::Pose currentPose;
+        geometry_msgs::Pose cmdPose;
+
+        // flags
+        bool realRobot;
 
     public:
 
@@ -24,12 +39,28 @@ class GoToPoseActionServer{
         as_(nh_, name, boost::bind(&GoToPoseActionServer::executeCB, this, _1), false),
         action_name_(name)
     {
-        as_.start();
+        nh_.getParam("real_robot", realRobot);
+        if (realRobot)
+        {
+            startRealRobot();
+        }
         initializeSubscribers();
+        initializePublishers();
+        as_.start();
+
     }
 
     ~GoToPoseActionServer(void)
     {
+    }
+
+    void startRealRobot()
+    {
+        ROS_INFO("[GoToPose] Starting real robot...");
+        realRobotDriverInitServiceClient_ = nh_.serviceClient<std_srvs::Trigger>("/lwa4p/driver/init");
+        realRobotDriverInitServiceClient_.waitForExistence();
+        std_srvs::Trigger srv;
+        realRobotDriverInitServiceClient_.call(srv);
     }
 
     void initializeSubscribers()
@@ -38,18 +69,25 @@ class GoToPoseActionServer{
 
     }
 
-    void currentPoseCB(const geometry_msgs::Pose::ConstPtr &msg)
+    void initializePublishers()
     {
-        feedback_.current_pose.position = msg->position;
-        feedback_.current_pose.orientation = msg->orientation;
-        as_.publishFeedback(feedback_);
+        cmdPosePublisher = nh_.advertise<geometry_msgs::Pose>("/control_arm_node/arm/command/pose", 1);
     }
 
-    float checkDist(geometry_msgs::Pose::ConstPtr &pose1, geometry_msgs::Pose::ConstPtr &pose2)
+    void currentPoseCB(const geometry_msgs::Pose::ConstPtr &msg)
     {
-        float x_dist = pow((pose1->position.x - pose2->position.x), 2);
-        float y_dist = pow((pose1->position.y - pose2->position.y), 2);
-        float z_dist = pow((pose1->position.z - pose2->position.z), 2);
+        // https://answers.ros.org/question/212857/what-is-constptr/
+        currentPose.position = msg->position;
+        currentPose.orientation = msg->orientation;
+
+    }
+
+
+    float checkDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2)
+    {
+        float x_dist = pow((pose1.position.x - pose2.position.x), 2);
+        float y_dist = pow((pose1.position.y - pose2.position.y), 2);
+        float z_dist = pow((pose1.position.z - pose2.position.z), 2);
 
         float dist = sqrt(x_dist + y_dist + z_dist);
 
@@ -60,49 +98,70 @@ class GoToPoseActionServer{
     void executeCB(const schunk_lwa4p_control::GoToPoseGoalConstPtr &goal)
     {
 
-        goal->goal_pose;
-        ROS_INFO("Goal received: !");
-        ros::Rate(1);
-        bool success = false;
+        ros::Rate r(2);
 
+        ROS_INFO("[GoToPose] Received new goal!");
 
-        ROS_INFO("Minimum deviation is: %f", goal->minimum_deviation);
-        ROS_INFO("Feedback is: %f", feedback_.current_pose.position.x);
+        bool sentCmd = false;
+        bool elapsed = false;
+        bool reached = false;
+        bool preempted = false;
+        int tRecvGoal = ros::Time::now().toSec();
+        r.sleep();
 
+        // Feedback publishing
+        feedback_.current_pose.position = currentPose.position;
+        feedback_.current_pose.orientation = currentPose.orientation;
+        as_.publishFeedback(feedback_);
+
+        // Goal variables
+        cmdPose = static_cast<geometry_msgs::Pose>(goal->goal_pose);
         float epsilon = goal->minimum_deviation;
+        int timeout = goal->timeout_sec;
 
+        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed){
+            // Check timeout condition
+            r.sleep();
+            elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
+            // Send to pose
+            if(!sentCmd){
+                cmdPosePublisher.publish(cmdPose);
+                sentCmd = true;
+                ROS_INFO("[GoToPose] Sending command!");
+            }
 
-        while (checkDist(goal->goal_pose, feedback_.current_pose) > epsilon) {
+            // Check preemption
             if (as_.isPreemptRequested() || !ros::ok())
             {
                 ROS_INFO("%s: Preempted", action_name_.c_str());
-                // Set the action state to preempted
+                // set the action state to preempted
                 as_.setPreempted();
-                break;
+                reached = false;
+                preempted = true;
             }
         }
-        /*
-        while (checkDist(goal->goal_pose, feedback_.current_pose) > epsilon)
-        {
-            if ( as_.isPreemptRequested() || !ros::ok())
-            {
-                ROS_INFO("%s: Preempted", action_name_.c_str());
-                // Set the action state to preempted
-                as_.setPreempted();
-                success = false;
-                break;
-            }
-        }
-         */
 
-        if (success)
+        if(checkDist(cmdPose, currentPose) < epsilon){
+            reached = true;
+        }
+
+        result_.reached_pose = reached;
+        if (elapsed || preempted)
+        {
+            ROS_INFO("[GoToPose] Timeout reached: ABORTED");
+            as_.setAborted(result_);
+        }
+        else
         {
             result_.reached_pose = true;
-            ROS_INFO("%s: Succeded", action_name_.c_str());
-
-            // set action state to succeded
             as_.setSucceeded(result_);
+            ROS_INFO("[GoToPose] Reached wanted pose: SUCCEEDDED!");
         }
+
+
+
+
+
 
     }
 

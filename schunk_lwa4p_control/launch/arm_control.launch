@@ -8,7 +8,7 @@
     <arg name="use_action_servers" value="true"/>
     <arg name="pose_detection_frequency" value="1"/>
     <param name="use_sim_time" value="false"/>
-
+    <param name="real_robot" value="true"/>
 
     <!-- Start arm control --> 
     <node pkg="schunk_lwa4p_control"  type="schunk_lwa4p_control_node" name="control_arm_node" output="screen">
@@ -24,7 +24,7 @@
 
     <!-- Use action servers -->
     <group if="$(arg use_action_servers)">
-        <node pkg="schunk_lwa4p_control" type="gotopose_server" name="go_to_pose_server" output="screen">
+        <node pkg="schunk_lwa4p_control" type="gotopose_server" name="go_to_pose_server" output="screen" >
         </node>
     </group>
 
