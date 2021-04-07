@@ -1,0 +1,9 @@
+# Goal
+geometry_msgs/Point goal_orientation
+int32 timeout_sec
+---
+# Result
+bool closed
+---
+# Feedback
+string motors_status

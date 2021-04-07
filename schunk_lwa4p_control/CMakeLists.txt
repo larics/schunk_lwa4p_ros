@@ -29,7 +29,7 @@ find_package(Eigen3 REQUIRED)
 #add_service_files()
 add_action_files(
         DIRECTORY action
-        FILES GoToPose.action
+        FILES GoToPose.action SetupDistancer.action
 )
 
 generate_messages(
@@ -72,25 +72,13 @@ include_directories(
 
 set(PROJECT_LIB_FILES 
     src/control_arm.cpp
-    src/gotopose_server.cpp
 )
 
-## Declare a C++ library
-add_library(
-    ${PROJECT_NAME}_lib
-    ${PROJECT_LIB_FILES}
-)
-
+# GoToPose
 add_executable(
-    ${PROJECT_NAME}_node
-    src/control_arm_node.cpp
+        gotopose_server
+        src/gotopose_server.cpp
 )
-
-add_executable(
-    gotopose_server
-    src/gotopose_server.cpp
-)
-
 
 target_link_libraries(
         gotopose_server
@@ -102,14 +90,39 @@ add_dependencies(
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
 )
 
+# SetupDistancer
+add_executable(
+    setupdistancer_server
+    src/setupdistancer_server.cpp
+)
 
-## Specify libraries to link a library or executable target against
 target_link_libraries(
-    ${PROJECT_NAME}_node
-    ${PROJECT_NAME}_lib
-    ${Boost_LIBRARIES}
-    ${EIGEN3_LIBRARIES}
-    ${catkin_LIBRARIES}
+        setupdistancer_server
+        ${catkin_LIBRARIES}
+)
+
+add_dependencies(
+        setupdistancer_server
+        ${${PROJECT_NAME}_EXPORTED_TARGETS}
+)
+
+## Declare a C++ library
+add_library(
+        ${PROJECT_NAME}_lib
+        ${PROJECT_LIB_FILES}
+)
+
+add_executable(
+        ${PROJECT_NAME}_node
+        src/control_arm_node.cpp
+)
+
+target_link_libraries(
+        ${PROJECT_NAME}_node
+        ${PROJECT_NAME}_lib
+        ${Boost_LIBRARIES}
+        ${EIGEN3_LIBRARIES}
+        ${catkin_LIBRARIES}
 )
 
 

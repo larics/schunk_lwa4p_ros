@@ -26,6 +26,9 @@
     <group if="$(arg use_action_servers)">
         <node pkg="schunk_lwa4p_control" type="gotopose_server" name="go_to_pose_server" output="screen" >
         </node>
+
+        <node pkg="schunk_lwa4p_control" type="setupdistancer_server" name="setup_distancer_server" output="screen">
+        </node>
     </group>
 
 

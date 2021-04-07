@@ -71,7 +71,6 @@ void ControlArm::init() {
     nodeHandle_.param("services/disable_collision_service", disableCollisionServiceName, std::string("tool/disable_collision"));
     nodeHandle_.param("services/add_collision_object", addCollisionObjectServiceName, std::string("scene/add_collisions"));
 
-
     ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
     currentPosePublisher_ = nodeHandle_.advertise<geometry_msgs::Pose>(currentPoseTopicName, currentPoseTopicQueueSize);
@@ -91,7 +90,7 @@ void ControlArm::init() {
     applyPlanningSceneServiceClient_.waitForExistence();
     addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
 
-    /* Moved this part to gotopose_server (initializes before/loads controllers
+    /* Moved this part to gotopose_server (initializes before/loads controllers on time)
     nodeHandleWithoutNs_.getParam("real_robot", realRobot_);
     if (realRobot_){
         ROS_INFO("[ControlArm] Starting real robot...");
@@ -155,7 +154,6 @@ void ControlArm::getBasicInfo() {
         ROS_INFO("[ControlArm] Reference end effector frame: %s", m_moveGroupPtr->getEndEffectorLink().c_str());
 
     }
-
 }
 
 void ControlArm::cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg) {
