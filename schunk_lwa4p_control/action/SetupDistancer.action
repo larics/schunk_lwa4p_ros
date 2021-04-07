@@ -1,5 +1,6 @@
 # Goal
 geometry_msgs/Point goal_orientation
+# string measure # rad/deg working with deg for now
 int32 timeout_sec
 ---
 # Result

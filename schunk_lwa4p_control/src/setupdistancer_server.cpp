@@ -3,6 +3,9 @@
 #include <actionlib/server/simple_action_server.h>
 #include <geometry_msgs/Pose.h>
 #include <std_srvs/Trigger.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/convert.h>
 #include "schunk_lwa4p_control/SetupDistancerAction.h"
 
 class SetupDistancerActionServer{
@@ -44,6 +47,10 @@ public:
         initializePublishers();
         initializeServices();
         as_.start();
+        ROS_INFO("[SetupDistancerServer] Initialized...");
+        // Add some collisions
+        std_srvs::Trigger coll_srv;
+        addCollisionsServiceClient.call(coll_srv);
 
     }
 
@@ -79,6 +86,17 @@ public:
         currentPose.position = msg->position;
         currentPose.orientation = msg->orientation;
 
+        tf2Scalar roll; tf2Scalar pitch; tf2Scalar yaw;
+        tf2::Quaternion quaternion(currentPose.orientation.x, currentPose.orientation.y, currentPose.orientation.z, currentPose.orientation.w);
+
+        // Get quaternion from ROS msg into tf2 quaternion
+        tf2::Matrix3x3(quaternion).getRPY(roll, pitch, yaw);
+
+        //ROS_INFO_STREAM("[SetupDistancer] Roll is " << roll);
+        //ROS_INFO_STREAM("[SetupDistancer] Pitch is: " << pitch);
+        //ROS_INFO_STREAM("[SetupDistancer] Yaw is: " << yaw);
+
+
         // Get tool orientation from current pose (and compare to MoveIt method used in control_arm.cpp
 
     }
@@ -90,7 +108,7 @@ public:
 
         ros::Rate r(2);
 
-        ROS_INFO("[GoToPose] Received new goal!");
+        ROS_INFO("[SetupDistancer] Received new goal!");
 
         bool sentCmd = false;
         bool elapsed = false;
@@ -104,6 +122,7 @@ public:
         // 2. Command tool service based on received goal
         // 3. Command tool orientation based on received goal
         // 4. Create sequence of service calls (remove_collision, send_orientation, close motors)
+        // 5. Check orientation in which format it's written (radians/degrees)
 
 
         /*
@@ -120,6 +139,7 @@ public:
 
         //
 
+        while (checkDist(goalOrientation, currentOrientation) and
         while (checkDist(cmdPose, currentPose) > epsilon && !elapsed){
             // Check timeout condition
             r.sleep();
