@@ -134,10 +134,10 @@ public:
 
             ROS_INFO("[SetupDistancerServer] Starting tool rotation.");
             cmdOrientation = goal->goal_orientation;
-            cmdOrientationPublisher.publish(cmdOrientation);
+            cmdOrientationPublisher.publish(cmdOrientation); // This gets published but somehow trajectory Start fails 
 
             // This condition may fail because of type comparison, check how to transform tf2scalar to float
-            while (cmdOrientation.z !=  yaw){
+            if (cmdOrientation.z !=  yaw){
                 ROS_INFO("[SetupDistancerServer] Rotating tool...");
             }
 

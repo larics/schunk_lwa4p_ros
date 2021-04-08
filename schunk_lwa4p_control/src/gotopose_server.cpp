@@ -44,6 +44,8 @@ class GoToPoseActionServer{
         if (realRobot)
         {
             startRealRobot();
+        }else {
+            ROS_INFO("[GoToPoseServer] Starting simulation...");
         }
         initializeSubscribers();
         initializePublishers();
@@ -57,7 +59,7 @@ class GoToPoseActionServer{
 
     void startRealRobot()
     {
-        ROS_INFO("[GoToPose] Starting real robot...");
+        ROS_INFO("[GoToPoseServer] Starting real robot...");
         realRobotDriverInitServiceClient_ = nh_.serviceClient<std_srvs::Trigger>("/lwa4p/driver/init");
         realRobotDriverInitServiceClient_.waitForExistence();
         std_srvs::Trigger srv;
