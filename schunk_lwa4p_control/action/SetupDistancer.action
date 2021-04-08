@@ -1,10 +1,11 @@
 # Goal
 geometry_msgs/Point goal_orientation
-# string measure # rad/deg working with deg for now
+# string measure # rad/deg working with rad for now (Maybe add some check for radians/degrees)
 int32 timeout_sec
 ---
 # Result
 bool closed
+bool arm_moved
 ---
 # Feedback
 string motors_status
