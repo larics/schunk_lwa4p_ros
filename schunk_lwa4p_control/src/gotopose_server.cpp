@@ -114,7 +114,9 @@ class GoToPoseActionServer{
         bool elapsed = false;
         bool reached = false;
         bool preempted = false;
+        bool succeeded = false;
         int tRecvGoal = ros::Time::now().toSec();
+
         r.sleep();
 
         // Feedback publishing
@@ -127,7 +129,7 @@ class GoToPoseActionServer{
         float epsilon = goal->minimum_deviation;
         int timeout = goal->timeout_sec;
 
-        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed){
+        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed && !preempted){
             // Check timeout condition
             r.sleep();
             elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
@@ -139,13 +141,14 @@ class GoToPoseActionServer{
             }
 
             // Check preemption
-            if (as_.isPreemptRequested() || !ros::ok())
+            if ( as_.isPreemptRequested() || !ros::ok() )
             {
-                ROS_INFO("%s: Preempted", action_name_.c_str());
+                ROS_INFO("[GoToPose] Preempted");
                 // set the action state to preempted
                 as_.setPreempted();
                 reached = false;
                 preempted = true;
+                elapsed = false;
             }
         }
 
@@ -154,15 +157,17 @@ class GoToPoseActionServer{
         }
 
         result_.reached_pose = reached;
-        if (elapsed || preempted)
+        if (elapsed && !preempted)
         {
             ROS_INFO("[GoToPose] Timeout reached: ABORTED");
             as_.setAborted(result_);
         }
-        else
+        if (!succeeded && !preempted && reached)
         {
+            succeeded = true;
             result_.reached_pose = true;
             as_.setSucceeded(result_);
+
             ROS_INFO("[GoToPose] Reached wanted pose: SUCCEEDDED!");
         }
 
