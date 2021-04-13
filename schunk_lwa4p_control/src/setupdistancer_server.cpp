@@ -26,6 +26,7 @@ protected:
     // ros::ServiceClient toolCmdServiceClient;
     ros::ServiceClient addCollisionsServiceClient;
     ros::ServiceClient disableToolCollisionsServiceClient;
+    ros::ServiceClient setUpSeparatorServiceClient;
 
     // action
     schunk_lwa4p_control::SetupDistancerFeedback feedback_;
@@ -54,7 +55,7 @@ public:
         initializeServices();
         as_.start();
         ROS_INFO("[SetupDistancerServer] Initialized...");
-        // Add some collisions (table for planning)
+        // Add some collisions (table for planning and working with real robot -> maybe not ideal here?)
         std_srvs::Trigger coll_srv;
         addCollisionsServiceClient.call(coll_srv);
 
@@ -113,114 +114,96 @@ public:
 
         ros::Rate r(2);
 
-        ROS_INFO("[SetupDistancer] Received new goal!");
+        ROS_INFO("[SetupDistancerServer] Received new goal!");
 
         bool sentCmd = false;
         bool elapsed = false;
-        bool reached = false;
         bool preempted = false;
+        // 1. Disable tool collisions
+        bool disabled_tool_collisions = false;
+        // 2. Rotate tool
+        bool orientation_cmd_sent = false;
+        bool tool_rotation_completed = false;
+        // 3. Close motors
+        bool called_close_motors_srv = false;
+        bool separator_on_powerlines = false;
+
         int tRecvGoal = ros::Time::now().toSec();
         int timeout = goal->timeout_sec;
+        float epsilon = goal->epsilon;
         r.sleep();
 
-        while (!elapsed) {
+        while (!elapsed && !preempted) {
             r.sleep();
             elapsed = (ros::Time::now().toSec() - tRecvGoal) > timeout;
 
             // Remove collisions for tool
-            ROS_INFO("[SetupDistancerServer] Removing tool collisions..");
             std_srvs::Trigger srv;
-            disableToolCollisionsServiceClient.call(srv);
-
-            ROS_INFO("[SetupDistancerServer] Starting tool rotation.");
-            cmdOrientation = goal->goal_orientation;
-            cmdOrientationPublisher.publish(cmdOrientation); // This gets published but somehow trajectory Start fails 
-
-            // This condition may fail because of type comparison, check how to transform tf2scalar to float
-            if (cmdOrientation.z !=  yaw){
-                ROS_INFO("[SetupDistancerServer] Rotating tool...");
+            if (!disabled_tool_collisions) {
+                ROS_INFO("[SetupDistancerServer] Removing tool collisions.");
+                disableToolCollisionsServiceClient.call(srv);
+                disabled_tool_collisions = true;
             }
 
-            ROS_INFO("[SetupDistancerServer] Rotation complete.");
+            if (!orientation_cmd_sent) {
+                    ROS_INFO("[SetupDistancerServer] Starting tool rotation..");
+                    cmdOrientation = goal->goal_orientation;
+                    cmdOrientationPublisher.publish(cmdOrientation); // This gets published but somehow trajectory Start fails
+                    orientation_cmd_sent = true;
+            }
+
+            // This condition may fail because of type comparison, check how to transform tf2scalar to float
+            if (cmdOrientation.z -  yaw > epsilon){
+                ROS_INFO("[SetupDistancerServer] Rotating tool...");
+                tool_rotation_completed = false;
+            } else{
+                ROS_INFO("[SetupDistancerServer] Rotation complete.");
+                tool_rotation_completed = true;
+            }
+
+            if (tool_rotation_completed && !called_close_motors_srv) {
+                std_srvs::Trigger srv;
+                setUpSeparatorServiceClient.call(srv);
+                called_close_motors_srv = true;
+                // Wait for response maybe (How to wait for response)
+                // For starters close separator
+                // Could eventually monitor force with which motors close it
+            }
+
+            // TODO: Add method check for separator on powerlines
 
             if (as_.isPreemptRequested() || !ros::ok())
             {
                 ROS_INFO("%s: Preempted", action_name_.c_str());
                 // set the action state to preempted
                 as_.setPreempted();
-                reached = false;
                 preempted = true;
             }
         }
+
+        if (elapsed && !preempted)
+        {
+            ROS_INFO("[SetupDistancerServer] Timeout reached: ABORTED");
+            as_.setAborted(result_);
+        }
+        if (!preempted && !elapsed && tool_rotation_completed && separator_on_powerlines)
+        {
+            result_.distancer_on_powerlines = true;
+            as_.setSucceeded(result_);
+
+            ROS_INFO("[SetupDistancerServer] Reached wanted pose: SUCCEEDDED!");
+        }
+
 
         // TODO:
         // 1. Build new action and start new action server --> DONE
         // 2. Command tool service based on received goal --> DONE
-        // 3. Command tool orientation based on received goal
-        // 4. Create sequence of service calls (remove_collision, send_orientation, close motors)
-        // 5. Check orientation in which format it's written (radians/degrees)
+        // 3. Command tool orientation based on received goal (Doesen't move when commanded from server?!) --> Fixed WHILE
+        // 4. Add Trigger service call to enable closing motors on trigger
+        // 5. Create sequence of service calls (remove_collision, send_orientation, close motors)
+        // 6. Check orientation in which format it's written (radians/degrees)
         // Think of arm servoing as a service moveit::servo as service that can be called during executing of this server
 
-
-        /*
-
-        // Feedback publishing
-        feedback_.current_pose.position = currentPose.position;
-        feedback_.current_pose.orientation = currentPose.orientation;
-        as_.publishFeedback(feedback_);
-
-        // Goal variables
-        cmdPose = static_cast<geometry_msgs::Pose>(goal->goal_pose);
-        float epsilon = goal->minimum_deviation;
-        int timeout = goal->timeout_sec;
-
-        //
-
-        while (!elapsed) {
-            r
-        }
-
-        while (checkDist(goalOrientation, currentOrientation) and
-        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed){
-            // Check timeout condition
-            r.sleep();
-            elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
-            // Send to pose
-            if(!sentCmd){
-                cmdPosePublisher.publish(cmdPose);
-                sentCmd = true;
-                ROS_INFO("[GoToPose] Sending command!");
-            }
-
-            // Check preemption
-            if (as_.isPreemptRequested() || !ros::ok())
-            {
-                ROS_INFO("%s: Preempted", action_name_.c_str());
-                // set the action state to preempted
-                as_.setPreempted();
-                reached = false;
-                preempted = true;
-            }
-        }
-
-        if(checkDist(cmdPose, currentPose) < epsilon){
-            reached = true;
-        }
-
-        result_.reached_pose = reached;
-        if (elapsed || preempted)
-        {
-            ROS_INFO("[GoToPose] Timeout reached: ABORTED");
-            as_.setAborted(result_);
-        }
-        else
-        {
-            result_.reached_pose = true;
-            as_.setSucceeded(result_);
-            ROS_INFO("[GoToPose] Reached wanted pose: SUCCEEDED!");
-        }
-
-        */
 
     }
 

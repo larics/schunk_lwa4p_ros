@@ -8,7 +8,7 @@
     <arg name="real_robot" default="true"/>
 
     <!-- Currently not useful, service call comes too late, after moveit already initializes controllers -->
-    <param name="real_robot" value="false"/>
+    <param name="real_robot" value="true"/>
 
     <!-- Send robot URDF to param server -->
     <group if="$(arg gripper)">
