@@ -108,7 +108,7 @@ class GoToPoseActionServer{
 
         ros::Rate r(2);
 
-        ROS_INFO("[GoToPose] Received new goal!");
+        ROS_INFO("[GoToPoseServer] Received new goal!");
 
         bool sentCmd = false;
         bool elapsed = false;
@@ -137,13 +137,13 @@ class GoToPoseActionServer{
             if(!sentCmd){
                 cmdPosePublisher.publish(cmdPose);
                 sentCmd = true;
-                ROS_INFO("[GoToPose] Sending command!");
+                ROS_INFO("[GoToPoseServer] Sending command!");
             }
 
             // Check preemption
             if ( as_.isPreemptRequested() || !ros::ok() )
             {
-                ROS_INFO("[GoToPose] Preempted");
+                ROS_INFO("[GoToPoseServer] Preempted");
                 // set the action state to preempted
                 as_.setPreempted();
                 reached = false;
@@ -159,7 +159,7 @@ class GoToPoseActionServer{
         result_.reached_pose = reached;
         if (elapsed && !preempted)
         {
-            ROS_INFO("[GoToPose] Timeout reached: ABORTED");
+            ROS_INFO("[GoToPoseServer] Timeout reached: ABORTED");
             as_.setAborted(result_);
         }
         if (!succeeded && !preempted && reached)
@@ -168,7 +168,7 @@ class GoToPoseActionServer{
             result_.reached_pose = true;
             as_.setSucceeded(result_);
 
-            ROS_INFO("[GoToPose] Reached wanted pose: SUCCEEDDED!");
+            ROS_INFO("[GoToPoseServer] Reached wanted pose: SUCCEEDDED!");
         }
 
     }
