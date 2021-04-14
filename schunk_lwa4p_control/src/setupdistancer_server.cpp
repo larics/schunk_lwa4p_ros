@@ -35,7 +35,6 @@ protected:
 
     // msgs
     geometry_msgs::Pose currentPose;
-    geometry_msgs::Pose cmdPose;
     geometry_msgs::Point cmdOrientation;
 
     // wanted tool rotations
@@ -76,7 +75,6 @@ public:
 
     void initializePublishers()
     {
-        cmdPosePublisher = nh_.advertise<geometry_msgs::Pose>("/control_arm_node/arm/command/pose", 1);
         cmdOrientationPublisher = nh_.advertise<geometry_msgs::Point>("/control_arm_node/tool/command/orientation", 1);
     }
 
