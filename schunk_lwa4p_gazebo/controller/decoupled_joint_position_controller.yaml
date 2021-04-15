@@ -4,39 +4,38 @@ lwa4p:
     joint: lwa4p_joint1
     pid:
       p: 100.0
-      d: 10.0
 
   joint2_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint2
     pid:
       p: 100.0
-      d: 10.0
 
   joint3_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint3
     pid:
       p: 100.0
-      d: 10.0
 
   joint4_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint4
     pid:
       p: 100.0
-      d: 10.0
 
   joint5_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint5
     pid:
       p: 100.0
-      d: 10.0
 
   joint6_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint6
     pid:
       p: 100.0
-      d: 10.0
+
+
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50
