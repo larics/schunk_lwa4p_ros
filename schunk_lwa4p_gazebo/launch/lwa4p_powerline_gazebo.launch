@@ -34,13 +34,19 @@
         <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_powerline_upload.launch"/>
             <!-- Start arm + gripper controller -->
             <rosparam file="$(find schunk_lwa4p_gazebo)/controller/separator_controller.yaml" command="load"/>
-            <node unless="$(arg real_robot)" name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller separator_controller distancer_controller" respawn="false" output="screen"/>
+            <!--node unless="$(arg real_robot)" name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller separator_controller distancer_controller " respawn="false" output="screen"/-->
+
+            <!-- For calibration -->
+            <rosparam file="$(find schunk_lwa4p_gazebo)/controller/decoupled_joint_position_controller.yaml" command="load"/>
+            <node unless="$(arg real_robot)" name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn joint1_position_controller joint2_position_controller joint3_position_controller joint4_position_controller joint5_position_controller joint6_position_controller"
+                  respawn="false" output="screen"/>
     </group>
     
     <group unless="$(arg gripper)">
         <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_upload.launch"/>
         <!-- Start arm controller -->
             <rosparam file="$(find schunk_lwa4p_gazebo)/controller/arm_controller.yaml" command="load"/>
+            <rosparam file="$(find schunk_lwa4p_gazebo)/controller/decoupled_joint_position_controller.yaml" command="load"/>
             <node unless="$(arg real_robot)" name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/>
     </group>
        

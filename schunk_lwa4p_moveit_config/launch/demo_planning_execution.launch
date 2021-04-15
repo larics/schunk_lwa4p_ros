@@ -1,7 +1,8 @@
 <launch>
 
   <arg name="respawn_robot" default="true"/> 
-  <arg name="rate" default="10" />>
+  <arg name="rate" default="10" />
+  <arg name="rviz_viz" default="true"/>
 
   <rosparam command="load" file="$(find schunk_lwa4p_moveit_config)/config/joint_names.yaml"/>
 
@@ -23,8 +24,11 @@
   </include>
 
   <!-- Laggy stuff -->
-  <include file="$(find schunk_lwa4p_moveit_config)/launch/moveit_rviz.launch">
-    <arg name="config" value="true"/>
-  </include>
+  <group if="$(arg rviz_viz)">
+    <include file="$(find schunk_lwa4p_moveit_config)/launch/moveit_rviz.launch">
+      <arg name="config" value="true"/>
+    </include>
+  </group>
+
 
 </launch>
