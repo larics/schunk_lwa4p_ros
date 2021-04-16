@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <cmath>
 #include <actionlib/server/simple_action_server.h>
+#include <std_msgs/Float64.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
 #include <std_srvs/Trigger.h>
@@ -18,6 +19,9 @@ protected:
     // publishers
     ros::Publisher cmdPosePublisher;
     ros::Publisher cmdOrientationPublisher;
+    ros::Publisher cmdLwa4pJoint6Publisher;
+    ros::Publisher cmdLeftDistancerPublisher;
+    ros::Publisher cmdRightDistancerPublisher;
 
     // subscribers
     ros::Subscriber currentPoseSubscriber;
@@ -27,6 +31,8 @@ protected:
     ros::ServiceClient addCollisionsServiceClient;
     ros::ServiceClient disableToolCollisionsServiceClient;
     ros::ServiceClient setUpSeparatorServiceClient;
+    ros::ServiceClient startJointPositionControllersClient;
+    ros::ServiceClient startJointTrajectoryControllerClient;
 
     // action
     schunk_lwa4p_control::SetupDistancerFeedback feedback_;
@@ -39,6 +45,9 @@ protected:
 
     // wanted tool rotations
     tf2Scalar roll; tf2Scalar pitch; tf2Scalar yaw;
+
+    // real robot
+    bool realRobot;
 
 
 public:
@@ -53,6 +62,7 @@ public:
         initializePublishers();
         initializeServices();
         as_.start();
+        nh_.getParam("real_robot", realRobot);
         ROS_INFO("[SetupDistancerServer] Initialized...");
         // Add some collisions (table for planning and working with real robot -> maybe not ideal here?)
         std_srvs::Trigger coll_srv;
@@ -76,6 +86,9 @@ public:
     void initializePublishers()
     {
         cmdOrientationPublisher = nh_.advertise<geometry_msgs::Point>("/control_arm_node/tool/command/orientation", 1);
+        cmdLwa4pJoint6Publisher =  nh_.advertise<std_msgs::Float64>("/lwa4p/joint_6_position_controller/command", 1);
+        cmdLeftDistancerPublisher = nh_.advertise<std_msgs::Float64>("/lwa4p/distancer_left_position_controller/command", 1);
+        cmdRightDistancerPublisher = nh_.advertise<std_msgs::Float64>("/lwa4p/distancer_right_position_controller/command", 1);
     }
 
     void initializeServices()
@@ -83,6 +96,9 @@ public:
 
         addCollisionsServiceClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/scene/add_collisions");
         disableToolCollisionsServiceClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/tool/disable_collision");
+        startJointPositionControllersClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_position_controllers");
+        startJointTrajectoryControllerClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_trajectory_controller");
+
         // toolCmdServiceClient = nh_.serviceClient<separator_end_effector::separator_service>("/tool_service");
 
     }
@@ -145,8 +161,18 @@ public:
 
             if (!orientation_cmd_sent) {
                     ROS_INFO("[SetupDistancerServer] Starting tool rotation..");
-                    cmdOrientation = goal->goal_orientation;
-                    cmdOrientationPublisher.publish(cmdOrientation); // This gets published but somehow trajectory Start fails
+
+                    // call services to load position controllers
+                    startJointPositionControllersClient.call(srv);
+
+                    // Wait to reload controllers
+                    r.sleep();
+                    // This gets published but somehow trajectory Start fails (not guaranteed that plan will only rotate end effector)
+                    // cmdOrientation = goal->goal_orientation;
+                    //cmdOrientationPublisher.publish(cmdOrientation);
+                    std_msgs::Float64 jointCmd;
+                    jointCmd.data = goal->goal_orientation;
+                    cmdLwa4pJoint6Publisher.publish(jointCmd);
                     orientation_cmd_sent = true;
             }
 
@@ -160,12 +186,20 @@ public:
             }
 
             if (tool_rotation_completed && !called_close_motors_srv) {
+                ROS_INFO("[SetupDistancerServer] Setting distancer on powerlines...");
                 std_srvs::Trigger srv;
                 setUpSeparatorServiceClient.call(srv);
                 called_close_motors_srv = true;
                 // Wait for response maybe (How to wait for response)
                 // For starters close separator
                 // Could eventually monitor force with which motors close it
+                if(!realRobot){
+                    std_msgs::Float64 rightDistancerCmd; rightDistancerCmd.data = 0.5;
+                    std_msgs::Float64 leftDistancerCmd; leftDistancerCmd.data = -0.5;
+
+                    cmdRightDistancerPublisher.publish(rightDistancerCmd);
+                    cmdLeftDistancerPublisher.publish(leftDistancerCmd);
+                }
             }
 
             // TODO: Add method check for separator on powerlines
