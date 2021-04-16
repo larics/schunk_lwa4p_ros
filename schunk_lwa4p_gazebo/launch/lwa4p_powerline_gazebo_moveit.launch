@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <launch>
     <param name="/use_sim_time" value="true"/>
-    <param name="real_robot" value="false"/>
-
     <!--arg name="remap" value="true"/-->
 
     <rosparam file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml" command="load"/>
 
     <!-- Launch URDF model and Gazebo -->
-    <include file="$(find schunk_lwa4p_gazebo)/launch/lwa4p_powerline_gazebo.launch"/>
+    <include file="$(find schunk_lwa4p_gazebo)/launch/lwa4p_powerline_gazebo.launch">
         <arg name="gripper" value="true" />
+        <!-- Add argument for real_robot flag -->
+    </include>
 
 
     <!-- Start MoveIt! -->

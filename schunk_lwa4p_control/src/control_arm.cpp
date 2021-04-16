@@ -95,7 +95,7 @@ void ControlArm::init() {
     applyPlanningSceneServiceClient_ = nodeHandleWithoutNs_.serviceClient<moveit_msgs::ApplyPlanningScene>("apply_planning_scene");
     applyPlanningSceneServiceClient_.waitForExistence();
     switchControllerServiceClient_ = nodeHandleWithoutNs_.serviceClient<controller_manager_msgs::SwitchController>("lwa4p/controller_manager/switch_controller");
-    switchControllerServiceClient_.waitForExistence(); 
+    switchControllerServiceClient_.waitForExistence();
     addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
 
 

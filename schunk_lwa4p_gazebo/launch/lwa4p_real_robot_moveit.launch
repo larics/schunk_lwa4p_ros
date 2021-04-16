@@ -7,7 +7,7 @@
     <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
     <arg name="real_robot" default="true"/>
 
-    <!-- Currently not useful, service call comes too late, after moveit already initializes controllers -->
+    <!-- used in control arm node to call lwa4p driver initialization !--> 
     <param name="real_robot" value="true"/>
 
     <!-- Send robot URDF to param server -->
@@ -27,7 +27,7 @@
     </group>
 
     <!-- Launch driver and some controllers if real robot-->
-    <include file="$(find schunk_lwa4p)/launch/schunk_blue.launch" /> <!--if="$(arg real_robot)"/-->
+    <include file="$(find schunk_lwa4p)/launch/schunk_blue.launch" />
 
     <!-- Start MoveIt! -->
     <include file="$(find schunk_lwa4p_moveit_config)/launch/demo_planning_execution.launch">
@@ -35,6 +35,7 @@
         <!-- joint remapping is done in move_group.launch -->
     </include>
 
+    <!-- Start Arm control node -->
     <include file="$(find schunk_lwa4p_control)/launch/arm_control.launch"></include>
 
 </launch>

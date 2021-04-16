@@ -34,6 +34,7 @@
         <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_separator_powerline_upload.launch"/>
             <!-- Start arm + gripper controller -->
             <rosparam file="$(find schunk_lwa4p_gazebo)/controller/separator_controller.yaml" command="load"/>
+            <!--rosparam file="$(find schunk_lwa4p_gazebo)/controller/joint_state_controller.yaml" command="load"/-->
             <node unless="$(arg real_robot)" name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller
             separator_controller distancer_right_position_controller distancer_left_position_controller" respawn="false" output="screen"/>
 

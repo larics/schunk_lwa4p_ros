@@ -4,7 +4,7 @@
     <!-- Add PID gains for joint group position controller -->
     <!-- https://answers.gazebosim.org//question/25578/what-does-jointgroupposition-controller-do-when-it-does-not-have-pid-gains-set/ -->
     <rosparam command="load" file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml"/>
-    <arg name="real_robot" value="true"/>
+    <arg name="real_robot" value="false"/>
 
     <!-- Robot state publisher -->
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
@@ -20,8 +20,6 @@
         <rosparam file="$(find schunk_lwa4p_gazebo)/controller/joint_state_controller.yaml" command="load"/>
         <node name="joint_state_controller_spawner"  ns="lwa4p" pkg="controller_manager" type="spawner" args="joint_state_controller" respawn="false" output="screen"/>
     </group>
-
-
 
 
 </launch>
