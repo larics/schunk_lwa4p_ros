@@ -57,6 +57,8 @@ void ControlArm::init() {
 
     std::string disableCollisionServiceName;
     std::string addCollisionObjectServiceName;
+    std::string startPositionControllersServiceName;
+    std::string startJointTrajectoryControllerServiceName;
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
@@ -70,6 +72,8 @@ void ControlArm::init() {
     nodeHandle_.param("subscribers/queue_size", cmdDeltaPoseTopicQueueSize, 1);
     nodeHandle_.param("services/disable_collision_service", disableCollisionServiceName, std::string("tool/disable_collision"));
     nodeHandle_.param("services/add_collision_object", addCollisionObjectServiceName, std::string("scene/add_collisions"));
+    nodeHandle_.param("services/start_position_controllers", startPositionControllersServiceName, std::string("controllers/start_position_controllers"));
+    nodeHandle_.param("services/start_joint_trajectory_controller", startJointTrajectoryControllerServiceName, std::string("controllers/start_joint_trajectory_controller"));
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
@@ -83,12 +87,17 @@ void ControlArm::init() {
     ROS_INFO("[ControlArm] Initializing services...");
     disableCollisionService_ = nodeHandle_.advertiseService(disableCollisionServiceName, &ControlArm::disableCollisionServiceCallback, this);
     addCollisionObjectService_ = nodeHandle_.advertiseService(addCollisionObjectServiceName, &ControlArm::addCollisionObjectServiceCallback, this);
+    startPositionControllersService_ = nodeHandle_.advertiseService(startPositionControllersServiceName, &ControlArm::startPositionControllers, this);
+    startJointTrajectoryControllerService_ = nodeHandle_.advertiseService(startJointTrajectoryControllerServiceName, &ControlArm::startJointTrajectoryController, this);
 
     // Client for refreshing planning scene
     ros::NodeHandle nodeHandleWithoutNs_;
     applyPlanningSceneServiceClient_ = nodeHandleWithoutNs_.serviceClient<moveit_msgs::ApplyPlanningScene>("apply_planning_scene");
     applyPlanningSceneServiceClient_.waitForExistence();
+    switchControllerServiceClient_ = nodeHandleWithoutNs_.serviceClient<controller_manager_msgs::SwitchController>("lwa4p/controller_manager/switch_controller");
+    switchControllerServiceClient_.waitForExistence(); 
     addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
+
 
     /* Moved this part to gotopose_server (initializes before/loads controllers on time)
     nodeHandleWithoutNs_.getParam("real_robot", realRobot_);
@@ -335,6 +344,54 @@ bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, 
     else{
         return false;
     }
+
+}
+
+bool ControlArm::startJointTrajectoryController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
+
+    ROS_INFO("[ControlArm] Starting JointTrajectoryController...");
+    controller_manager_msgs::SwitchControllerRequest switchControllerRequest;
+    controller_manager_msgs::SwitchControllerResponse switchControllerResponse;
+    switchControllerRequest.stop_controllers.push_back(std::string("joint_1_position_controller"));
+    switchControllerRequest.stop_controllers.push_back(std::string("joint_2_position_controller"));
+    switchControllerRequest.stop_controllers.push_back(std::string("joint_3_position_controller"));
+    switchControllerRequest.stop_controllers.push_back(std::string("joint_4_position_controller"));
+    switchControllerRequest.stop_controllers.push_back(std::string("joint_5_position_controller"));
+    switchControllerRequest.stop_controllers.push_back(std::string("joint_6_position_controller"));
+    switchControllerRequest.start_controllers.push_back(std::string("arm_controller"));
+    switchControllerRequest.start_asap = true;
+    //ontroller Manager: To switch controllers you need to specify a strictness level of
+    // controller_manager_msgs::SwitchController::STRICT (2) or ::BEST_EFFORT (1). Defaulting to ::BEST_EFFORT.
+    switchControllerRequest.strictness = 2;
+    switchControllerRequest.timeout = 10;
+
+    switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
+
+    return switchControllerResponse.ok;
+
+}
+
+bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
+
+    ROS_INFO("[ControlArm] Starting JointPosition controllers...");
+    controller_manager_msgs::SwitchControllerRequest switchControllerRequest;
+    controller_manager_msgs::SwitchControllerResponse switchControllerResponse;
+    switchControllerRequest.start_controllers.push_back(std::string("joint_1_position_controller"));
+    switchControllerRequest.start_controllers.push_back(std::string("joint_2_position_controller"));
+    switchControllerRequest.start_controllers.push_back(std::string("joint_3_position_controller"));
+    switchControllerRequest.start_controllers.push_back(std::string("joint_4_position_controller"));
+    switchControllerRequest.start_controllers.push_back(std::string("joint_5_position_controller"));
+    switchControllerRequest.start_controllers.push_back(std::string("joint_6_position_controller"));
+    switchControllerRequest.stop_controllers.push_back(std::string("arm_controller"));
+    switchControllerRequest.start_asap = true;
+    //ontroller Manager: To switch controllers you need to specify a strictness level of
+    // controller_manager_msgs::SwitchController::STRICT (2) or ::BEST_EFFORT (1). Defaulting to ::BEST_EFFORT.
+    switchControllerRequest.strictness = 2;
+    switchControllerRequest.timeout = 10;
+
+    switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
+
+    return switchControllerResponse.ok;
 
 }
 

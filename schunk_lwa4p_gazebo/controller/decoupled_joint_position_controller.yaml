@@ -1,5 +1,5 @@
 lwa4p:
-  joint1_position_controller:
+  joint_1_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint1
     #pid:
@@ -7,24 +7,23 @@ lwa4p:
     #  i: 5
     #  d: 1
 
-  joint2_position_controller:
+  joint_2_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint2
 
-  joint3_position_controller:
+  joint_3_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint3
 
-  joint4_position_controller:
+  joint_4_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint4
 
-
-  joint5_position_controller:
+  joint_5_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint5
 
-  joint6_position_controller:
+  joint_6_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint6
 

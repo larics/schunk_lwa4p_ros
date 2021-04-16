@@ -34,6 +34,30 @@ lwa4p:
     type: position_controllers/JointPositionController
     joint: separator_main_left_head_joint
 
+  joint_1_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint1
+
+  joint_2_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint2
+
+  joint_3_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint3
+
+  joint_4_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint4
+
+  joint_5_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint5
+
+  joint_6_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint6
+
   # Probably not neccessary
   joint_group_position_controller:
     type: position_controllers/JointGroupPositionController
