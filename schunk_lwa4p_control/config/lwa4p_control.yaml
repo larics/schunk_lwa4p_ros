@@ -4,7 +4,7 @@ lwa4p:
   # Publish joint states 
   joint_state_controller: 
     type: joint_state_controller/JointStateController
-    publish_rate: 100
+    publish_rate: 25
 
   arm_controller:
     type: position_controllers/JointTrajectoryController
@@ -16,17 +16,17 @@ lwa4p:
       - lwa4p_joint5
       - lwa4p_joint6
 
-    gains: 
-      lwa4p_joint1: {p: 500, d: 0.0, i: 0.0, i_clamp: 10000 }
-      lwa4p_joint2: {p: 500, d: 0.0, i: 0.0, i_clamp: 10000 }
-      lwa4p_joint3: {p: 500, d: 0.0, i: 0.0, i_clamp: 1 }
-      lwa4p_joint4: {p: 500, d: 0.0, i: 0.0, i_clamp: 10000 }
-      lwa4p_joint5: {p: 500, d: 0.0, i: 0.0, i_clamp: 1 }
-      lwa4p_joint6: {p: 500, d: 0.0, i: 0.0, i_clamp: 1 }
+    #gains:
+    #  lwa4p_joint1: {p: 2000.0, d: 0.0, i: 0.0}
+    #  lwa4p_joint2: {p: 2000.0, d: 0.0, i: 0.0}
+    #  lwa4p_joint3: {p: 2000.0, d: 0.0, i: 0.0}
+    #  lwa4p_joint4: {p: 2020.0, d: 0.0, i: 0.0}
+    #  lwa4p_joint5: {p: 2030.0, d: 0.0, i: 0.0}
+    #  lwa4p_joint6: {p: 2050.0, d: 0.0, i: 0.0}
 
 
     constrains: 
       goal_time: 2.0 
       
-    state_publish_rate: 100
+    state_publish_rate: 25
 

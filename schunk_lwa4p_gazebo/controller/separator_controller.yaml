@@ -26,12 +26,15 @@ lwa4p:
       - separator_right_front_joint
       - separator_left_front_joint 
       - separator_right_back_joint
-      - separator_right_front_joint
-  distancer_controller:
-    type: position_controllers/JointTrajectoryController
-    joints: 
-      - separator_main_right_head_joint
-      - separator_main_left_head_joint
+      - separator_left_back_joint
+  distancer_right_position_controller:
+    type: position_controllers/JointPositionController
+    joint: separator_main_right_head_joint
+  distancer_left_position_controller:
+    type: position_controllers/JointPositionController
+    joint: separator_main_left_head_joint
+
+  # Probably not neccessary
   joint_group_position_controller:
     type: position_controllers/JointGroupPositionController
     joints:
