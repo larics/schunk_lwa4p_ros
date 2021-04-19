@@ -20,6 +20,7 @@ lwa4p:
     stop_trajectory_duration: 1.5
     state_publish_rate:  25
     action_monitor_rate: 10
+
   separator_controller:
     type: position_controllers/JointTrajectoryController
     joints:
@@ -27,13 +28,17 @@ lwa4p:
       - separator_left_front_joint 
       - separator_right_back_joint
       - separator_left_back_joint
+
+  ##### DISTANCER CONTROLLERS #####
   distancer_right_position_controller:
     type: position_controllers/JointPositionController
     joint: separator_main_right_head_joint
+
   distancer_left_position_controller:
     type: position_controllers/JointPositionController
     joint: separator_main_left_head_joint
 
+  #### JOINT POSITION CONTROLLERS ####
   joint_1_position_controller:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint1
@@ -58,7 +63,7 @@ lwa4p:
     type: position_controllers/JointPositionController
     joint: lwa4p_joint6
 
-  # Probably not neccessary
+  #### JOINT GROUP POSITION CONTROLLER ####
   joint_group_position_controller:
     type: position_controllers/JointGroupPositionController
     joints:
@@ -68,12 +73,6 @@ lwa4p:
       - lwa4p_joint4
       - lwa4p_joint5
       - lwa4p_joint6      
-  #    - separator_right_front_joint
-  #    - separator_left_front_joint
-  #    - separator_right_back_joint
-  #    - separator_right_front_joint
-  #    - separator_main_right_head_joint
-  #    - separator_main_left_head_joint
-      
+
 
 

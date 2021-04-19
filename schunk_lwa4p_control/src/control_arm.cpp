@@ -59,6 +59,7 @@ void ControlArm::init() {
     std::string addCollisionObjectServiceName;
     std::string startPositionControllersServiceName;
     std::string startJointTrajectoryControllerServiceName;
+    std::string startJointGroupPositionControllerServiceName;
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
@@ -74,6 +75,7 @@ void ControlArm::init() {
     nodeHandle_.param("services/add_collision_object", addCollisionObjectServiceName, std::string("scene/add_collisions"));
     nodeHandle_.param("services/start_position_controllers", startPositionControllersServiceName, std::string("controllers/start_position_controllers"));
     nodeHandle_.param("services/start_joint_trajectory_controller", startJointTrajectoryControllerServiceName, std::string("controllers/start_joint_trajectory_controller"));
+    nodeHandle_.param("services/start_joint_groujp_position_controller", startJointGroupPositionControllerServiceName, std::string("controllers/start_joint_group_position_controller"));
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
@@ -83,20 +85,27 @@ void ControlArm::init() {
     armCmdDeltaPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdDeltaPoseTopicName, cmdDeltaPoseTopicQueueSize, &ControlArm::cmdDeltaPoseCallback, this); 
     ROS_INFO("[ControlArm] Initialized subscribers/publishers.");
 
-    // Client for disable collisions service
+    // Initialize Services
     ROS_INFO("[ControlArm] Initializing services...");
     disableCollisionService_ = nodeHandle_.advertiseService(disableCollisionServiceName, &ControlArm::disableCollisionServiceCallback, this);
     addCollisionObjectService_ = nodeHandle_.advertiseService(addCollisionObjectServiceName, &ControlArm::addCollisionObjectServiceCallback, this);
     startPositionControllersService_ = nodeHandle_.advertiseService(startPositionControllersServiceName, &ControlArm::startPositionControllers, this);
     startJointTrajectoryControllerService_ = nodeHandle_.advertiseService(startJointTrajectoryControllerServiceName, &ControlArm::startJointTrajectoryController, this);
+    startJointGroupPositionControllerService_ = nodeHandle_.advertiseService(startJointGroupPositionControllerServiceName, &ControlArm::startJointGroupPositionController, this);
+    ROS_INFO("[ControlArm] Initialized services.");
 
-    // Client for refreshing planning scene
+    // Initialize Clients for other services
+    ROS_INFO("[ControlArm] Initializing service clients...");
     ros::NodeHandle nodeHandleWithoutNs_;
     applyPlanningSceneServiceClient_ = nodeHandleWithoutNs_.serviceClient<moveit_msgs::ApplyPlanningScene>("apply_planning_scene");
     applyPlanningSceneServiceClient_.waitForExistence();
     switchControllerServiceClient_ = nodeHandleWithoutNs_.serviceClient<controller_manager_msgs::SwitchController>("lwa4p/controller_manager/switch_controller");
     switchControllerServiceClient_.waitForExistence();
+    listControllersServiceClient_ = nodeHandleWithoutNs_.serviceClient<controller_manager_msgs::ListControllers>("lwa4p/controller_manager/list_controllers");
+    listControllersServiceClient_.waitForExistence();
     addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
+    ROS_INFO("[ControlArm] Initialized service clients. ");
+
 
 
     /* Moved this part to gotopose_server (initializes before/loads controllers on time)
@@ -347,6 +356,27 @@ bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, 
 
 }
 
+bool ControlArm::getRunningControllers(){
+    ROS_INFO("[ControlArm] Listing controllers: ");
+    std::vector<std::string> runningControllerNames;
+    controller_manager_msgs::ListControllersRequest listReq; controller_manager_msgs::ListControllersResponse listRes;
+    listControllersServiceClient_.call(listReq, listRes);
+    //ROS_INFO_STREAM("[ControlArm] Controllers: " << listRes);
+
+    for(std::size_t i = 0; i < listRes.controller.size(); ++i){
+        if (listRes.controller[i].state == "running" ){
+            if(listRes.controller[i].name != "joint_state_controller"){
+                runningControllerNames.push_back(listRes.controller[i].name);
+
+                ROS_INFO_STREAM("[ControlArm] Adding running controller to list: " << listRes.controller[i].name);
+            }
+        }
+    }
+
+    //ROS_INFO_STREAM("[ControlArm] Running controllers are: " << runningControllerNames);
+
+}
+
 bool ControlArm::startJointTrajectoryController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
 
     ROS_INFO("[ControlArm] Starting JointTrajectoryController...");
@@ -369,6 +399,23 @@ bool ControlArm::startJointTrajectoryController(std_srvs::TriggerRequest &req, s
 
     return switchControllerResponse.ok;
 
+}
+
+bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
+    getRunningControllers();
+    ROS_INFO("[ControlArm] Starting JointGroupPositionController...");
+    controller_manager_msgs::SwitchControllerRequest switchControllerRequest;
+    controller_manager_msgs::SwitchControllerResponse  switchControllerResponse;
+
+    switchControllerRequest.stop_controllers.push_back(std::string("arm_controller"));
+    switchControllerRequest.start_controllers.push_back(std::string("joint_group_position_controller"));
+    switchControllerRequest.start_asap = true;
+    switchControllerRequest.strictness = 2;
+    switchControllerRequest.timeout = 10;
+
+    switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
+
+    return switchControllerResponse.ok;
 }
 
 bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {

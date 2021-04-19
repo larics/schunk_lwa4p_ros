@@ -19,6 +19,7 @@
 #include <std_srvs/TriggerResponse.h>
 #include <std_srvs/Trigger.h>
 #include <controller_manager_msgs/SwitchController.h>
+#include <controller_manager_msgs/ListControllers.h>
 
 // MoveIt
 #include <moveit/move_group_interface/move_group_interface.h>
@@ -102,12 +103,14 @@ class ControlArm{
         ros::ServiceServer addCollisionObjectService_;
         ros::ServiceServer startPositionControllersService_;
         ros::ServiceServer startJointTrajectoryControllerService_;
+        ros::ServiceServer startJointGroupPositionControllerService_;
 
         // ROS Service clients
         ros::ServiceClient applyPlanningSceneServiceClient_;
         ros::ServiceClient realRobotDriverInitServiceClient_;
         ros::ServiceClient addCollisionObjectServiceClient_;
         ros::ServiceClient switchControllerServiceClient_;
+        ros::ServiceClient listControllersServiceClient_;
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
@@ -119,6 +122,7 @@ class ControlArm{
         bool addCollisionObjectServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startPositionControllers(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startJointTrajectoryController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool startJointGroupPositionController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_;         
@@ -141,6 +145,7 @@ class ControlArm{
         bool planPathToCmdPose();
         bool planPathToZeroPose();
         bool isNodeRunning();
+        bool getRunningControllers();
         bool executeDummyCartesianPath();
         void addCollisionObject(moveit_msgs::PlanningScene& planningScene);
         void getCurrentArmState(); 
