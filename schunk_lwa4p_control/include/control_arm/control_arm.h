@@ -145,12 +145,12 @@ class ControlArm{
         bool planPathToCmdPose();
         bool planPathToZeroPose();
         bool isNodeRunning();
-        bool getRunningControllers();
         bool executeDummyCartesianPath();
         void addCollisionObject(moveit_msgs::PlanningScene& planningScene);
         void getCurrentArmState(); 
-        void getCurrentEndEffectorState(const std::string linkName); 
+        void getCurrentEndEffectorState(const std::string linkName);
         void getJointPositions(const std::vector<std::string>& jointNames);
+        void getRunningControllers(std::vector<std::string> &runningControllerNames);
         bool getIK(const std::size_t attempts, double timeout);
         Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution
 

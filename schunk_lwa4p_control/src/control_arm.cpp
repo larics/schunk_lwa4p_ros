@@ -356,19 +356,20 @@ bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, 
 
 }
 
-bool ControlArm::getRunningControllers(){
+void ControlArm::getRunningControllers(std::vector<std::string> &runningControllerNames){
     ROS_INFO("[ControlArm] Listing controllers: ");
-    std::vector<std::string> runningControllerNames;
     controller_manager_msgs::ListControllersRequest listReq; controller_manager_msgs::ListControllersResponse listRes;
     listControllersServiceClient_.call(listReq, listRes);
     //ROS_INFO_STREAM("[ControlArm] Controllers: " << listRes);
 
     for(std::size_t i = 0; i < listRes.controller.size(); ++i){
         if (listRes.controller[i].state == "running" ){
-            if(listRes.controller[i].name != "joint_state_controller"){
+            // Additional constraints for controllers that must be active all of the time
+            if(listRes.controller[i].name != "joint_state_controller" && listRes.controller[i].name != "distancer_right_position_controller" && listRes.controller[i].name != "distancer_left_position_controller")
+            {
                 runningControllerNames.push_back(listRes.controller[i].name);
 
-                ROS_INFO_STREAM("[ControlArm] Adding running controller to list: " << listRes.controller[i].name);
+                ROS_INFO_STREAM("[ControlArm] Stopping controller: " << listRes.controller[i].name);
             }
         }
     }
@@ -379,15 +380,14 @@ bool ControlArm::getRunningControllers(){
 
 bool ControlArm::startJointTrajectoryController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
 
+    std::vector<std::string> runningControllers; getRunningControllers(runningControllers);
     ROS_INFO("[ControlArm] Starting JointTrajectoryController...");
+    // Stop running controllers
     controller_manager_msgs::SwitchControllerRequest switchControllerRequest;
     controller_manager_msgs::SwitchControllerResponse switchControllerResponse;
-    switchControllerRequest.stop_controllers.push_back(std::string("joint_1_position_controller"));
-    switchControllerRequest.stop_controllers.push_back(std::string("joint_2_position_controller"));
-    switchControllerRequest.stop_controllers.push_back(std::string("joint_3_position_controller"));
-    switchControllerRequest.stop_controllers.push_back(std::string("joint_4_position_controller"));
-    switchControllerRequest.stop_controllers.push_back(std::string("joint_5_position_controller"));
-    switchControllerRequest.stop_controllers.push_back(std::string("joint_6_position_controller"));
+    for(std::size_t i = 0; i < runningControllers.size(); ++i){
+        switchControllerRequest.stop_controllers.push_back(runningControllers[i]);
+    }
     switchControllerRequest.start_controllers.push_back(std::string("arm_controller"));
     switchControllerRequest.start_asap = true;
     //ontroller Manager: To switch controllers you need to specify a strictness level of
@@ -402,12 +402,15 @@ bool ControlArm::startJointTrajectoryController(std_srvs::TriggerRequest &req, s
 }
 
 bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
-    getRunningControllers();
+
+    std::vector<std::string> runningControllers; getRunningControllers(runningControllers);
     ROS_INFO("[ControlArm] Starting JointGroupPositionController...");
     controller_manager_msgs::SwitchControllerRequest switchControllerRequest;
     controller_manager_msgs::SwitchControllerResponse  switchControllerResponse;
-
-    switchControllerRequest.stop_controllers.push_back(std::string("arm_controller"));
+    // Stop running controllers
+    for(std::size_t i = 0; i < runningControllers.size(); ++i){
+        switchControllerRequest.stop_controllers.push_back(runningControllers[i]);
+    }
     switchControllerRequest.start_controllers.push_back(std::string("joint_group_position_controller"));
     switchControllerRequest.start_asap = true;
     switchControllerRequest.strictness = 2;
@@ -420,18 +423,22 @@ bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req
 
 bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
 
+    std::vector<std::string> runningControllers; getRunningControllers(runningControllers);
     ROS_INFO("[ControlArm] Starting JointPosition controllers...");
     controller_manager_msgs::SwitchControllerRequest switchControllerRequest;
     controller_manager_msgs::SwitchControllerResponse switchControllerResponse;
+    // Stop running controllers
+    for(std::size_t i = 0; i < runningControllers.size(); ++i){
+        switchControllerRequest.stop_controllers.push_back(runningControllers[i]);
+    }
     switchControllerRequest.start_controllers.push_back(std::string("joint_1_position_controller"));
     switchControllerRequest.start_controllers.push_back(std::string("joint_2_position_controller"));
     switchControllerRequest.start_controllers.push_back(std::string("joint_3_position_controller"));
     switchControllerRequest.start_controllers.push_back(std::string("joint_4_position_controller"));
     switchControllerRequest.start_controllers.push_back(std::string("joint_5_position_controller"));
     switchControllerRequest.start_controllers.push_back(std::string("joint_6_position_controller"));
-    switchControllerRequest.stop_controllers.push_back(std::string("arm_controller"));
-    switchControllerRequest.start_asap = true;
-    //ontroller Manager: To switch controllers you need to specify a strictness level of
+   switchControllerRequest.start_asap = true;
+    // Controller Manager: To switch controllers you need to specify a strictness level of
     // controller_manager_msgs::SwitchController::STRICT (2) or ::BEST_EFFORT (1). Defaulting to ::BEST_EFFORT.
     switchControllerRequest.strictness = 2;
     switchControllerRequest.timeout = 10;
