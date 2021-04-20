@@ -1,0 +1,12 @@
+<launch>
+    <arg name="servo" value="true"/>
+
+    <group if="$(arg servo)">
+        <!-- Launch an example that sends commands via C++ API. -->
+        <node name="servo_server" pkg="moveit_servo" type="pose_tracking_example" output="screen" >
+            <!-- <param name="parameter_ns" type="string" value="servo_server" /> -->
+            <rosparam command="load" file="$(find schunk_lwa4p_control)/config/schunk_servo_config.yaml" />
+            <rosparam command="load" file="$(find schunk_lwa4p_control)/config/pose_tracking_settings.yaml" />
+        </node>
+    </group>
+</launch>

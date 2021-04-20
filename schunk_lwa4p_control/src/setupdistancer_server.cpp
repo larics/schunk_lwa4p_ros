@@ -171,7 +171,7 @@ public:
                     // cmdOrientation = goal->goal_orientation;
                     //cmdOrientationPublisher.publish(cmdOrientation);
                     std_msgs::Float64 jointCmd;
-                    jointCmd.data = goal->goal_orientation;
+                    jointCmd.data = goal->goal_orientation.z;
                     cmdLwa4pJoint6Publisher.publish(jointCmd);
                     orientation_cmd_sent = true;
             }
@@ -199,6 +199,8 @@ public:
 
                     cmdRightDistancerPublisher.publish(rightDistancerCmd);
                     cmdLeftDistancerPublisher.publish(leftDistancerCmd);
+                }else {
+                    //TODO: Add service calls for closing distancer motors
                 }
             }
 
