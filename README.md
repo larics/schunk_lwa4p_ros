@@ -61,9 +61,10 @@ Currently is not used!
  - [x] Build and use OpenRAVE
  - [x] Reconfigured schunk_robots to match new joint names
  - [x] Added MoveToPose action server  
- - [ ] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
+ - [x] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
  - [ ] Create node for continuous replanning 
- 
+ - [ ] Add moveit_servo 
+ - [ ] Integrate everything and test on real robot
 # Possible improvements 
 
  - [x] Add powerline as Git submodule into schunk_ros_package, and use it if neccessary (not neccessary) 
