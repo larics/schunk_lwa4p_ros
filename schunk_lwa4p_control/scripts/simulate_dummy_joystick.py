@@ -21,8 +21,8 @@ class ServoPosePublisher():
         self.final_pose.position.x = 0.2; self.final_pose.position.y = 0.; self.final_pose.position.z = 1.1;
         self.final_pose.orientation.x = 0; self.final_pose.orientation.y = 0; self.final_pose.orientation.z = -1; self.final_pose.orientation.w = 0;
 
-        init_sleep_time = 5
-        rospy.sleep(init_sleep_time)
+        #init_sleep_time = 5
+        #rospy.sleep(init_sleep_time)
 
         self._initialize_publishers()
         rospy.loginfo("[DummyJoy] Initialized publishers...")
@@ -33,7 +33,7 @@ class ServoPosePublisher():
         self.publish_ = False
 
     def _initialize_publishers(self):
-        self.cmd_pose_pub = rospy.Publisher("/servo_server/target_pose", PoseStamped, queue_size=1)
+        self.cmd_pose_pub = rospy.Publisher("/sim_joy/target_pose", PoseStamped, queue_size=1)
 
     def _initialize_subscribers(self):
         self.start_trigger = rospy.Subscriber("/sim_joy/start_servo_sim", Bool, callback=self.start_trigger_cb)

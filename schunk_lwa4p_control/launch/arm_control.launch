@@ -6,7 +6,7 @@
     <arg name="simulate_determined_pose" value="false"/>
     <arg name="propagate_pose_ctl" value="false"/>
     <arg name="use_action_servers" value="true"/>
-    <arg name="servo" value="true"/>
+    <arg name="servo" value="false"/>
     <arg name="pose_detection_frequency" value="1"/>
     <param name="use_sim_time" value="false"/>
 

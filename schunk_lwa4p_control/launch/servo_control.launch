@@ -1,5 +1,7 @@
 <launch>
     <arg name="servo" value="true"/>
+    <arg name="sim_servo_cmd" value="true"/>
+    <arg name="servo_sim_pub_freq" value="50"/>
 
     <group if="$(arg servo)">
         <!-- Launch an example that sends commands via C++ API. -->
@@ -7,6 +9,14 @@
             <!-- <param name="parameter_ns" type="string" value="servo_server" /> -->
             <rosparam command="load" file="$(find schunk_lwa4p_control)/config/schunk_servo_config.yaml" />
             <rosparam command="load" file="$(find schunk_lwa4p_control)/config/pose_tracking_settings.yaml" />
+            <!-- that the new node ends up subscribing to /needed_topic when it thinks it is subscribing to /different_topic. !-->
+            <!-- <remap from="/different_topic" to="/needed_topic"/> !-->
+            <remap from="target_pose" to="sim_joy/target_pose"/>
+        </node>
+    </group>
+
+    <group if="$(arg sim_servo_cmd)">
+        <node pkg="schunk_lwa4p_control" type="simulate_dummy_joystick.py" name="dummy_joy_node" output="screen" args="$(arg servo_sim_pub_freq)">
         </node>
     </group>
 </launch>

@@ -36,25 +36,25 @@ planning_frame: world  # The MoveIt planning frame. Often 'base_link' or 'world'
 ## Other frames
 ee_frame_name: lwa4p_link6
 # The name of the end effector link, used to return the EE pose
-robot_link_command_frame:  world  # commands must be given in the frame of a robot link. Usually either the base or end effector
+robot_link_command_frame:  base_link  # commands must be given in the frame of a robot link. Usually either the base or end effector
 
 ## Stopping behaviour
-incoming_command_timeout:  15 # Stop servoing if X seconds elapse without a new command
+incoming_command_timeout: 150 # Stop servoing if X seconds elapse without a new command
 # If 0, republish commands forever even if the robot is stationary. Otherwise, specify num. to publish.
 # Important because ROS may drop some messages and we need the robot to halt reliably.
 num_outgoing_halt_msgs_to_publish: 4
 
 ## Configure handling of singularities and joint limits
-lower_singularity_threshold:  17  # Start decelerating when the condition number hits this (close to singularity)
-hard_stop_singularity_threshold: 30 # Stop when the condition number hits this
-joint_limit_margin: 0.2 # added as a buffer to joint limits [radians]. If moving quickly, make this larger.
+lower_singularity_threshold:  50  # Start decelerating when the condition number hits this (close to singularity)
+hard_stop_singularity_threshold: 300 # Stop when the condition number hits this
+joint_limit_margin: 0.1 # added as a buffer to joint limits [radians]. If moving quickly, make this larger.
 
 ## Topic names
 cartesian_command_in_topic: delta_twist_cmds  # Topic for incoming Cartesian twist commands
 joint_command_in_topic: delta_joint_cmds # Topic for incoming joint angle commands
 joint_topic: joint_states
 status_topic: status # Publish status to this topic
-command_out_topic: /joint_group_position_controller/command # Publish outgoing commands here
+command_out_topic: /lwa4p/joint_group_position_controller/command # Publish outgoing commands here
 
 ## Collision checking for the entire robot body
 check_collisions: true # Check collisions?
