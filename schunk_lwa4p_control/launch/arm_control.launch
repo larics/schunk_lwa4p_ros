@@ -35,6 +35,7 @@
 
     <!-- Use action servers -->
     <group if="$(arg use_action_servers)">
+
         <!-- Start GoToPoseServer -->
         <node pkg="schunk_lwa4p_control" type="gotopose_server" name="go_to_pose_server" output="screen" >
         </node>
@@ -42,6 +43,11 @@
         <!-- Start SetupDistancerServer -->
         <node pkg="schunk_lwa4p_control" type="setupdistancer_server" name="setup_distancer_server" output="screen">
         </node>
+
+        <!-- Start ServoServer -->
+        <!--node pkg="schunk_lwa4p_control" type="posetracking_server" name="pose_tracking_server" output="screen">
+        </node-->
+
     </group>
 
 

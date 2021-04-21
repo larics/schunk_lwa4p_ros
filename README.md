@@ -54,7 +54,7 @@ Currently is not used!
  - [x] Write node for dummy pose sending (send pose, reach goal, hardcode at first)
  - [x] Create action server for moveToLine, rotateTool, setUpDistancer -> moveGroup already has those
  - [x] Think of a way to decouple separator from holder after setting it up (prismatic joint, possible move arm freely, dynamically change robot description? not advised).
- - [x] Check Path Tolerance Violated (Changed dynamic joint params, error reduced) 
+ - [x] Check Path Tolerance Violated (Changed dynamic joint params, error reduced/PID params fixed) 
  - [x] Create Gazebo world with powerlines (robot model) 
  - [x] Integrate descartes cartesian planner
  - [x] use TracIK for IK
@@ -62,9 +62,11 @@ Currently is not used!
  - [x] Reconfigured schunk_robots to match new joint names
  - [x] Added MoveToPose action server  
  - [x] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
- - [ ] Create node for continuous replanning 
- - [ ] Add moveit_servo 
+ - [ ] Create node for continuous replanning (TBD)  
+ - [ ] Add moveit_servo / Action server
+ - [ ] Find PID params for servoing (pose_tracking config) 
  - [ ] Integrate everything and test on real robot
+
 # Possible improvements 
 
  - [x] Add powerline as Git submodule into schunk_ros_package, and use it if neccessary (not neccessary) 
