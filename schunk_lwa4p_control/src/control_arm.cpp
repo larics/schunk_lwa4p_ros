@@ -151,7 +151,7 @@ bool ControlArm::setPlanningScene() {
     robot_model_loader::RobotModelLoader m_robotLoader("robot_description");
     robot_model::RobotModelPtr kinematic_model = m_robotLoader.getModel();
     m_planningScenePtr = new planning_scene::PlanningScene(kinematic_model);
-
+    ROS_INFO("[ControlArm] Model frame: %s", kinematic_model->getModelFrame().c_str());
     return true; 
 }
 

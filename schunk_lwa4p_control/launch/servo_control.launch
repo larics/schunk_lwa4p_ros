@@ -1,7 +1,7 @@
 <launch>
     <arg name="servo" value="true"/>
     <arg name="sim_servo_cmd" value="true"/>
-    <arg name="servo_sim_pub_freq" value="50"/>
+    <arg name="servo_sim_pub_freq" value="10"/>
 
     <group if="$(arg servo)">
         <!-- Launch an example that sends commands via C++ API. -->
