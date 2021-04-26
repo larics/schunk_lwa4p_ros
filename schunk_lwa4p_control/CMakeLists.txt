@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
     moveit_ros_planning_interface
     moveit_ros_move_group
     moveit_msgs
+    moveit_servo
     roscpp 
     std_msgs
     tf
@@ -29,7 +30,7 @@ find_package(Eigen3 REQUIRED)
 #add_service_files()
 add_action_files(
         DIRECTORY action
-        FILES GoToPose.action SetupDistancer.action
+        FILES GoToPose.action SetupDistancer.action ServoTrackPose.action
 )
 
 generate_messages(
@@ -51,6 +52,7 @@ catkin_package(
     moveit_ros_planning_interface
     moveit_ros_move_group
     moveit_msgs
+    moveit_servo
     roscpp
     std_msgs
     tf
@@ -105,6 +107,23 @@ add_dependencies(
         setupdistancer_server
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
 )
+
+# ServoTrackPose
+add_executable(
+        servotrackpose_server
+        src/servotrackpose_server.cpp
+)
+
+target_link_libraries(
+        servotrackpose_server
+        ${catkin_LIBRARIES}
+)
+
+add_dependencies(
+        servotrackpose_server
+        ${${PROJECT_NAME}_EXPORTED_TARGETS}
+)
+
 
 ## Declare a C++ library
 add_library(

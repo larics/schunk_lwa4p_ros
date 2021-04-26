@@ -118,7 +118,7 @@ class ServoTrackPoseServer{
 
     void startTracker()
     {
-        moveit_servo::PoseTracking tracker(nh, planningSceneMonitor_);
+        moveit_servo::PoseTracking tracker(nh, planningSceneMonitor_); // PoseTracker initializes servo
     }
 
     void initializeSubscribers()
@@ -163,7 +163,7 @@ class ServoTrackPoseServer{
     void executeCB(const schunk_lwa4p_control::GoToPoseGoalConstPtr &goal)
     {
 
-        ros::Rate r(100);
+        ros::Rate r(50);
 
         ROS_INFO_STREAM_NAMED(LOGNAME, "Received new goal!");
 
@@ -174,12 +174,16 @@ class ServoTrackPoseServer{
         bool succeeded = false;
         int tRecvGoal = ros::Time::now().toSec();
 
+        // get Current pose
+        // compare with final pose
+        // publish target pose
+
         r.sleep();
 
         // Feedback publishing
-        feedback_.current_pose.position = currentPose.position;
-        feedback_.current_pose.orientation = currentPose.orientation;
-        as_.publishFeedback(feedback_);
+        // feedback_.current_pose.position = currentPose.position;
+        // feedback_.current_pose.orientation = currentPose.orientation;
+        // as_.publishFeedback(feedback_);
 
         // Goal variables
         cmdPose = static_cast<geometry_msgs::Pose>(goal->goal_pose);

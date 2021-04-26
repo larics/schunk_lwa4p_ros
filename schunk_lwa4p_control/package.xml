@@ -59,6 +59,7 @@
   <build_depend>moveit_ros_planning</build_depend>
   <build_depend>moveit_ros_planning_interface</build_depend>
   <build_depend>moveit_ros_move_group</build_depend>
+  <build_depend>moveit_servo</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>tf_conversions</build_depend>
   <build_depend>eigen_conversions</build_depend>
@@ -81,6 +82,7 @@
   <exec_depend>trajectory_msgs</exec_depend>
   <exec_depend>actionlib_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
+  <exec_depend>moveit_servo</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
