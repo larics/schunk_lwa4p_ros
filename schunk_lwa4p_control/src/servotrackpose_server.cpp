@@ -6,12 +6,13 @@
 // servo stuff
 #include <std_msgs/Int8.h>
 #include <moveit_servo/servo.h>
+#include <moveit_servo/pose_tracking.h>
 #include <moveit_servo/status_codes.h>
 #include <moveit_servo/make_shared_from_pool.h>
 // action specific stuff
 #include "schunk_lwa4p_control/ServoTrackPoseAction.h"
 
-static const std::string LOGNAME= "servo_track_pose_server"
+static const std::string LOGNAME= "servo_track_pose_server";
 
 // Class for monitoring status of moveit servo
 
@@ -41,8 +42,9 @@ private:
 
 class ServoTrackPoseServer{
     protected:
-        ros::NodeHandle nh_;
-        actionlib::SimpleActionServer<schunk_lwa4p_control::GoToPoseAction> as_;
+        ros::NodeHandle as_nh_;
+        ros::NodeHandle servo_nh_;
+        actionlib::SimpleActionServer<schunk_lwa4p_control::ServoTrackPoseAction> as_;
         std::string action_name_;
 
         // publishers
@@ -55,20 +57,27 @@ class ServoTrackPoseServer{
 
         // service clients
         ros::ServiceClient realRobotDriverInitServiceClient_;
+        ros::ServiceClient startJointGroupPositionControllerClient_;
 
         // action
-        schunk_lwa4p_control::ServoTrackPoseServerFeedback feedback_;
-        schunk_lwa4p_control::ServoTrackPoseServerResult result_;
+        schunk_lwa4p_control::ServoTrackPoseFeedback feedback_;
+        schunk_lwa4p_control::ServoTrackPoseResult result_;
         schunk_lwa4p_control::ServoTrackPoseGoal goal_;
 
         // msgs
         geometry_msgs::Pose currentPose;
         geometry_msgs::Pose cmdPose;
 
+        // planningScene
+        planning_scene_monitor::PlanningSceneMonitorPtr planningSceneMonitor_;
+
+        bool pscLoaded;
+
+
     public:
 
     ServoTrackPoseServer(std::string name) :
-        as_(nh_, name, boost::bind(&ServoTrackPoseServer::executeCB, this, _1), false),
+        as_(as_nh_, name, boost::bind(&ServoTrackPoseServer::executeCB, this, _1), false),
         action_name_(name)
     {
 
@@ -77,23 +86,27 @@ class ServoTrackPoseServer{
         {
             initializeSubscribers();
             initializePublishers();
+        }else{
+            ROS_ERROR("[ServoTrackPoseServer] Please load planning scene.");
         }
 
         //startServo();
-        startTracker();
+        startTracker(servo_nh_, planningSceneMonitor_);
+        StatusMonitor status_monitor(servo_nh_, "status");
         as_.start();
+
 
     }
 
     ~ServoTrackPoseServer(void)
     {
-        servo.setPaused(true);
+        //tracker.setPaused(true);
+        //servo.setPaused;
     }
 
 
     bool loadPlanningSceneMonitor()
     {
-        planning_scene_monitor::PlanningSceneMonitorPtr planningSceneMonitor_;
         planningSceneMonitor_ = std::make_shared<planning_scene_monitor::PlanningSceneMonitor>("robot_description");
         if (!planningSceneMonitor_->getPlanningScene())
         {
@@ -106,31 +119,32 @@ class ServoTrackPoseServer{
                 planning_scene_monitor::PlanningSceneMonitor::DEFAULT_COLLISION_OBJECT_TOPIC,
                 planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_WORLD_TOPIC,
                 false /*skip octomap monitor*/);
-        planningSceneMonior_->startStateMonitor();
+        planningSceneMonitor_->startStateMonitor();
         return true;
     }
 
-    void startServo()
+    void startServo(ros::NodeHandle nh, planning_scene_monitor::PlanningSceneMonitorPtr ps)
     {
         moveit_servo::Servo servo(nh, planningSceneMonitor_);
         servo.start();
     }
 
-    void startTracker()
+    void startTracker(ros::NodeHandle nh, planning_scene_monitor::PlanningSceneMonitorPtr ps)
     {
-        moveit_servo::PoseTracking tracker(nh, planningSceneMonitor_); // PoseTracker initializes servo
+        moveit_servo::PoseTracking tracker(nh, ps); // PoseTracker initializes servo
+        // check which nodes initialize tracker and under which name.
     }
 
     void initializeSubscribers()
     {
-        currentPoseSubscriber = nh_.subscribe<geometry_msgs::Pose>("/control_arm_node/tool/current_pose", 10, &GoToPoseActionServer::currentPoseCB, this);
+        currentPoseSubscriber = as_nh_.subscribe<geometry_msgs::Pose>("/control_arm_node/tool/current_pose", 10, &ServoTrackPoseServer::currentPoseCB, this);
 
     }
 
     void initializePublishers()
     {
-        twistStampedPublisher = nh_.advertise<geometry_msgs::TwistStamped>("/control_arm_node/arm/command/pose", 1);
-        targetPosePublisher = nh_.advertise<geometry_msgs::PoseStamped>("/target_pose", 1, true);
+        targetPosePublisher = servo_nh_.advertise<geometry_msgs::PoseStamped>("/target_pose", 1, true);
+        // namespace stuff?
 
     }
 
@@ -159,24 +173,31 @@ class ServoTrackPoseServer{
         return dist;
     }
 
+    //float checkError(cmdPose, currentPose)
+    //{
+    //
+    //}
+
     // TODO: Fix transition between state 2 and 3
-    void executeCB(const schunk_lwa4p_control::GoToPoseGoalConstPtr &goal)
+    void executeCB(const schunk_lwa4p_control::ServoTrackPoseGoalConstPtr &goal)
     {
 
         ros::Rate r(50);
 
         ROS_INFO_STREAM_NAMED(LOGNAME, "Received new goal!");
 
+
         bool sentCmd = false;
         bool elapsed = false;
         bool reached = false;
         bool preempted = false;
         bool succeeded = false;
+        bool executable = true;
         int tRecvGoal = ros::Time::now().toSec();
 
-        // get Current pose
-        // compare with final pose
-        // publish target pose
+        // Start JointGroupPositionControllers
+        std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
+        ROS_DEBUG_STREAM("[ServoTrackPoseServer] Starting joint group position controller.");
 
         r.sleep();
 
@@ -186,26 +207,49 @@ class ServoTrackPoseServer{
         // as_.publishFeedback(feedback_);
 
         // Goal variables
-        cmdPose = static_cast<geometry_msgs::Pose>(goal->goal_pose);
+        cmdPose = static_cast<geometry_msgs::Pose>(goal->final_pose);
         float epsilon = goal->minimum_deviation;
         int timeout = goal->timeout_sec;
+        int n_segments = 0;
+
+        // More segments should result with smoother motion probably
+        if (goal->n_segments != 0){
+            n_segments = goal->n_segments;
+        }else if(goal->euclid_per_segment != 0){
+            n_segments = checkDist(cmdPose, currentPose)/goal->euclid_per_segment;
+        }else{
+            n_segments = 1000;
+        }
+        ROS_DEBUG_STREAM("[ServoTrackPoseServer] n_segments:" << n_segments);
+
+        // TWO operating modes (static -> goal pose is fixed)
+        //                     (dynamic -> goal pose is variable)
+        // defined in goal -> num_segments should be constant
+        float x_error = cmdPose.position.x - currentPose.position.x;
+        float y_error = cmdPose.position.y - currentPose.position.y;
+        float z_error = cmdPose.position.z - currentPose.position.z;
+
+        float x_increment = x_error / n_segments;
+        float y_increment = y_error / n_segments;
+        float z_increment = z_error / n_segments;
+
+        float estimated_duration = n_segments * r.cycleTime().toSec();
+
+        if(estimated_duration > timeout){
+            executable = false;
+        }
 
         // while not Final pose reached
-        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed && !preempted){
+        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed && !preempted && executable) {
             // Check timeout condition
+            // publishes target pose based on some params :)
+            //
             r.sleep();
             elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
-            // Send to pose
-            if(!sentCmd){
-                cmdPosePublisher.publish(cmdPose);
-                sentCmd = true;
-                ROS_INFO("[GoToPoseServer] Sending command!");
-            }
 
-            // Check preemption
             if ( as_.isPreemptRequested() || !ros::ok() )
             {
-                ROS_INFO("[GoToPoseServer] Preempted");
+                ROS_INFO("[ServoTrackPoseServer] Preempted");
                 // set the action state to preempted
                 as_.setPreempted();
                 reached = false;
@@ -214,35 +258,23 @@ class ServoTrackPoseServer{
             }
         }
 
-        // Should check for drifting (stop server if something drifts off, maybe difference between c
-        if(checkDist(cmdPose, currentPose) < epsilon){
-            reached = true;
-        }
-
-        result_.reached_pose = reached;
-        if (elapsed && !preempted)
+        if (elapsed && !preempted && !executable)
         {
             ROS_INFO("[GoToPoseServer] Timeout reached: ABORTED");
             as_.setAborted(result_);
         }
-        if (!succeeded && !preempted && reached)
-        {
-            succeeded = true;
-            result_.reached_pose = true;
-            as_.setSucceeded(result_);
 
-            ROS_INFO("[GoToPoseServer] Reached wanted pose: SUCCEEDDED!");
-        }
 
     }
 };
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "gotopose");
+    ros::init(argc, argv, "servotrackpose");
 
-    GoToPoseActionServer gotopose("go_to_pose");
-    ros::spin();
+    ServoTrackPoseServer servotrackpose("servo_track_pose");
+    ros::AsyncSpinner spinner(8);
+    spinner.start();
     return 0;
 
 }
