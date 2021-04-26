@@ -1,0 +1,12 @@
+# Goal
+geometry_msgs/Pose final_pose
+int32 timeout_sec
+int32 n_segments
+int32 euclid_per_segment
+float32 min_deviation
+---
+# Result
+bool reached_pose
+---
+# Feedback
+geometry_msgs/Pose current_pose
