@@ -6,7 +6,7 @@
     <arg name="simulate_determined_pose" value="false"/>
     <arg name="propagate_pose_ctl" value="false"/>
     <arg name="use_action_servers" value="true"/>
-    <arg name="servo" value="false"/>
+    <arg name="servo" value="true"/>
     <arg name="pose_detection_frequency" value="1"/>
     <param name="use_sim_time" value="false"/>
 
@@ -19,12 +19,9 @@
     <!-- Launch servo node -->
     <group if="$(arg servo)">
 
-        <!-- Launch an example that sends commands via C++ API. -->
-        <node name="servo_server" pkg="moveit_servo" type="pose_tracking_example" output="screen" >
-        <!-- <param name="parameter_ns" type="string" value="servo_server" /> -->
-            <rosparam command="load" file="$(find schunk_lwa4p_control)/config/schunk_servo_config.yaml" />
-            <rosparam command="load" file="$(find schunk_lwa4p_control)/config/pose_tracking_settings.yaml" />
-        </node>
+        <rosparam ns="servo_server" command="load" file="$(find schunk_lwa4p_control)/config/schunk_servo_config.yaml" />
+        <rosparam ns="servo_server" command="load" file="$(find schunk_lwa4p_control)/config/pose_tracking_settings.yaml" />
+
     </group>
 
     <!-- Simulate magentic pose detection publisher -->
@@ -36,6 +33,8 @@
     <!-- Use action servers -->
     <group if="$(arg use_action_servers)">
 
+
+
         <!-- Start GoToPoseServer -->
         <node pkg="schunk_lwa4p_control" type="gotopose_server" name="go_to_pose_server" output="screen" >
         </node>
@@ -44,9 +43,10 @@
         <node pkg="schunk_lwa4p_control" type="setupdistancer_server" name="setup_distancer_server" output="screen">
         </node>
 
-        <!-- Start ServoServer -->
-        <!--node pkg="schunk_lwa4p_control" type="posetracking_server" name="pose_tracking_server" output="screen">
-        </node-->
+
+        <!-- Start ServoTrackPoseServer -->
+        <node pkg="schunk_lwa4p_control" type="servotrackpose_server" name="servo_track_pose_server" output="screen">
+        </node>
 
     </group>
 

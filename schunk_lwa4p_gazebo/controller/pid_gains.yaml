@@ -2,12 +2,12 @@ lwa4p:
   gazebo_ros_control:
     # If you remove all pid's they are perfect in simulation which is good enough for now
     pid_gains:
-      lwa4p_joint1: {p: 1000.0, i: 0.01, d: 0.001}
-      lwa4p_joint2: {p: 800.0, i: 0.01, d: 0.001}
-      lwa4p_joint3: {p: 600.0, i: 0.01, d: 0.001}
-      lwa4p_joint4: {p: 400.0, i: 0.01, d: 0.001}
-      lwa4p_joint5: {p: 200.0, i: 0.01, d: 0.001}
-      lwa4p_joint6: {p: 100.0, i: 0.01, d: 0.001}
+      lwa4p_joint1: {p: 2000.0, i: 0.01, d: 0.001}
+      lwa4p_joint2: {p: 2000.0, i: 0.01, d: 0.001}
+      lwa4p_joint3: {p: 2000.0, i: 0.01, d: 0.001}
+      lwa4p_joint4: {p: 2000.0, i: 0.01, d: 0.001}
+      lwa4p_joint5: {p: 2000.0, i: 0.01, d: 0.001}
+      lwa4p_joint6: {p: 2000.0, i: 0.01, d: 0.001}
       separator_base_main_joint: {p: 10.0, i: 0.0, d: 0.0}
       separator_main_right_head_joint: {p: 10.0, i: 0.0, d: 0.0}
       separator_main_left_head_joint: {p: 10.0, i: 0.0, d: 0.0}
