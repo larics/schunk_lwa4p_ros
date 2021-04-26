@@ -147,7 +147,7 @@ class ServoTrackPoseServer{
 
     void initializePublishers()
     {
-        targetPosePublisher = servo_nh_.advertise<geometry_msgs::PoseStamped>("/target_pose", 1, true);
+        targetPosePublisher = servo_nh_.advertise<geometry_msgs::PoseStamped>("/servo_server/target_pose", 1, true);
         // namespace stuff?
 
     }
@@ -198,7 +198,7 @@ class ServoTrackPoseServer{
         ROS_INFO("[ServoTrackPoseServer] Initialized tracker");
         StatusMonitor status_monitor(servo_nh_, "status");
 
-        ROS_INFO("[ServoTrackPoseServer] Initialized StatusMonitor"); 
+        ROS_INFO("[ServoTrackPoseServer] Initialized StatusMonitor");
 
         bool sentCmd = false;
         bool elapsed = false;
@@ -210,7 +210,7 @@ class ServoTrackPoseServer{
 
         // Start JointGroupPositionControllers
         std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
-        ROS_DEBUG_STREAM("[ServoTrackPoseServer] Starting joint group position controller.");
+        ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
 
         r.sleep();
 
@@ -233,7 +233,7 @@ class ServoTrackPoseServer{
         }else{
             n_segments = 1000;
         }
-        ROS_DEBUG_STREAM("[ServoTrackPoseServer] n_segments:" << n_segments);
+        ROS_INFO_STREAM("[ServoTrackPoseServer] n_segments:" << n_segments);
 
         // TWO operating modes (static -> goal pose is fixed and increments are recalculated at every step)
         //                     (dynamic -> goal pose is variable)
@@ -246,10 +246,13 @@ class ServoTrackPoseServer{
         float y_increment = y_error / n_segments;
         float z_increment = z_error / n_segments;
 
+        ROS_INFO_STREAM("[ServoTrackPoseServer] r.cycleTime().toSec() " << r.cycleTime().toSec());
         float estimated_duration = n_segments * r.cycleTime().toSec();
+        ROS_INFO_STREAM("[ServoTrackPoseServer] est duration " << estimated_duration);
 
         if(estimated_duration > timeout){
             executable = false;
+            ROS_INFO("[ServoTrackPoseServer] Not executable, timeout. ");
         }
 
         Eigen::Vector3d lin_tol {0.01, 0.01, 0.01};
@@ -276,10 +279,13 @@ class ServoTrackPoseServer{
                 [&tracker, &lin_tol, &rot_tol] {tracker.moveToPose(lin_tol, rot_tol, 0.1);});
 
         // while not Final pose reached
-        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed && !preempted && executable) {
+        // Added reached instead of check distance
+        while (reached > epsilon && !elapsed && !preempted && executable) {
             // Check timeout condition
             // publishes target pose based on some params :)
-            //
+
+
+            ROS_INFO("[ServoTrackPoseServer] Entered loop.");
 
             ros::Rate loop_rate(50);
             for (size_t i = 0; i < n_segments; ++i)
@@ -307,20 +313,37 @@ class ServoTrackPoseServer{
 
             }
 
+            // Notes:
+            // No delta twist cmd
+
             //TODO: Add condition check
             reached = true;
 
-            //tracker.stopMotion();
+            tracker.stopMotion();
+            move_to_pose_thread.join();
+            // caused error before, now not? WTF?
+
+            // moved up! thread fault happened otherwise.
             //move_to_pose_thread.join();
 
 
         }
 
-        if (elapsed && !preempted && !executable)
+        if (elapsed && !preempted || !executable)
         {
-            ROS_INFO("[GoToPoseServer] Timeout reached: ABORTED");
+            ROS_INFO("[ServoTrackPoseServer] Timeout reached: ABORTED");
             as_.setAborted(result_);
         }
+
+        if(!succeeded && !preempted && reached)
+        {
+            succeeded = true;
+            result_.reached_pose = true;
+            as_.setSucceeded(result_);
+            ROS_INFO("[ServoTrackPoseServer] Reached wanted pose: SUCCEEDDED!");
+        }
+
+
 
 
     }
