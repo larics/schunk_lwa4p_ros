@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <thread>
 #include <cmath>
 #include <actionlib/server/simple_action_server.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -186,7 +187,7 @@ class ServoTrackPoseServer{
     void executeCB(const schunk_lwa4p_control::ServoTrackPoseGoalConstPtr &goal)
     {
 
-        ros::Rate r(50);
+        ros::Rate r(1);
 
         ROS_INFO_STREAM_NAMED(LOGNAME, "Received new goal!");
 
@@ -275,12 +276,14 @@ class ServoTrackPoseServer{
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
 
-        std::thread move_to_pose_thread(
-                [&tracker, &lin_tol, &rot_tol] {tracker.moveToPose(lin_tol, rot_tol, 0.1);});
+        //std::thread move_to_pose_thread(
+        //        [&tracker, &lin_tol, &rot_tol] {tracker.moveToPose(lin_tol, rot_tol, 0.1);});
+
+
 
         // while not Final pose reached
         // Added reached instead of check distance
-        while (reached > epsilon && !elapsed && !preempted && executable) {
+        while (!reached && !elapsed && !preempted && executable) {
             // Check timeout condition
             // publishes target pose based on some params :)
 
@@ -290,6 +293,7 @@ class ServoTrackPoseServer{
             ros::Rate loop_rate(50);
             for (size_t i = 0; i < n_segments; ++i)
             {
+                // ROS_INFO_THROTTLE(0.1, "Running loop...");
                 // Modify the pose target a little bit each cycle
                 // This is a dynamic pose target
                 target_pose.pose.position.z += z_increment;
@@ -298,8 +302,11 @@ class ServoTrackPoseServer{
                 target_pose.header.stamp = ros::Time::now();
                 targetPosePublisher.publish(target_pose);
 
+                tracker.moveToPose(lin_tol, rot_tol, 0.1);
+
                 loop_rate.sleep();
                 elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
+                ROS_INFO_STREAM("[ServoTrackPoseServer] elapsed is: " << elapsed);
 
                 if ( as_.isPreemptRequested() || !ros::ok() )
                 {
@@ -309,6 +316,8 @@ class ServoTrackPoseServer{
                     reached = false;
                     preempted = true;
                     elapsed = false;
+                    tracker.stopMotion();
+                    tracker.resetTargetPose();
                 }
 
             }
@@ -318,9 +327,14 @@ class ServoTrackPoseServer{
 
             //TODO: Add condition check
             reached = true;
-
             tracker.stopMotion();
-            move_to_pose_thread.join();
+            tracker.resetTargetPose();
+            //if(move_to_pose_thread.joinable()){
+            //    move_to_pose_thread.join();
+            //}
+
+
+            // https://stackoverflow.com/questions/13999432/stdthread-terminate-called-without-an-active-exception-dont-want-to-joi
             // caused error before, now not? WTF?
 
             // moved up! thread fault happened otherwise.
@@ -342,6 +356,7 @@ class ServoTrackPoseServer{
             as_.setSucceeded(result_);
             ROS_INFO("[ServoTrackPoseServer] Reached wanted pose: SUCCEEDDED!");
         }
+
 
 
 
