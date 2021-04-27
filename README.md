@@ -14,7 +14,7 @@ If you want to use robot from simulation run one of the following commands:
 roslaunch schunk_lwa4p_gazebo lwa4p_gazebo_moveit.launch
 ```
 
-Lanuch simulation with robotic arm and powerline model:
+Launch simulation with robotic arm and powerline model:
 ```
 roslaunch schunk_lwa4p_gazebo lwa4p_powerline_gazebo_moveit.launch
 ```
@@ -23,6 +23,17 @@ Launch real robot:
 ```
 roslaunch schunk_lwa4p_gazebo lwa4p_real_robot_moveit.launch
 ```
+
+# What is going on after launching 
+
+Following nodes are started: 
+ * control_arm_node --> robot_arm_control 
+ * go_to_pose_server --> action server go_to_pose (send arm to certain pose in world)
+ * setup_distancer_server --> action server setup_distancer (execute different actions to set up distancer on powerline) 
+ * servo_track_pose_server --> action server servo_track_pose (use robotic arm servoing for following target pose) 
+ * pose_tracking --> moveit_servo node for generating twist ee command based on 4 PIDs output
+ * servo --> moveit_servo node for generating joint commands based on ee twist 
+ * move_group --> moveit_node for manipulating robotic arm 
 
 # System requirements 
 Following packages have been used with ROS melodic, Gazebo 11 on Ubuntu 18.04. 
@@ -52,7 +63,7 @@ Currently is not used!
  - [x] Init separator distancer in separator holder
  - [x] Add powerline to robot model for collisions
  - [x] Write node for dummy pose sending (send pose, reach goal, hardcode at first)
- - [x] Create action server for moveToLine, rotateTool, setUpDistancer -> moveGroup already has those
+ - [x] Create action server for GoToPoseServer, setUpDistancerServer -> moveGroup already has those
  - [x] Think of a way to decouple separator from holder after setting it up (prismatic joint, possible move arm freely, dynamically change robot description? not advised).
  - [x] Check Path Tolerance Violated (Changed dynamic joint params, error reduced/PID params fixed) 
  - [x] Create Gazebo world with powerlines (robot model) 
@@ -62,9 +73,10 @@ Currently is not used!
  - [x] Reconfigured schunk_robots to match new joint names
  - [x] Added MoveToPose action server  
  - [x] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
- - [ ] Create node for continuous replanning (TBD)  
- - [ ] Add moveit_servo / Action server
+ - [ ] Create node for continuous replanning (TBD) 
+ - [x] Add moveit_servo / Action server
  - [ ] Find PID params for servoing (pose_tracking config) 
+ - [ ] Check actions (maybe add few params/conditions, depending on real or simulated robot) 
  - [ ] Integrate everything and test on real robot
 
 # Possible improvements 

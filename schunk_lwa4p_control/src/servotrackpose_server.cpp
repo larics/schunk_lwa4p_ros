@@ -255,7 +255,7 @@ class ServoTrackPoseServer{
                 target_pose.header.stamp = ros::Time::now();
                 targetPosePublisher.publish(target_pose);
 
-                // Create ee_
+                // Create e
                 tracker.moveToPose(lin_tol, rot_tol, 0.1);
 
                 tracker_rate.sleep();
