@@ -128,7 +128,7 @@ class ServoTrackPoseServer{
     {
         ros::NodeHandle empty_nh_("");
         // Not Good! Node name for control_arm_node is hardcoded, have that in mind
-        startJointGroupPositionControllerClient_ = empty_nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_group_position_controllers");
+        startJointGroupPositionControllerClient_ = empty_nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_group_position_controller");
         startJointGroupPositionControllerClient_.waitForExistence();
 
     }
@@ -241,7 +241,6 @@ class ServoTrackPoseServer{
 
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
-
 
         // while not Final pose reached
         // Added reached instead of check distance
