@@ -48,16 +48,10 @@ class ServoTrackPoseServer{
         actionlib::SimpleActionServer<schunk_lwa4p_control::ServoTrackPoseAction> as_;
         std::string action_name_;
 
-        // publishers
-        ros::Publisher twistStampedPublisher;
-        ros::Publisher jointServoPublisher;
         ros::Publisher targetPosePublisher;
-
-        // subscribers
         ros::Subscriber currentPoseSubscriber;
 
         // service clients
-        ros::ServiceClient realRobotDriverInitServiceClient_;
         ros::ServiceClient startJointGroupPositionControllerClient_;
 
         // action
@@ -71,13 +65,7 @@ class ServoTrackPoseServer{
 
         // planningScene
         planning_scene_monitor::PlanningSceneMonitorPtr planningSceneMonitor_;
-
-        // pose tracking interface
-        //moveit_servo::PoseTracking tracker;
-
-
         bool pscLoaded = false;
-
 
     public:
 
@@ -94,19 +82,17 @@ class ServoTrackPoseServer{
         }
         initializeSubscribers();
         initializePublishers();
+        initializeServices();
         //startServo();
         //moveit_servo::PoseTracking tracker(servo_nh_, planningSceneMonitor_);
         //startTracker(servo_nh_, planningSceneMonitor_);
         as_.start();
         ROS_INFO("[ServoTrackPoseServer] Starting...");
-
-
     }
 
     ~ServoTrackPoseServer(void)
     {
-        //tracker.setPaused(true);
-        //servo.setPaused;
+        // TODO: Check how looks descrutor of typical action_server
     }
 
 
@@ -128,28 +114,22 @@ class ServoTrackPoseServer{
         return true;
     }
 
-    void startServo(ros::NodeHandle nh, planning_scene_monitor::PlanningSceneMonitorPtr ps)
-    {
-        moveit_servo::Servo servo(nh, planningSceneMonitor_);
-        servo.start();
-    }
-
-    //void startTracker(ros::NodeHandle nh, planning_scene_monitor::PlanningSceneMonitorPtr ps)
-    //{
-    //    moveit_servo::PoseTracking tracker(nh, ps); // PoseTracker initializes servo
-    // check which nodes initialize tracker and under which name.
-    // }
-
     void initializeSubscribers()
     {
         currentPoseSubscriber = as_nh_.subscribe<geometry_msgs::Pose>("/control_arm_node/tool/current_pose", 10, &ServoTrackPoseServer::currentPoseCB, this);
-
     }
 
     void initializePublishers()
     {
         targetPosePublisher = servo_nh_.advertise<geometry_msgs::PoseStamped>("/servo_server/target_pose", 1, true);
-        // namespace stuff?
+    }
+
+    void initializeServices()
+    {
+        ros::NodeHandle empty_nh_("");
+        // Not Good! Node name for control_arm_node is hardcoded, have that in mind
+        startJointGroupPositionControllerClient_ = empty_nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_group_position_controllers");
+        startJointGroupPositionControllerClient_.waitForExistence();
 
     }
 
@@ -168,6 +148,7 @@ class ServoTrackPoseServer{
         float y_dist = pow((pose1.position.y - pose2.position.y), 2);
         float z_dist = pow((pose1.position.z - pose2.position.z), 2);
 
+        // Check quaternion difference from moveit_servo!
         float x_ang_dist = pow((pose1.orientation.x - pose2.orientation.x), 1/2);
         float y_ang_dist = pow((pose1.orientation.y - pose2.orientation.y), 1/2);
         float z_ang_dist = pow((pose1.orientation.z - pose2.orientation.z), 1/2);
@@ -178,55 +159,46 @@ class ServoTrackPoseServer{
         return dist;
     }
 
-    //float checkError(cmdPose, currentPose)
-    //{
-    //
-    //}
-
     // TODO: Fix transition between state 2 and 3
     void executeCB(const schunk_lwa4p_control::ServoTrackPoseGoalConstPtr &goal)
     {
-
         ros::Rate r(1);
-
-        ROS_INFO_STREAM_NAMED(LOGNAME, "Received new goal!");
+        ROS_INFO("[ServoTrackPoseServer] Recieved new goal!");
 
         // Start PoseTracking node upon recieving goal
         ros::NodeHandle servo_nh_("servo_server");
         ROS_INFO("[ServoTrackPoseServer] Initialized servo_nh");
 
         moveit_servo::PoseTracking tracker(servo_nh_, planningSceneMonitor_);
-        ROS_INFO("[ServoTrackPoseServer] Initialized tracker");
         StatusMonitor status_monitor(servo_nh_, "status");
-
-        ROS_INFO("[ServoTrackPoseServer] Initialized StatusMonitor");
-
-        bool sentCmd = false;
-        bool elapsed = false;
-        bool reached = false;
-        bool preempted = false;
-        bool succeeded = false;
-        bool executable = true;
+        bool elapsed = false; // execution timeout flag
+        bool reached = false; // reached wanted pose with servoing
+        bool preempted = false; // as has been preempted
+        bool executable = true; // if execution_time > timeout -> false
         int tRecvGoal = ros::Time::now().toSec();
-
-        // Start JointGroupPositionControllers
-        std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
-        ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
-
-        r.sleep();
-
-        // Feedback publishing
-        // feedback_.current_pose.position = currentPose.position;
-        // feedback_.current_pose.orientation = currentPose.orientation;
-        // as_.publishFeedback(feedback_);
 
         // Goal variables
         cmdPose = static_cast<geometry_msgs::Pose>(goal->final_pose);
         float epsilon = goal->minimum_deviation;
         int timeout = goal->timeout_sec;
-        int n_segments = 0;
+        int tracker_freq = goal->cmd_freq;
+        int n_segments = goal->n_segments;
+        Eigen::Vector3d lin_tol {0.01, 0.01, 0.01}; double rot_tol = 0.1; // Add this to goal if neccessary
 
-        // More segments should result with smoother motion probably
+        // Start JointGroupPositionController
+        std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
+        ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
+
+        r.sleep();
+        // TODO: Move
+        // Feedback publishing --> What would be informative feedback? x_error, y_error, z_error?
+        // euclidean distance to goal,
+        // feedback_ = SchunkLwa4pControl::ServoTrackPose.action
+        // feedback_.current_pose.position = currentPose.position;
+        // feedback_.current_pose.orientation = currentPose.orientation;
+        // as_.publishFeedback(feedback_);
+
+        // More segments should result with smoother motion probably -> send it to method
         if (goal->n_segments != 0){
             n_segments = goal->n_segments;
         }else if(goal->euclid_per_segment != 0){
@@ -234,30 +206,24 @@ class ServoTrackPoseServer{
         }else{
             n_segments = 1000;
         }
-        ROS_INFO_STREAM("[ServoTrackPoseServer] n_segments:" << n_segments);
-
         // TWO operating modes (static -> goal pose is fixed and increments are recalculated at every step)
         //                     (dynamic -> goal pose is variable)
-        // defined in goal -> num_segments should be constant
+        // defined in goal -> num_segments should be constant -> STATIC SERVO
         float x_error = cmdPose.position.x - currentPose.position.x;
         float y_error = cmdPose.position.y - currentPose.position.y;
         float z_error = cmdPose.position.z - currentPose.position.z;
-
+        // STATIC INCREMENT -> STATIC SERVO
         float x_increment = x_error / n_segments;
         float y_increment = y_error / n_segments;
         float z_increment = z_error / n_segments;
 
-        ROS_INFO_STREAM("[ServoTrackPoseServer] r.cycleTime().toSec() " << r.cycleTime().toSec());
-        float estimated_duration = n_segments * r.cycleTime().toSec();
-        ROS_INFO_STREAM("[ServoTrackPoseServer] est duration " << estimated_duration);
-
+        // Setup tracker_rate && check if estimated_duration > timeout to abort;
+        if (tracker_freq == 0) tracker_freq = 50; ros::Rate tracker_rate(tracker_freq);
+        float estimated_duration = n_segments * tracker_rate.cycleTime().toSec();
         if(estimated_duration > timeout){
             executable = false;
             ROS_INFO("[ServoTrackPoseServer] Not executable, timeout. ");
         }
-
-        Eigen::Vector3d lin_tol {0.01, 0.01, 0.01};
-        double rot_tol = 0.1;
 
         // Get current ee pose
         geometry_msgs::TransformStamped current_ee_tf;
@@ -276,37 +242,28 @@ class ServoTrackPoseServer{
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
 
-        //std::thread move_to_pose_thread(
-        //        [&tracker, &lin_tol, &rot_tol] {tracker.moveToPose(lin_tol, rot_tol, 0.1);});
-
-
 
         // while not Final pose reached
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted && executable) {
-            // Check timeout condition
-            // publishes target pose based on some params :)
 
-
-            ROS_INFO("[ServoTrackPoseServer] Entered loop.");
-
-            ros::Rate loop_rate(50);
             for (size_t i = 0; i < n_segments; ++i)
             {
-                // ROS_INFO_THROTTLE(0.1, "Running loop...");
                 // Modify the pose target a little bit each cycle
-                // This is a dynamic pose target
                 target_pose.pose.position.z += z_increment;
                 target_pose.pose.position.y += y_increment;
                 target_pose.pose.position.x += x_increment;
                 target_pose.header.stamp = ros::Time::now();
                 targetPosePublisher.publish(target_pose);
 
+                // Create ee_
                 tracker.moveToPose(lin_tol, rot_tol, 0.1);
 
-                loop_rate.sleep();
+                tracker_rate.sleep();
+
+                // Break loop if timeout elapsed
                 elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
-                ROS_INFO_STREAM("[ServoTrackPoseServer] elapsed is: " << elapsed);
+                if (elapsed) break;
 
                 if ( as_.isPreemptRequested() || !ros::ok() )
                 {
@@ -320,46 +277,28 @@ class ServoTrackPoseServer{
                     tracker.resetTargetPose();
                 }
 
+                if (checkDist(currentPose, cmdPose) < epsilon); reached = true;
             }
 
-            // Notes:
-            // No delta twist cmd
-
-            //TODO: Add condition check
-            reached = true;
             tracker.stopMotion();
             tracker.resetTargetPose();
-            //if(move_to_pose_thread.joinable()){
-            //    move_to_pose_thread.join();
-            //}
-
-
-            // https://stackoverflow.com/questions/13999432/stdthread-terminate-called-without-an-active-exception-dont-want-to-joi
-            // caused error before, now not? WTF?
-
-            // moved up! thread fault happened otherwise.
-            //move_to_pose_thread.join();
-
 
         }
 
-        if (elapsed && !preempted || !executable)
+        // Set as to preempted
+        if ((elapsed && !preempted) || !executable)
         {
             ROS_INFO("[ServoTrackPoseServer] Timeout reached: ABORTED");
             as_.setAborted(result_);
         }
 
-        if(!succeeded && !preempted && reached)
+        // Set as to succeeded
+        if(!preempted && reached)
         {
-            succeeded = true;
             result_.reached_pose = true;
             as_.setSucceeded(result_);
             ROS_INFO("[ServoTrackPoseServer] Reached wanted pose: SUCCEEDDED!");
         }
-
-
-
-
 
     }
 };
