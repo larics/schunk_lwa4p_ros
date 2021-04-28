@@ -162,6 +162,21 @@ class ServoTrackPoseServer{
         return dist;
     }
 
+    float checkError(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2)
+
+    {
+        float x_err = pose1.position.x - pose2.position.x;
+        float y_err = pose1.position.y - pose2.position.y;
+        float z_err = pose1.position.z - pose2.position.z;
+
+        ROS_INFO_STREAM("x_err: " << x_err << "y_err:" << y_err << "z_err" << z_err);
+
+        float abs_err_sum = std::abs(x_err) + std::abs(y_err) + std::abs(z_err);
+
+        return abs_err_sum/3;
+
+    }
+
     // TODO: Fix transition between state 2 and 3
     void executeCB(const schunk_lwa4p_control::ServoTrackPoseGoalConstPtr &goal)
     {
@@ -173,7 +188,7 @@ class ServoTrackPoseServer{
         ROS_INFO("[ServoTrackPoseServer] Initialized servo_nh");
 
         moveit_servo::PoseTracking tracker(servo_nh_, planningSceneMonitor_);
-        StatusMonitor status_monitor(servo_nh_, "status");
+        StatusMonitor status_monitor(servo_nh_, "servo_status");
         bool elapsed = false; // execution timeout flag
         bool reached = false; // reached wanted pose with servoing
         bool preempted = false; // as has been preempted
@@ -182,7 +197,7 @@ class ServoTrackPoseServer{
 
         // Goal variables
         cmdPose = static_cast<geometry_msgs::Pose>(goal->final_pose);
-        float epsilon = goal->minimum_deviation;
+        float epsilon = goal->max_err_per_axis;
         int timeout = goal->timeout_sec;
         int tracker_freq = goal->cmd_freq;
         int n_segments = goal->n_segments;
@@ -209,6 +224,9 @@ class ServoTrackPoseServer{
         }else{
             n_segments = 1000;
         }
+
+        ROS_INFO_STREAM("cmdPose is: " << cmdPose);
+        ROS_INFO_STREAM("currentPose is: " << currentPose);
         // TWO operating modes (static -> goal pose is fixed and increments are recalculated at every step)
         //                     (dynamic -> goal pose is variable)
         // defined in goal -> num_segments should be constant -> STATIC SERVO
@@ -232,6 +250,8 @@ class ServoTrackPoseServer{
         geometry_msgs::TransformStamped current_ee_tf;
         tracker.getCommandFrameTransform(current_ee_tf);
 
+        tracker.resetTargetPose();
+
         // Create target pose
         geometry_msgs::PoseStamped target_pose;
         target_pose.header.frame_id = current_ee_tf.header.frame_id;
@@ -240,17 +260,10 @@ class ServoTrackPoseServer{
         target_pose.pose.position.z = current_ee_tf.transform.translation.z;
         target_pose.pose.orientation = current_ee_tf.transform.rotation;
 
-        tracker.resetTargetPose();
 
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
 
-        // Run the pose tracking in a new thread
-        //std::thread move_to_pose_thread(
-        //        [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */); });
-        //std::thread stop_motion()
-
-        // while not Final pose reached
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted && executable) {
 
@@ -268,10 +281,6 @@ class ServoTrackPoseServer{
                 target_pose.header.stamp = ros::Time::now();
                 targetPosePublisher.publish(target_pose);
 
-
-
-                // Create e
-
                 tracker_rate.sleep();
 
                 // Break loop if timeout elapsed
@@ -287,13 +296,17 @@ class ServoTrackPoseServer{
                     preempted = true;
                     elapsed = false;
                     tracker.stopMotion();
-                    //tracker.resetTargetPose();
-                    // this represents problem! How to terminate thread without active exception?!
                     move_to_pose_thread.join();
                 }
 
-                if (checkDist(currentPose, cmdPose) < epsilon); reached = true;
-                //ROS_INFO("looping...");
+                float euclideanDistance = checkDist(currentPose, cmdPose);
+                float absError = checkError(currentPose, cmdPose);
+                ROS_INFO_STREAM("current dist is: " << euclideanDistance);
+                ROS_INFO_STREAM("current err is: " << absError);
+
+                if (absError < epsilon){
+                    reached = true;
+                }
             }
             tracker.stopMotion();
             move_to_pose_thread.join();

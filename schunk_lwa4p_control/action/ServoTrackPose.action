@@ -4,7 +4,7 @@ int32 timeout_sec
 int32 n_segments
 int32 euclid_per_segment
 int32 cmd_freq
-float32 minimum_deviation
+float32 max_err_per_axis
 ---
 # Result
 bool reached_pose
