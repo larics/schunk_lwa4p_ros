@@ -67,6 +67,9 @@ class ServoTrackPoseServer{
         planning_scene_monitor::PlanningSceneMonitorPtr planningSceneMonitor_;
         bool pscLoaded = false;
 
+        // thread
+        std::thread move_to_pose_thread;
+
     public:
 
     ServoTrackPoseServer(std::string name) :
@@ -242,12 +245,22 @@ class ServoTrackPoseServer{
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
 
+        // Run the pose tracking in a new thread
+        //std::thread move_to_pose_thread(
+        //        [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */); });
+        //std::thread stop_motion()
+
         // while not Final pose reached
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted && executable) {
 
+            std::thread move_to_pose_thread(
+                    [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
+                    });
+
             for (size_t i = 0; i < n_segments; ++i)
             {
+                ROS_INFO_STREAM("i: "<< i);
                 // Modify the pose target a little bit each cycle
                 target_pose.pose.position.z += z_increment;
                 target_pose.pose.position.y += y_increment;
@@ -255,8 +268,9 @@ class ServoTrackPoseServer{
                 target_pose.header.stamp = ros::Time::now();
                 targetPosePublisher.publish(target_pose);
 
+
+
                 // Create e
-                tracker.moveToPose(lin_tol, rot_tol, 0.1);
 
                 tracker_rate.sleep();
 
@@ -273,21 +287,30 @@ class ServoTrackPoseServer{
                     preempted = true;
                     elapsed = false;
                     tracker.stopMotion();
-                    tracker.resetTargetPose();
+                    //tracker.resetTargetPose();
+                    // this represents problem! How to terminate thread without active exception?!
+                    move_to_pose_thread.join();
                 }
 
                 if (checkDist(currentPose, cmdPose) < epsilon); reached = true;
+                //ROS_INFO("looping...");
             }
-
             tracker.stopMotion();
-            tracker.resetTargetPose();
+            move_to_pose_thread.join();
 
+            ROS_INFO_STREAM("elapsed: " << elapsed);
+            ROS_INFO_STREAM("reached: " << reached);
+            ROS_INFO_STREAM("preempted: " << preempted);
+            ROS_INFO_STREAM("executable: " << executable);
         }
+
 
         // Set as to preempted
         if ((elapsed && !preempted) || !executable)
         {
             ROS_INFO("[ServoTrackPoseServer] Timeout reached: ABORTED");
+            //tracker.stopMotion();
+            //move_to_pose_thread.join();
             as_.setAborted(result_);
         }
 
@@ -299,7 +322,11 @@ class ServoTrackPoseServer{
             ROS_INFO("[ServoTrackPoseServer] Reached wanted pose: SUCCEEDDED!");
         }
 
+        ros::Rate sleep_rate(1);
+        sleep_rate.sleep();
+
     }
+
 };
 
 int main(int argc, char** argv)
