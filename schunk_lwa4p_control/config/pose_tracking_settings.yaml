@@ -6,16 +6,16 @@
 windup_limit: 0.1
 
 # PID gains --> Increase gains even more, test it in simulation, CHECK REAL ROBOT SAFETY
-x_proportional_gain: 75.0
-y_proportional_gain: 75.0
-z_proportional_gain: 250
+x_proportional_gain: 250.0    # gain 200
+y_proportional_gain: 250.0    # gain: 200
+z_proportional_gain: 275   # gain: 275 (25Hz)
 x_integral_gain: 0.0
 y_integral_gain: 0.0
 z_integral_gain: 0.0
-x_derivative_gain: 0.00
-y_derivative_gain: 0.00
-z_derivative_gain: 0.00
+x_derivative_gain: 0.1
+y_derivative_gain: 0.1
+z_derivative_gain: 0.1
 
-angular_proportional_gain: 150
+angular_proportional_gain: 0
 angular_integral_gain: 0.0
 angular_derivative_gain: 0.0
