@@ -12,10 +12,10 @@ z_proportional_gain: 275   # gain: 275 (25Hz)
 x_integral_gain: 0.0
 y_integral_gain: 0.0
 z_integral_gain: 0.0
-x_derivative_gain: 0.1
-y_derivative_gain: 0.1
-z_derivative_gain: 0.1
+x_derivative_gain: 0.01
+y_derivative_gain: 0.01
+z_derivative_gain: 0.01
 
-angular_proportional_gain: 0
+angular_proportional_gain: 50
 angular_integral_gain: 0.0
 angular_derivative_gain: 0.0

@@ -230,13 +230,7 @@ class ServoTrackPoseServer{
         // TWO operating modes (static -> goal pose is fixed and increments are recalculated at every step)
         //                     (dynamic -> goal pose is variable)
         // defined in goal -> num_segments should be constant -> STATIC SERVO
-        float x_error = cmdPose.position.x - currentPose.position.x;
-        float y_error = cmdPose.position.y - currentPose.position.y;
-        float z_error = cmdPose.position.z - currentPose.position.z;
-        // STATIC INCREMENT -> STATIC SERVO
-        float x_increment = x_error / n_segments;
-        float y_increment = y_error / n_segments;
-        float z_increment = z_error / n_segments;
+
 
         // Setup tracker_rate && check if estimated_duration > timeout to abort;
         if (tracker_freq == 0) tracker_freq = 50; ros::Rate tracker_rate(tracker_freq);
@@ -270,13 +264,23 @@ class ServoTrackPoseServer{
                 [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
                 });
 
+        bool done = false;
         // Added reached instead of check distance
-        while (!reached && !elapsed && !preempted && executable) {
+        while (!reached && !elapsed && !preempted && executable && !done) {
 
 
 
             for (size_t i = 0; i < n_segments; ++i)
             {
+                float x_error = cmdPose.position.x - currentPose.position.x;
+                float y_error = cmdPose.position.y - currentPose.position.y;
+                float z_error = cmdPose.position.z - currentPose.position.z;
+                // STATIC INCREMENT -> STATIC SERVO IF BEFORE FOR LOOP
+                // DYNAMIC INCREMENT -> DEPENDING ON CURRENT STEP
+                float x_increment = x_error / (n_segments - i);
+                float y_increment = y_error / (n_segments - i);
+                float z_increment = z_error / (n_segments - i);
+
                 ROS_INFO_STREAM("i: "<< i);
                 // Modify the pose target a little bit each cycle
                 target_pose.pose.position.z += z_increment;
@@ -311,6 +315,8 @@ class ServoTrackPoseServer{
                 if (absError < epsilon){
                     reached = true;
                 }
+
+                done = true;
             }
 
 
