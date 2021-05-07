@@ -240,6 +240,8 @@ class ServoTrackPoseServer{
 
         // Setup tracker_rate && check if estimated_duration > timeout to abort;
         if (tracker_freq == 0) tracker_freq = 50; ros::Rate tracker_rate(tracker_freq);
+        // Setup timeout to 30 sec if not given
+        if (timeout == 0) timeout=30;
         float estimated_duration = n_segments * tracker_rate.cycleTime().toSec();
         if(estimated_duration > timeout){
             executable = false;
@@ -264,12 +266,14 @@ class ServoTrackPoseServer{
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
 
+        std::thread move_to_pose_thread(
+                [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
+                });
+
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted && executable) {
 
-            std::thread move_to_pose_thread(
-                    [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
-                    });
+
 
             for (size_t i = 0; i < n_segments; ++i)
             {
@@ -308,8 +312,7 @@ class ServoTrackPoseServer{
                     reached = true;
                 }
             }
-            tracker.stopMotion();
-            move_to_pose_thread.join();
+
 
             ROS_INFO_STREAM("elapsed: " << elapsed);
             ROS_INFO_STREAM("reached: " << reached);
@@ -317,6 +320,8 @@ class ServoTrackPoseServer{
             ROS_INFO_STREAM("executable: " << executable);
         }
 
+        tracker.stopMotion();
+        move_to_pose_thread.join();
 
         // Set as to preempted
         if ((elapsed && !preempted) || !executable)
