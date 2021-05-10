@@ -281,6 +281,9 @@ class ServoTrackPoseServer{
                 float y_increment = y_error / (n_segments - i);
                 float z_increment = z_error / (n_segments - i);
 
+                // No angle distance check, maybe use quaternions for that as stated in following link
+                // https://math.stackexchange.com/questions/90081/quaternion-distance
+
                 ROS_INFO_STREAM("i: "<< i);
                 // Modify the pose target a little bit each cycle
                 target_pose.pose.position.z += z_increment;
@@ -318,7 +321,6 @@ class ServoTrackPoseServer{
 
                 done = true;
             }
-
 
             ROS_INFO_STREAM("elapsed: " << elapsed);
             ROS_INFO_STREAM("reached: " << reached);
