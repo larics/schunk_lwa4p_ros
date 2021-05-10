@@ -85,6 +85,21 @@ class GoToPoseActionServer{
 
     }
 
+    //TODO: Add checkOrientationDist
+
+    float checkOrientationDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2){
+        
+        // quaternion distance: https://math.stackexchange.com/questions/90081/quaternion-distance
+        float a1 = pose1.orientation.w; float a2 = pose2.orientation.w;
+        float b1 = pose1.orientation.x; float b2 = pose2.orientation.x;
+        float c1 = pose1.orientation.y; float c2 = pose2.orientation.y;
+        float d1 = pose1.orientation.z; float d2 = pose2.orientation.z;
+
+        float dist = 1 - (a1*a2 + b1*b2 + c1*c2 + d1*d2);
+
+        //0 whenenver the quaternions represent the same orientation, 1 when they're 180 apart
+        return dist;
+    }
 
     float checkDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2)
     {
