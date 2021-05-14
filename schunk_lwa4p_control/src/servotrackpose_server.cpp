@@ -201,7 +201,9 @@ class ServoTrackPoseServer{
         int timeout = goal->timeout_sec;
         int tracker_freq = goal->cmd_freq;
         int n_segments = goal->n_segments;
-        Eigen::Vector3d lin_tol {0.01, 0.01, 0.01}; double rot_tol = 0.1; // Add this to goal if neccessary
+        float mm_per_segment = goal->mm_per_segment/100; // mm -> to m
+        std::string mode = goal->mode;
+        Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 0.1; // Add this to goal if neccessary
 
         // Start JointGroupPositionController
         std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
@@ -219,14 +221,16 @@ class ServoTrackPoseServer{
         // More segments should result with smoother motion probably -> send it to method
         if (goal->n_segments != 0){
             n_segments = goal->n_segments;
-        }else if(goal->euclid_per_segment != 0){
-            n_segments = checkDist(cmdPose, currentPose)/goal->euclid_per_segment;
+        }else if(goal->mm_per_segment != 0){
+            n_segments = checkError(cmdPose, currentPose)/mm_per_segment;
         }else{
-            n_segments = 1000;
+            // Set default n_segments
+            n_segments = 100;
         }
 
-        ROS_INFO_STREAM("cmdPose is: " << cmdPose);
-        ROS_INFO_STREAM("currentPose is: " << currentPose);
+        //ROS_INFO_STREAM("cmdPose is: " << cmdPose);
+        //ROS_INFO_STREAM("currentPose is: " << currentPose);
+
         // TWO operating modes (static -> goal pose is fixed and increments are recalculated at every step)
         //                     (dynamic -> goal pose is variable)
         // defined in goal -> num_segments should be constant -> STATIC SERVO
@@ -254,8 +258,11 @@ class ServoTrackPoseServer{
         target_pose.pose.position.x = current_ee_tf.transform.translation.x;
         target_pose.pose.position.y = current_ee_tf.transform.translation.y;
         target_pose.pose.position.z = current_ee_tf.transform.translation.z;
-        target_pose.pose.orientation = current_ee_tf.transform.rotation;
+        // Hardcode orientation for starters
+        target_pose.pose.orientation.x = 0; target_pose.pose.orientation.y = 0;
+        target_pose.pose.orientation.z = 0; target_pose.pose.orientation.w = 1;
 
+        ROS_INFO_STREAM("Commanded orientation is: " << current_ee_tf.transform.rotation);
 
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
@@ -264,11 +271,11 @@ class ServoTrackPoseServer{
                 [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
                 });
 
+        // mode defines how we assign reference to pose tracking node
         bool done = false;
+        float x_increment; float y_increment; float z_increment;
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted && executable && !done) {
-
-
 
             for (size_t i = 0; i < n_segments; ++i)
             {
@@ -277,18 +284,24 @@ class ServoTrackPoseServer{
                 float z_error = cmdPose.position.z - currentPose.position.z;
                 // STATIC INCREMENT -> STATIC SERVO IF BEFORE FOR LOOP
                 // DYNAMIC INCREMENT -> DEPENDING ON CURRENT STEP
-                float x_increment = x_error / (n_segments - i);
-                float y_increment = y_error / (n_segments - i);
-                float z_increment = z_error / (n_segments - i);
+                if (mode == std::string("dynamic")){
+                    x_increment = x_error / (n_segments - i);
+                    y_increment = y_error / (n_segments - i);
+                    z_increment = z_error / (n_segments - i);
+                }else{
+                    x_increment = x_error; if (x_increment >  mm_per_segment) x_increment = mm_per_segment;
+                    y_increment = y_error; if (y_increment >  mm_per_segment) y_increment = mm_per_segment;
+                    z_increment = z_error; if (z_increment >  mm_per_segment) z_increment = mm_per_segment;
+                }
 
                 // No angle distance check, maybe use quaternions for that as stated in following link
                 // https://math.stackexchange.com/questions/90081/quaternion-distance
 
                 ROS_INFO_STREAM("i: "<< i);
                 // Modify the pose target a little bit each cycle
-                target_pose.pose.position.z += z_increment;
-                target_pose.pose.position.y += y_increment;
                 target_pose.pose.position.x += x_increment;
+                target_pose.pose.position.y += y_increment;
+                target_pose.pose.position.z += z_increment;
                 target_pose.header.stamp = ros::Time::now();
                 targetPosePublisher.publish(target_pose);
 
@@ -319,7 +332,7 @@ class ServoTrackPoseServer{
                     reached = true;
                 }
 
-                done = true;
+                done = true; // Flag for finishing loop
             }
 
             ROS_INFO_STREAM("elapsed: " << elapsed);

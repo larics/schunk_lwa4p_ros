@@ -88,7 +88,7 @@ class GoToPoseActionServer{
     //TODO: Add checkOrientationDist
 
     float checkOrientationDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2){
-        
+
         // quaternion distance: https://math.stackexchange.com/questions/90081/quaternion-distance
         float a1 = pose1.orientation.w; float a2 = pose2.orientation.w;
         float b1 = pose1.orientation.x; float b2 = pose2.orientation.x;
