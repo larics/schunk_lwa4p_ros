@@ -152,10 +152,10 @@ class ServoTrackPoseServer{
         float z_dist = pow((pose1.position.z - pose2.position.z), 2);
 
         // Check quaternion difference from moveit_servo!
-        float x_ang_dist = pow((pose1.orientation.x - pose2.orientation.x), 1/2);
-        float y_ang_dist = pow((pose1.orientation.y - pose2.orientation.y), 1/2);
-        float z_ang_dist = pow((pose1.orientation.z - pose2.orientation.z), 1/2);
-        float w_ang_dist = pow((pose1.orientation.w - pose2.orientation.w), 1/2);
+        float x_ang_dist = 0; //pow((pose1.orientation.x - pose2.orientation.x), 1/2);
+        float y_ang_dist = 0; //pow((pose1.orientation.y - pose2.orientation.y), 1/2);
+        float z_ang_dist = 0; //pow((pose1.orientation.z - pose2.orientation.z), 1/2);
+        float w_ang_dist = 0; //pow((pose1.orientation.w - pose2.orientation.w), 1/2);
 
         float dist = sqrt(x_dist + y_dist + z_dist + x_ang_dist + y_ang_dist + z_ang_dist + w_ang_dist);
 
@@ -210,13 +210,6 @@ class ServoTrackPoseServer{
         ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
 
         r.sleep();
-        // TODO: Move
-        // Feedback publishing --> What would be informative feedback? x_error, y_error, z_error?
-        // euclidean distance to goal,
-        // feedback_ = SchunkLwa4pControl::ServoTrackPose.action
-        // feedback_.current_pose.position = currentPose.position;
-        // feedback_.current_pose.orientation = currentPose.orientation;
-        // as_.publishFeedback(feedback_);
 
         // More segments should result with smoother motion probably -> send it to method
         if (goal->n_segments != 0){
@@ -262,7 +255,8 @@ class ServoTrackPoseServer{
         target_pose.pose.orientation.x = 0; target_pose.pose.orientation.y = 0;
         target_pose.pose.orientation.z = 0; target_pose.pose.orientation.w = 1;
 
-        ROS_INFO_STREAM("Commanded orientation is: " << current_ee_tf.transform.rotation);
+        ROS_INFO_STREAM("Target pose translation is: " << current_ee_tf.transform.translation);
+        ROS_INFO_STREAM("Target pose orientation is: " << current_ee_tf.transform.rotation);
 
         target_pose.header.stamp = ros::Time::now();
         targetPosePublisher.publish(target_pose);
@@ -272,10 +266,14 @@ class ServoTrackPoseServer{
                 });
 
         // mode defines how we assign reference to pose tracking node
-        bool done = false;
+        bool done = false; bool failed = false; bool first_step = true;
         float x_increment; float y_increment; float z_increment;
+        float initial_x_err; float initial_y_err; float initial_z_err;
         // Added reached instead of check distance
-        while (!reached && !elapsed && !preempted && executable && !done) {
+        while (!reached && !elapsed && !preempted && executable && !done && !failed) {
+
+            ROS_INFO_STREAM("cmdPose: " << cmdPose);
+            ROS_INFO_STREAM("currentPose " << currentPose);
 
             for (size_t i = 0; i < n_segments; ++i)
             {
@@ -289,20 +287,37 @@ class ServoTrackPoseServer{
                     y_increment = y_error / (n_segments - i);
                     z_increment = z_error / (n_segments - i);
                 }else{
-                    x_increment = x_error; if (x_increment >  mm_per_segment) x_increment = mm_per_segment;
-                    y_increment = y_error; if (y_increment >  mm_per_segment) y_increment = mm_per_segment;
-                    z_increment = z_error; if (z_increment >  mm_per_segment) z_increment = mm_per_segment;
+                    x_increment = x_error / n_segments ; if (mm_per_segment != 0 && x_increment !=  mm_per_segment) x_increment = mm_per_segment;
+                    y_increment = y_error / n_segments ; if (mm_per_segment != 0 && y_increment !=  mm_per_segment) y_increment = mm_per_segment;
+                    z_increment = z_error / n_segments ; if (mm_per_segment != 0 && z_increment !=  mm_per_segment) z_increment = mm_per_segment;
+                } // Minimal is 1mm increment to set up (controller resolution) 
+
+                // Add error check to see if error increases to halt motion
+                if (first_step){
+                    float initial_err_x = x_error; float initial_err_y = y_error; float initial_err_z = z_error;
+                    first_step  = false;
                 }
+                float x_err_check = initial_x_err * 1.1; float y_err_check = initial_y_err * 1.1; float z_err_check = initial_z_err * 1.1;
+                if (x_error > x_err_check || y_error > y_err_check || z_error >  z_err_check) failed = true;
+
+                feedback_.current_pose.position = currentPose.position;
+                feedback_.current_pose.orientation = currentPose.orientation;
+                as_.publishFeedback(feedback_);
 
                 // No angle distance check, maybe use quaternions for that as stated in following link
                 // https://math.stackexchange.com/questions/90081/quaternion-distance
 
                 ROS_INFO_STREAM("i: "<< i);
                 // Modify the pose target a little bit each cycle
-                target_pose.pose.position.x += x_increment;
-                target_pose.pose.position.y += y_increment;
-                target_pose.pose.position.z += z_increment;
+                target_pose.pose.position.x = currentPose.position.x + x_increment;
+                target_pose.pose.position.y = currentPose.position.y + y_increment;
+                target_pose.pose.position.z = currentPose.position.z + z_increment;
                 target_pose.header.stamp = ros::Time::now();
+
+                ROS_INFO_STREAM("x: " << target_pose.pose.position.x );
+                ROS_INFO_STREAM("y: " << target_pose.pose.position.y );
+                ROS_INFO_STREAM("z: " << target_pose.pose.position.z );
+                ROS_INFO_STREAM("z_increment: " << z_increment);
                 targetPosePublisher.publish(target_pose);
 
                 tracker_rate.sleep();
@@ -327,9 +342,12 @@ class ServoTrackPoseServer{
                 float absError = checkError(currentPose, cmdPose);
                 ROS_INFO_STREAM("current dist is: " << euclideanDistance);
                 ROS_INFO_STREAM("current err is: " << absError);
+                ROS_INFO_STREAM("epsilon is: " << epsilon);
 
+                // This should break him if position has been reached
                 if (absError < epsilon){
                     reached = true;
+                    result_.reached_pose = true;
                 }
 
                 done = true; // Flag for finishing loop
