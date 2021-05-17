@@ -107,12 +107,12 @@ class GoToPoseActionServer{
         float y_dist = pow((pose1.position.y - pose2.position.y), 2);
         float z_dist = pow((pose1.position.z - pose2.position.z), 2);
 
-        float x_ang_dist = pow((pose1.orientation.x - pose2.orientation.x), 1/2);
-        float y_ang_dist = pow((pose1.orientation.y - pose2.orientation.y), 1/2);
-        float z_ang_dist = pow((pose1.orientation.z - pose2.orientation.z), 1/2);
-        float w_ang_dist = pow((pose1.orientation.w - pose2.orientation.w), 1/2);
+        // float x_ang_dist = pow((pose1.orientation.x - pose2.orientation.x), 1/2);
+        // float y_ang_dist = pow((pose1.orientation.y - pose2.orientation.y), 1/2);
+        // float z_ang_dist = pow((pose1.orientation.z - pose2.orientation.z), 1/2);
+        // float w_ang_dist = pow((pose1.orientation.w - pose2.orientation.w), 1/2);
 
-        float dist = sqrt(x_dist + y_dist + z_dist + x_ang_dist + y_ang_dist + z_ang_dist + w_ang_dist);
+        float dist = sqrt(x_dist + y_dist + z_dist);
 
         return dist;
     }
@@ -144,7 +144,7 @@ class GoToPoseActionServer{
         float epsilon = goal->minimum_deviation;
         int timeout = goal->timeout_sec;
 
-        while (checkDist(cmdPose, currentPose) > epsilon && !elapsed && !preempted){
+        while ((checkDist(cmdPose, currentPose)  + checkOrientationDist(cmdPose, currentPose))> epsilon && !elapsed && !preempted){
             // Check timeout condition
             r.sleep();
             elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
