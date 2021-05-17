@@ -1,0 +1,14 @@
+oal:
+  final_pose:
+    position: {x: -0.0, y: 0.2, z: 0.8}
+    orientation: {x: 0.0, y: 0.0, z: 0.5, w: 0.866}
+  timeout_sec: 10
+  n_segments: 100
+  euclid_per_segment: 0.0
+  cmd_freq: 10
+  max_err_per_axis: 0.01" 
+
+# Number of segments is great factor, if there's too much segments, increase in 
+# 100 of segments works fine
+# reference isn't of great value somehow. Cmd freq, dictates dynamic of publishing 
+# rate of tracker_pose, 20 Hz seems to be nice 
