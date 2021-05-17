@@ -184,6 +184,23 @@ class ServoTrackPoseServer{
         return 0;
     }
 
+    float limit_reference(float current_err, float max_ref, float min_error){
+
+        if (abs(current_err) > min_error){
+            if (abs(current_err) > max_ref){
+                if(signum(current_err) == 1){
+                    return max_ref;
+                }
+                if(signum(current_err) == -1){
+                    return -max_ref;
+                }
+            }
+        }else{
+            return 0;
+        }
+
+    }
+
     // TODO: Fix transition between state 2 and 3
     void executeCB(const schunk_lwa4p_control::ServoTrackPoseGoalConstPtr &goal)
     {
@@ -293,38 +310,28 @@ class ServoTrackPoseServer{
                     x_increment = x_error / (n_segments - i);
                     y_increment = y_error / (n_segments - i);
                     z_increment = z_error / (n_segments - i);
-                }else{
-                    float increment = 0.01;
-                    if (abs(x_error) > 0.01){
-                        if(signum(x_error) == 1) x_increment = increment;
-                        if(signum(x_error) == -1) x_increment = -increment;
-                    }
-                    else {
-                        x_increment = 0;
-                    }
-
-                    if (abs(y_error) > 0.01) {
-                        if (signum(y_error) == 1) y_increment = increment;
-                        if (signum(y_error) == -1) y_increment = -increment;
-                    }
-                    else {
-                        y_increment = 0;
-                    }
-
-                    if (abs(z_error) > 0.01){
-                        if(signum(z_error) == 1) z_increment = increment;
-                        if(signum(z_error) == -1) z_increment = -increment;
-                    }else {
-                        z_increment = 0;
-                    }
+                }
+                else if(mode == std::string("full")){
+                    float max_reference = 0.05;
+                    // reference limiting
+                    x_increment = limit_reference(x_error, max_reference, 0.01); //x_error;
+                    y_increment = limit_reference(y_error, max_reference, 0.01); //y_error;
+                    z_increment = limit_reference(z_error, max_reference, 0.01); //z_error;
 
                 }
+                else{
+                    float increment = 0.01;
+                    float min_error = 0.01; float max_reference=0.01;
+                    x_increment = limit_reference(x_error, max_reference, 0.01);
+                    y_increment = limit_reference(y_error, max_reference, 0.01);
+                    z_increment = limit_reference(z_error, max_reference, 0.01);
 
-                // Minimal reference change 
-                // x_increment = x_error / n_segments ; if (mm_per_segment != 0 && x_increment !=  mm_per_segment) x_increment = mm_per_segment;
-                // y_increment = y_error / n_segments ; if (mm_per_segment != 0 && y_increment !=  mm_per_segment) y_increment = mm_per_segment;
-                // z_increment = z_error / n_segments ; if (mm_per_segment != 0 && z_increment !=  mm_per_segment) z_increment = mm_per_segment;
-                 // Minimal is 1mm increment to set up (controller resolution)
+                    // Minimal reference change
+                    // x_increment = x_error / n_segments ; if (mm_per_segment != 0 && x_increment !=  mm_per_segment) x_increment = mm_per_segment;
+                    // y_increment = y_error / n_segments ; if (mm_per_segment != 0 && y_increment !=  mm_per_segment) y_increment = mm_per_segment;
+                    // z_increment = z_error / n_segments ; if (mm_per_segment != 0 && z_increment !=  mm_per_segment) z_increment = mm_per_segment;
+                    // Minimal is 1mm increment to set up (controller resolution)
+                }
 
                 // Add error check to see if error increases to halt motion --> used for securing real robot from insane references
                 if (first_step){
@@ -385,6 +392,7 @@ class ServoTrackPoseServer{
                 if (absError < epsilon){
                     reached = true;
                     result_.reached_pose = true;
+                    break;
                 }
 
                 done = true; // Flag for finishing loop
