@@ -177,6 +177,20 @@ class ServoTrackPoseServer{
 
     }
 
+    float checkOrientationDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2){
+
+        // quaternion distance: https://math.stackexchange.com/questions/90081/quaternion-distance
+        float a1 = pose1.orientation.w; float a2 = pose2.orientation.w;
+        float b1 = pose1.orientation.x; float b2 = pose2.orientation.x;
+        float c1 = pose1.orientation.y; float c2 = pose2.orientation.y;
+        float d1 = pose1.orientation.z; float d2 = pose2.orientation.z;
+
+        float dist = 1 - (a1*a2 + b1*b2 + c1*c2 + d1*d2);
+
+        //0 whenenver the quaternions represent the same orientation, 1 when they're 180 apart
+        return dist;
+    }
+
     bool signum(float x)
     {
         if (x > 0) return 1;
@@ -221,6 +235,7 @@ class ServoTrackPoseServer{
 
         // Goal variables
         cmdPose = static_cast<geometry_msgs::Pose>(goal->final_pose);
+
         float epsilon = goal->max_err_per_axis;
         int timeout = goal->timeout_sec;
         int tracker_freq = goal->cmd_freq;
@@ -245,7 +260,7 @@ class ServoTrackPoseServer{
             n_segments = 100;
         }
 
-        //ROS_INFO_STREAM("cmdPose is: " << cmdPose);
+        ROS_INFO_STREAM("cmdPose is: " << cmdPose);
         //ROS_INFO_STREAM("currentPose is: " << currentPose);
 
         // TWO operating modes (static -> goal pose is fixed and increments are recalculated at every step)
@@ -276,8 +291,8 @@ class ServoTrackPoseServer{
         target_pose.pose.position.y = current_ee_tf.transform.translation.y;
         target_pose.pose.position.z = current_ee_tf.transform.translation.z;
         // Hardcode orientation for starters
-        target_pose.pose.orientation.x = 0; target_pose.pose.orientation.y = 0;
-        target_pose.pose.orientation.z = 0; target_pose.pose.orientation.w = 1;
+        // target_pose.pose.orientation.x = 0; target_pose.pose.orientation.y = 0;
+        // target_pose.pose.orientation.z = 0; target_pose.pose.orientation.w = 1;
 
         ROS_INFO_STREAM("Target pose translation is: " << current_ee_tf.transform.translation);
         ROS_INFO_STREAM("Target pose orientation is: " << current_ee_tf.transform.rotation);
@@ -294,12 +309,83 @@ class ServoTrackPoseServer{
         float x_increment; float y_increment; float z_increment;
         float initial_x_err; float initial_y_err; float initial_z_err;
         // Added reached instead of check distance
-        while (!reached && !elapsed && !preempted && executable && !done && !failed) {
+        while (!reached && !elapsed && !preempted && executable && !failed) { // !done --> used in for loop to terminate for loop
 
-            ROS_INFO_STREAM("cmdPose: " << cmdPose);
-            ROS_INFO_STREAM("currentPose " << currentPose);
+            feedback_.current_pose.position = currentPose.position;
+            feedback_.current_pose.orientation = currentPose.orientation;
+            as_.publishFeedback(feedback_);
 
-            for (size_t i = 0; i < n_segments; ++i)
+            // No angle distance check, maybe use quaternions for that as stated in following link
+            // https://math.stackexchange.com/questions/90081/quaternion-distance
+
+            // Modify the pose target a little bit each cycle
+            target_pose.header.stamp = ros::Time::now();
+            target_pose.pose.position.x = cmdPose.position.x;
+            target_pose.pose.position.y = cmdPose.position.y;
+            target_pose.pose.position.z = cmdPose.position.z;
+            // Keep same orientation
+            target_pose.pose.orientation.x = cmdPose.orientation.x;
+            target_pose.pose.orientation.y = cmdPose.orientation.y;
+            target_pose.pose.orientation.z = cmdPose.orientation.z;
+            target_pose.pose.orientation.w = cmdPose.orientation.w;
+
+            targetPosePublisher.publish(target_pose);
+            tracker_rate.sleep();
+
+            // COMM
+            // ROS_INFO_STREAM("cmdPose: " << cmdPose);
+            // ROS_INFO_STREAM("currentPose " << currentPose);
+
+            // float x_error = cmdPose.position.x - currentPose.position.x;
+            // float y_error = cmdPose.position.y - currentPose.position.y;
+            // float z_error = cmdPose.position.z - currentPose.position.z;
+
+            // feedback_.current_pose.position = currentPose.position;
+            // feedback_.current_pose.orientation = currentPose.orientation;
+            // as_.publishFeedback(feedback_);
+
+            // No angle distance check, maybe use quaternions for that as stated in following link
+            // https://math.stackexchange.com/questions/90081/quaternion-distance
+            // COMM
+
+            // Modify the pose target a little bit each cycle | COMM
+            // target_pose.pose.position.x = currentPose.position.x + x_increment;
+            // target_pose.pose.position.y = currentPose.position.y + y_increment;
+            // target_pose.pose.position.z = currentPose.position.z + z_increment;
+
+
+            // Break loop if timeout elapsed
+            elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
+            if (elapsed) break;
+
+            if ( as_.isPreemptRequested() || !ros::ok() )
+            {
+                ROS_INFO("[ServoTrackPoseServer] Preempted");
+                // set the action state to preempted
+                as_.setPreempted();
+                reached = false;
+                preempted = true;
+                elapsed = false;
+                tracker.stopMotion();
+                move_to_pose_thread.join();
+            }
+
+            float euclideanDistance = checkDist(currentPose, cmdPose);
+            float orientationDist = checkOrientationDist(currentPose, cmdPose);
+            float absError = checkError(currentPose, cmdPose);
+            ROS_INFO_STREAM("current dist is: " << euclideanDistance);
+            ROS_INFO_STREAM("current err is: " << absError);
+            ROS_INFO_STREAM("epsilon is: " << epsilon);
+
+            // This should break him if position has been reached
+            if (absError < epsilon and orientationDist < epsilon){
+                reached = true;
+                result_.reached_pose = true;
+                break;
+            }
+
+            done = true; // Flag for finishing loop
+            /* for (size_t i = 0; i < n_segments; ++i)
             {
                 float x_error = cmdPose.position.x - currentPose.position.x;
                 float y_error = cmdPose.position.y - currentPose.position.y;
@@ -322,9 +408,9 @@ class ServoTrackPoseServer{
                 else{
                     float increment = 0.01;
                     float min_error = 0.01; float max_reference=0.01;
-                    x_increment = limit_reference(x_error, max_reference, 0.01);
-                    y_increment = limit_reference(y_error, max_reference, 0.01);
-                    z_increment = limit_reference(z_error, max_reference, 0.01);
+                    x_increment = x_error; //limit_reference(x_error, max_reference, 0.01);
+                    y_increment = y_error; //limit_reference(y_error, max_reference, 0.01);
+                    z_increment = z_error; //limit_reference(z_error, max_reference, 0.01);
 
                     // Minimal reference change
                     // x_increment = x_error / n_segments ; if (mm_per_segment != 0 && x_increment !=  mm_per_segment) x_increment = mm_per_segment;
@@ -348,7 +434,6 @@ class ServoTrackPoseServer{
                 // No angle distance check, maybe use quaternions for that as stated in following link
                 // https://math.stackexchange.com/questions/90081/quaternion-distance
 
-                ROS_INFO_STREAM("i: "<< i);
                 // Modify the pose target a little bit each cycle
                 target_pose.pose.position.x = currentPose.position.x + x_increment;
                 target_pose.pose.position.y = currentPose.position.y + y_increment;
@@ -396,7 +481,7 @@ class ServoTrackPoseServer{
                 }
 
                 done = true; // Flag for finishing loop
-            }
+            }*/
 
             ROS_INFO_STREAM("elapsed: " << elapsed);
             ROS_INFO_STREAM("reached: " << reached);
