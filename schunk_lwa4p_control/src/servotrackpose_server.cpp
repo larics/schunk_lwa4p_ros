@@ -152,7 +152,7 @@ class ServoTrackPoseServer{
         float z_dist = pow((pose1.position.z - pose2.position.z), 2);
 
         // Check quaternion difference from moveit_servo!
-        float x_ang_dist = 0; //pow((pose1.orientation.x - pose2.orientation.x), 1/2);
+        float x_ang_dist = 0; //pow((pose1.orientation.x - pose2.orientation.x), 1/2); // Not really useful
         float y_ang_dist = 0; //pow((pose1.orientation.y - pose2.orientation.y), 1/2);
         float z_ang_dist = 0; //pow((pose1.orientation.z - pose2.orientation.z), 1/2);
         float w_ang_dist = 0; //pow((pose1.orientation.w - pose2.orientation.w), 1/2);
@@ -175,6 +175,13 @@ class ServoTrackPoseServer{
 
         return abs_err_sum/3;
 
+    }
+
+    bool signum(float x)
+    {
+        if (x > 0) return 1;
+        if (x < 0) return -1;
+        return 0;
     }
 
     // TODO: Fix transition between state 2 and 3
@@ -287,12 +294,39 @@ class ServoTrackPoseServer{
                     y_increment = y_error / (n_segments - i);
                     z_increment = z_error / (n_segments - i);
                 }else{
-                    x_increment = x_error / n_segments ; if (mm_per_segment != 0 && x_increment !=  mm_per_segment) x_increment = mm_per_segment;
-                    y_increment = y_error / n_segments ; if (mm_per_segment != 0 && y_increment !=  mm_per_segment) y_increment = mm_per_segment;
-                    z_increment = z_error / n_segments ; if (mm_per_segment != 0 && z_increment !=  mm_per_segment) z_increment = mm_per_segment;
-                } // Minimal is 1mm increment to set up (controller resolution) 
+                    float increment = 0.01;
+                    if (abs(x_error) > 0.01){
+                        if(signum(x_error) == 1) x_increment = increment;
+                        if(signum(x_error) == -1) x_increment = -increment;
+                    }
+                    else {
+                        x_increment = 0;
+                    }
 
-                // Add error check to see if error increases to halt motion
+                    if (abs(y_error) > 0.01) {
+                        if (signum(y_error) == 1) y_increment = increment;
+                        if (signum(y_error) == -1) y_increment = -increment;
+                    }
+                    else {
+                        y_increment = 0;
+                    }
+
+                    if (abs(z_error) > 0.01){
+                        if(signum(z_error) == 1) z_increment = increment;
+                        if(signum(z_error) == -1) z_increment = -increment;
+                    }else {
+                        z_increment = 0;
+                    }
+
+                }
+
+                // Minimal reference change 
+                // x_increment = x_error / n_segments ; if (mm_per_segment != 0 && x_increment !=  mm_per_segment) x_increment = mm_per_segment;
+                // y_increment = y_error / n_segments ; if (mm_per_segment != 0 && y_increment !=  mm_per_segment) y_increment = mm_per_segment;
+                // z_increment = z_error / n_segments ; if (mm_per_segment != 0 && z_increment !=  mm_per_segment) z_increment = mm_per_segment;
+                 // Minimal is 1mm increment to set up (controller resolution)
+
+                // Add error check to see if error increases to halt motion --> used for securing real robot from insane references
                 if (first_step){
                     float initial_err_x = x_error; float initial_err_y = y_error; float initial_err_z = z_error;
                     first_step  = false;
@@ -312,11 +346,14 @@ class ServoTrackPoseServer{
                 target_pose.pose.position.x = currentPose.position.x + x_increment;
                 target_pose.pose.position.y = currentPose.position.y + y_increment;
                 target_pose.pose.position.z = currentPose.position.z + z_increment;
+                // Keep same orientation
+                target_pose.pose.orientation = currentPose.orientation;
                 target_pose.header.stamp = ros::Time::now();
 
-                ROS_INFO_STREAM("x: " << target_pose.pose.position.x );
-                ROS_INFO_STREAM("y: " << target_pose.pose.position.y );
-                ROS_INFO_STREAM("z: " << target_pose.pose.position.z );
+                ROS_INFO_STREAM("target x: " << target_pose.pose.position.x );
+                ROS_INFO_STREAM("target y: " << target_pose.pose.position.y );
+                ROS_INFO_STREAM("target z: " << target_pose.pose.position.z );
+                //ROS_INFO_STREAM("target_pose_x")
                 ROS_INFO_STREAM("z_increment: " << z_increment);
                 targetPosePublisher.publish(target_pose);
 
