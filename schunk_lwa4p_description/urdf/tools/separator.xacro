@@ -164,5 +164,84 @@
             <axis xyz="0 1 0"/>
         </joint>
 
+        <!-- Add IMUs to mitiagate possible collision !-->
+        <link name="imu1">
+            <intertial>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <mass value="0.01"/>
+                <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyz="0.0" izz="0.01"/>
+            </intertial>
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <box size="0.05 0.05 0.02"/>
+                </geometry>
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <box size="0.05 0.05 0.02"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="separator_imu1" type="fixed">
+            <parent link="separator_base"/>
+            <child link="imu1"/>
+            <origin xyz="0.1 0.3 -0.01" rpy="0 0 0"/>
+        </joint>
+
+        <link name="imu2">
+            <intertial>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <mass value="0.01"/>
+                <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyz="0.0" izz="0.01"/>
+            </intertial>
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <box size="0.05 0.05 0.02"/>
+                </geometry>
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <box size="0.05 0.05 0.02"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="separator_imu2" type="fixed">
+            <parent link="separator_base"/>
+            <child link="imu2"/>
+            <origin xyz="0.1 0.0 -0.01" rpy="0 0 0"/>
+        </joint>
+
+        <link name="imu3">
+            <intertial>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <mass value="0.01"/>
+                <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyz="0.0" izz="0.01"/>
+            </intertial>
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <box size="0.05 0.05 0.02"/>
+                </geometry>
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <geometry>
+                    <box size="0.05 0.05 0.02"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="separator_imu3" type="fixed">
+            <parent link="separator_base"/>
+            <child link="imu3"/>
+            <origin xyz="0.1 -0.3 -0.01" rpy="0 0 0"/>
+        </joint>
+
     </xacro:macro>
 </robot>
