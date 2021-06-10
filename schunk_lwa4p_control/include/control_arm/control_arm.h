@@ -15,6 +15,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
+#include <std_msgs/Float64.h>
 #include <std_srvs/TriggerRequest.h>
 #include <std_srvs/TriggerResponse.h>
 #include <std_srvs/Trigger.h>
@@ -89,11 +90,19 @@ class ControlArm{
         void init();     
 
         // ROS node handle  
-        ros::NodeHandle nodeHandle_;         
+        ros::NodeHandle nodeHandle_;
+        ros::NodeHandle nodeHandleWithoutNs_;
 
         // ROS Publishers and subscribers
         ros::Publisher displayTrajectoryPublisher_;
         ros::Publisher currentPosePublisher_;
+        ros::Publisher cmdJoint1Publisher;
+        ros::Publisher cmdJoint2Publisher;
+        ros::Publisher cmdJoint3Publisher;
+        ros::Publisher cmdJoint4Publisher;
+        ros::Publisher cmdJoint5Publisher;
+        ros::Publisher cmdJoint6Publisher;
+
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
         ros::Subscriber armCmdToolOrientationSubscriber_;
@@ -104,6 +113,7 @@ class ControlArm{
         ros::ServiceServer startPositionControllersService_;
         ros::ServiceServer startJointTrajectoryControllerService_;
         ros::ServiceServer startJointGroupPositionControllerService_;
+        ros::ServiceServer sendArmToHomingPoseService_;
 
         // ROS Service clients
         ros::ServiceClient applyPlanningSceneServiceClient_;
@@ -111,6 +121,8 @@ class ControlArm{
         ros::ServiceClient addCollisionObjectServiceClient_;
         ros::ServiceClient switchControllerServiceClient_;
         ros::ServiceClient listControllersServiceClient_;
+        ros::ServiceClient switchToPositionControllerServiceClient_;
+        ros::ServiceClient switchToTrajectoryControllerServiceClient_;
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
@@ -123,6 +135,7 @@ class ControlArm{
         bool startPositionControllers(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startJointTrajectoryController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startJointGroupPositionController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_;         
@@ -136,7 +149,10 @@ class ControlArm{
         bool firstTrajectoryExecution_ = true;
         bool blockingMovement = false; 
         geometry_msgs::Pose m_cmdPose;    
-        geometry_msgs::Pose m_cmdDeltaPose;     
+        geometry_msgs::Pose m_cmdDeltaPose;
+
+        // Vectors and arrays
+        std::vector<double> m_jointPositions_;
 
         float round(float var); 
         bool sendToCmdPose(); 
@@ -149,7 +165,7 @@ class ControlArm{
         void addCollisionObject(moveit_msgs::PlanningScene& planningScene);
         void getCurrentArmState(); 
         void getCurrentEndEffectorState(const std::string linkName);
-        void getJointPositions(const std::vector<std::string>& jointNames);
+        void getJointPositions(const std::vector<std::string>& jointNames, std::vector<double> &jointGroupPositions) ;
         void getRunningControllers(std::vector<std::string> &runningControllerNames);
         bool getIK(const std::size_t attempts, double timeout);
         Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution

@@ -45,6 +45,14 @@
         <joint name="lwa4p_joint5" value="0" />
         <joint name="lwa4p_joint6" value="-0.012" />
     </group_state>
+    <group_state name="homing_pose" group="arm">
+        <joint name="lwa4p_joint1" value="-2.31" />
+        <joint name="lwa4p_joint2" value="1.006" />
+        <joint name="lwa4p_joint3" value="1.5318" />
+        <joint name="lwa4p_joint4" value="0" />
+        <joint name="lwa4p_joint5" value="-0.53" />
+        <joint name="lwa4p_joint6" value="-1.11" />
+    </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="separator_tool" parent_link="lwa4p_link6" group="separator" parent_group="arm" />
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
