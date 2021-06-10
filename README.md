@@ -19,7 +19,16 @@ Launch simulation with robotic arm and powerline model:
 roslaunch schunk_lwa4p_gazebo lwa4p_powerline_gazebo_moveit.launch
 ```
 
-Launch real robot: 
+# How to use real robot? 
+
+First you need to start CAN interface up on your PC to enable data transmission. 
+
+You can start your can interface as follows: 
+```
+sudo ip link set can0 type can bitrate 500000
+```
+
+After that you can launch real robot: 
 ```
 roslaunch schunk_lwa4p_gazebo lwa4p_real_robot_moveit.launch
 ```
@@ -73,7 +82,8 @@ Currently is not used!
  - [x] Reconfigured schunk_robots to match new joint names
  - [x] Added MoveToPose action server  
  - [x] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
- - [ ] Create node for continuous replanning (TBD) 
+ - [ ] Add gravity compensation controller in gazebo [TBD]
+ - [ ] Create node for continuous replanning [TBD] 
  - [x] Add moveit_servo / Action server
  - [ ] Find PID params for servoing (pose_tracking config) 
  - [ ] Check actions (maybe add few params/conditions, depending on real or simulated robot) 
