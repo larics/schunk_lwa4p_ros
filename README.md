@@ -28,6 +28,19 @@ You can start your can interface as follows:
 sudo ip link set can0 type can bitrate 500000
 ```
 
+Update frame length: 
+
+```
+sudo ifconfig txqueuelen 16
+
+```
+
+Watch CAN statistics: 
+```
+watch -n 0.1 ip -details -statistics link show can0
+
+```
+
 After that you can launch real robot: 
 ```
 roslaunch schunk_lwa4p_gazebo lwa4p_real_robot_moveit.launch
