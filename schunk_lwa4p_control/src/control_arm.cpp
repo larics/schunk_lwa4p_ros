@@ -433,6 +433,10 @@ bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req
     switchControllerRequest.timeout = 10;
 
     switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
+    ros::Duration(0.5).sleep();
+    // TODO: Add enabling stuff for different controller type
+    ROS_INFO("Sending all joints to zero"); 
+    sendZeros("group");
 
     return switchControllerResponse.ok;
 }
@@ -454,13 +458,14 @@ bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srv
     switchControllerRequest.start_controllers.push_back(std::string("joint_4_position_controller"));
     switchControllerRequest.start_controllers.push_back(std::string("joint_5_position_controller"));
     switchControllerRequest.start_controllers.push_back(std::string("joint_6_position_controller"));
-   switchControllerRequest.start_asap = true;
+    switchControllerRequest.start_asap = true;
     // Controller Manager: To switch controllers you need to specify a strictness level of
     // controller_manager_msgs::SwitchController::STRICT (2) or ::BEST_EFFORT (1). Defaulting to ::BEST_EFFORT.
     switchControllerRequest.strictness = 2;
     switchControllerRequest.timeout = 10;
 
     switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
+    ros::Duration(0.1).sleep();
 
     return switchControllerResponse.ok;
 
@@ -513,12 +518,13 @@ bool ControlArm::sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::Tr
 
     // Get current joint positions ( send every joint to 0)
     getJointPositions(jointNames, currentJointPositions_);
+    // Send zeros to enable joints
+    sendZeros("position");
     for (std::size_t i = jointNames.size() - 1 ; i + 1 >0 ; --i){
 
         std_msgs::Float64 jointCmd_;
         std_msgs::Float64 jointCmd1_; jointCmd1_.data = 0;
         jointCmd_.data = - currentJointPositions_[i];
-        jointCmd_.data = 0;
         //jointCmd_.data = 0;
         // Doesn't work as it should, something weird is happening,
         // Either I get an emergency error
@@ -526,18 +532,27 @@ bool ControlArm::sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::Tr
         // Sometimes it rotates
         // Wierd behaviour
         ROS_INFO("[ControlArm] Sending joint %s to  - %f", jointNames[i].c_str(), currentJointPositions_[i]);
+        if (i == 6){
+            ROS_INFO("[ControlArm] Having!");
+        }
         if (i == 5){
-            cmdJoint6Publisher.publish(jointCmd1_);
-            ros::Duration(0.5).sleep();
-            cmdJoint6Publisher.publish(jointCmd_);}
+            cmdJoint6Publisher.publish(jointCmd_);
+        }
         if (i == 4){
-            cmdJoint5Publisher.publish(jointCmd1_);
-            ros::Duration(0.5).sleep();
-            cmdJoint5Publisher.publish(jointCmd_);}
-        if (i == 3){cmdJoint4Publisher.publish(jointCmd_);}
-        if (i == 2){cmdJoint3Publisher.publish(jointCmd_);}
-        if (i == 1){cmdJoint2Publisher.publish(jointCmd_);}
-        if (i == 0){cmdJoint1Publisher.publish(jointCmd_);}
+            cmdJoint5Publisher.publish(jointCmd_);
+        }
+        if (i == 3){
+            cmdJoint4Publisher.publish(jointCmd_);
+        }
+        if (i == 2){
+            cmdJoint3Publisher.publish(jointCmd_);
+        }
+        if (i == 1){
+            cmdJoint2Publisher.publish(jointCmd_);
+        }
+        if (i == 0){
+            cmdJoint1Publisher.publish(jointCmd1_);
+        }
 
         float sleep_t = abs ( currentJointPositions_[i] / 0.1 ) ; // MAX_SPEED RAD/S
         ros::Duration(sleep_t).sleep();
@@ -547,6 +562,44 @@ bool ControlArm::sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::Tr
     return true;
 
 }
+
+bool ControlArm::sendZeros(std::string ControllerType){
+    // NOTE: This method is used to activate joint control for each arm joint.
+    // Joints do not move before recieving 0 as command, after recieving 0, you can send
+    // anything and it should be fine
+
+    if (ControllerType == "position"){
+
+        std_msgs::Float64 msg;
+        msg.data = 0;
+
+        //cmdJoint1Publisher.publish(msg);
+        cmdJoint2Publisher.publish(msg);
+        cmdJoint3Publisher.publish(msg);
+        cmdJoint4Publisher.publish(msg);
+        cmdJoint5Publisher.publish(msg);
+        cmdJoint6Publisher.publish(msg);
+
+    }
+    if (ControllerType == "group"){
+        std_msgs::Float64MultiArray msg;
+
+        std::vector<double> zeroPositions = {0, 0, 0, 0, 0, 0};
+
+        msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+        msg.layout.dim[0].size = zeroPositions.size();
+        msg.layout.dim[0].stride = 1;
+        msg.layout.dim[0].label = "i";
+
+        msg.data.clear();
+        msg.data.insert(msg.data.end(), zeroPositions.begin(), zeroPositions.end());
+
+    }
+
+
+}
+
+
 
 float ControlArm::round(float var){
 

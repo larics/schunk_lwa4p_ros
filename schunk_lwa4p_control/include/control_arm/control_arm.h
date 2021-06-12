@@ -154,7 +154,8 @@ class ControlArm{
         // Vectors and arrays
         std::vector<double> m_jointPositions_;
 
-        float round(float var); 
+        float round(float var);
+        bool sendZeros(std::string ControllerType);
         bool sendToCmdPose(); 
         bool sendToDeltaCmdPose(); 
         bool sendToZeroPose();

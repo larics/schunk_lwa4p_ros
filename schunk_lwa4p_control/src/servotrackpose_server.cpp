@@ -235,13 +235,16 @@ class ServoTrackPoseServer{
 
         // Goal variables
         cmdPose = static_cast<geometry_msgs::Pose>(goal->final_pose);
-
+        // Epsilon
         float epsilon = goal->max_err_per_axis;
-        int timeout = goal->timeout_sec;
+        // Setup tracker_rate && check if estimated_duration > timeout to abort;
         int tracker_freq = goal->cmd_freq;
-        int n_segments = goal->n_segments;
-        float mm_per_segment = goal->mm_per_segment/100; // mm -> to m
-        std::string mode = goal->mode;
+        if (tracker_freq == 0) tracker_freq = 50; ros::Rate tracker_rate(tracker_freq);
+        // Setup timeout to 30 sec if not given
+        int timeout = goal->timeout_sec;
+        if (timeout == 0) timeout=30;
+
+
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 0.1; // Add this to goal if neccessary
 
         // Start JointGroupPositionController
@@ -250,33 +253,7 @@ class ServoTrackPoseServer{
 
         r.sleep();
 
-        // More segments should result with smoother motion probably -> send it to method
-        if (goal->n_segments != 0){
-            n_segments = goal->n_segments;
-        }else if(goal->mm_per_segment != 0){
-            n_segments = checkError(cmdPose, currentPose)/mm_per_segment;
-        }else{
-            // Set default n_segments
-            n_segments = 100;
-        }
-
         ROS_INFO_STREAM("cmdPose is: " << cmdPose);
-        //ROS_INFO_STREAM("currentPose is: " << currentPose);
-
-        // TWO operating modes (static -> goal pose is fixed and increments are recalculated at every step)
-        //                     (dynamic -> goal pose is variable)
-        // defined in goal -> num_segments should be constant -> STATIC SERVO
-
-
-        // Setup tracker_rate && check if estimated_duration > timeout to abort;
-        if (tracker_freq == 0) tracker_freq = 50; ros::Rate tracker_rate(tracker_freq);
-        // Setup timeout to 30 sec if not given
-        if (timeout == 0) timeout=30;
-        float estimated_duration = n_segments * tracker_rate.cycleTime().toSec();
-        if(estimated_duration > timeout){
-            executable = false;
-            ROS_INFO("[ServoTrackPoseServer] Not executable, timeout. ");
-        }
 
         // Get current ee pose
         geometry_msgs::TransformStamped current_ee_tf;
@@ -316,7 +293,10 @@ class ServoTrackPoseServer{
             as_.publishFeedback(feedback_);
 
             // No angle distance check, maybe use quaternions for that as stated in following link
-            // https://math.stackexchange.com/questions/90081/quaternion-distance
+            // https://math.stackexchange.com/questions/90081/quaternion-distance / WORKS
+            // TODO: Check commands that are being sent to joint group position contorller
+            // TODO: Check PID params
+            // TODO: Check differences between controllers
 
             // Modify the pose target a little bit each cycle
             target_pose.header.stamp = ros::Time::now();
@@ -331,28 +311,6 @@ class ServoTrackPoseServer{
 
             targetPosePublisher.publish(target_pose);
             tracker_rate.sleep();
-
-            // COMM
-            // ROS_INFO_STREAM("cmdPose: " << cmdPose);
-            // ROS_INFO_STREAM("currentPose " << currentPose);
-
-            // float x_error = cmdPose.position.x - currentPose.position.x;
-            // float y_error = cmdPose.position.y - currentPose.position.y;
-            // float z_error = cmdPose.position.z - currentPose.position.z;
-
-            // feedback_.current_pose.position = currentPose.position;
-            // feedback_.current_pose.orientation = currentPose.orientation;
-            // as_.publishFeedback(feedback_);
-
-            // No angle distance check, maybe use quaternions for that as stated in following link
-            // https://math.stackexchange.com/questions/90081/quaternion-distance
-            // COMM
-
-            // Modify the pose target a little bit each cycle | COMM
-            // target_pose.pose.position.x = currentPose.position.x + x_increment;
-            // target_pose.pose.position.y = currentPose.position.y + y_increment;
-            // target_pose.pose.position.z = currentPose.position.z + z_increment;
-
 
             // Break loop if timeout elapsed
             elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
@@ -383,105 +341,6 @@ class ServoTrackPoseServer{
                 result_.reached_pose = true;
                 break;
             }
-
-            done = true; // Flag for finishing loop
-            /* for (size_t i = 0; i < n_segments; ++i)
-            {
-                float x_error = cmdPose.position.x - currentPose.position.x;
-                float y_error = cmdPose.position.y - currentPose.position.y;
-                float z_error = cmdPose.position.z - currentPose.position.z;
-                // STATIC INCREMENT -> STATIC SERVO IF BEFORE FOR LOOP
-                // DYNAMIC INCREMENT -> DEPENDING ON CURRENT STEP
-                if (mode == std::string("dynamic")){
-                    x_increment = x_error / (n_segments - i);
-                    y_increment = y_error / (n_segments - i);
-                    z_increment = z_error / (n_segments - i);
-                }
-                else if(mode == std::string("full")){
-                    float max_reference = 0.05;
-                    // reference limiting
-                    x_increment = limit_reference(x_error, max_reference, 0.01); //x_error;
-                    y_increment = limit_reference(y_error, max_reference, 0.01); //y_error;
-                    z_increment = limit_reference(z_error, max_reference, 0.01); //z_error;
-
-                }
-                else{
-                    float increment = 0.01;
-                    float min_error = 0.01; float max_reference=0.01;
-                    x_increment = x_error; //limit_reference(x_error, max_reference, 0.01);
-                    y_increment = y_error; //limit_reference(y_error, max_reference, 0.01);
-                    z_increment = z_error; //limit_reference(z_error, max_reference, 0.01);
-
-                    // Minimal reference change
-                    // x_increment = x_error / n_segments ; if (mm_per_segment != 0 && x_increment !=  mm_per_segment) x_increment = mm_per_segment;
-                    // y_increment = y_error / n_segments ; if (mm_per_segment != 0 && y_increment !=  mm_per_segment) y_increment = mm_per_segment;
-                    // z_increment = z_error / n_segments ; if (mm_per_segment != 0 && z_increment !=  mm_per_segment) z_increment = mm_per_segment;
-                    // Minimal is 1mm increment to set up (controller resolution)
-                }
-
-                // Add error check to see if error increases to halt motion --> used for securing real robot from insane references
-                if (first_step){
-                    float initial_err_x = x_error; float initial_err_y = y_error; float initial_err_z = z_error;
-                    first_step  = false;
-                }
-                float x_err_check = initial_x_err * 1.1; float y_err_check = initial_y_err * 1.1; float z_err_check = initial_z_err * 1.1;
-                if (x_error > x_err_check || y_error > y_err_check || z_error >  z_err_check) failed = true;
-
-                feedback_.current_pose.position = currentPose.position;
-                feedback_.current_pose.orientation = currentPose.orientation;
-                as_.publishFeedback(feedback_);
-
-                // No angle distance check, maybe use quaternions for that as stated in following link
-                // https://math.stackexchange.com/questions/90081/quaternion-distance
-
-                // Modify the pose target a little bit each cycle
-                target_pose.pose.position.x = currentPose.position.x + x_increment;
-                target_pose.pose.position.y = currentPose.position.y + y_increment;
-                target_pose.pose.position.z = currentPose.position.z + z_increment;
-                // Keep same orientation
-                target_pose.pose.orientation = currentPose.orientation;
-                target_pose.header.stamp = ros::Time::now();
-
-                ROS_INFO_STREAM("target x: " << target_pose.pose.position.x );
-                ROS_INFO_STREAM("target y: " << target_pose.pose.position.y );
-                ROS_INFO_STREAM("target z: " << target_pose.pose.position.z );
-                //ROS_INFO_STREAM("target_pose_x")
-                ROS_INFO_STREAM("z_increment: " << z_increment);
-                targetPosePublisher.publish(target_pose);
-
-                tracker_rate.sleep();
-
-                // Break loop if timeout elapsed
-                elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
-                if (elapsed) break;
-
-                if ( as_.isPreemptRequested() || !ros::ok() )
-                {
-                    ROS_INFO("[ServoTrackPoseServer] Preempted");
-                    // set the action state to preempted
-                    as_.setPreempted();
-                    reached = false;
-                    preempted = true;
-                    elapsed = false;
-                    tracker.stopMotion();
-                    move_to_pose_thread.join();
-                }
-
-                float euclideanDistance = checkDist(currentPose, cmdPose);
-                float absError = checkError(currentPose, cmdPose);
-                ROS_INFO_STREAM("current dist is: " << euclideanDistance);
-                ROS_INFO_STREAM("current err is: " << absError);
-                ROS_INFO_STREAM("epsilon is: " << epsilon);
-
-                // This should break him if position has been reached
-                if (absError < epsilon){
-                    reached = true;
-                    result_.reached_pose = true;
-                    break;
-                }
-
-                done = true; // Flag for finishing loop
-            }*/
 
             ROS_INFO_STREAM("elapsed: " << elapsed);
             ROS_INFO_STREAM("reached: " << reached);
