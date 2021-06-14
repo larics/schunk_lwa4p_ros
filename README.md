@@ -7,6 +7,8 @@ Available packages are:
  * schunk_lwa4p_gazebo --> launch files + controllers  
  * schunk_lwa4p_moveit_config --> ROS package for MoveIt configuration  
 
+Joint limits and some links to HW resources can be found [here](http://wiki.ros.org/schunk_description)
+
 # How to launch simulation? 
 
 If you want to use robot from simulation run one of the following commands:
@@ -34,6 +36,9 @@ Update frame length:
 sudo ifconfig txqueuelen 16
 
 ```
+I think it's important to set up txqueuelen on 16-20 as stated in ROS `socketcan_interface` 
+and can be found [here](http://wiki.ros.org/socketcan_interface) in section 4.2
+
 
 Watch CAN statistics: 
 ```
@@ -45,6 +50,17 @@ After that you can launch real robot:
 ```
 roslaunch schunk_lwa4p_gazebo lwa4p_real_robot_moveit.launch
 ```
+
+Really good basic introduction for CAN communication can be found [here](https://en.wikipedia.org/wiki/CANopen). 
+
+# Fetch CAN msgs and log them to the file 
+
+You can log can messages by using available scripts in `scripts` folder: 
+Run command as follows: 
+```
+./candump.sh | ./predate.sh > log.txt
+```
+
 
 # What is going on after launching 
 
