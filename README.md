@@ -61,6 +61,30 @@ Run command as follows:
 ./candump.sh | ./predate.sh > log.txt
 ```
 
+# Current CAN communication status: 
+
+```
+RPDO 18x
+RPDO 38x
+TPDO 20x 
+```
+
+`canopen_chain_node` is extension of following [link](http://wiki.ros.org/canopen_master) 
+
+# ROS control 
+
+In order to use real arm, it's neccessary to properly configure 
+controllers: 
+
+Controller used for trajectory planning and execution is `jointTrajectoryController`, 
+controller used for decoupled joint position moving is `jointPositionController` and 
+one used for coupled joint position movement is `jointGroupPositionController`.
+
+Each of those controllers are part of ROS control, and it is neccessary 
+to properly configure CAN + ROS control. In order to do so, check 
+following [http://wiki.ros.org/canopen_motor_node] and bear in mind 
+parameter called `required_drive_mode`. 
+
 
 # What is going on after launching 
 
