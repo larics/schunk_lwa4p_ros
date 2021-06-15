@@ -94,6 +94,7 @@ void ControlArm::init() {
     cmdJoint4Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64>(std::string("lwa4p/joint_4_position_controller/command"), 1);
     cmdJoint5Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64>(std::string("lwa4p/joint_5_position_controller/command"), 1);
     cmdJoint6Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64>(std::string("lwa4p/joint_6_position_controller/command"), 1);
+    cmdJointGroupPublisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64MultiArray>(std::string("lwa4p/joint_group_position_controller/command"), 1);
 
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
     armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
@@ -437,6 +438,7 @@ bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req
     // TODO: Add enabling stuff for different controller type
     ROS_INFO("Sending all joints to zero"); 
     sendZeros("group");
+    ros::Duration(0.1).sleep();
 
     return switchControllerResponse.ok;
 }
@@ -466,6 +468,8 @@ bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srv
 
     switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
     ros::Duration(0.1).sleep();
+
+    sendZeros("position");
 
     return switchControllerResponse.ok;
 
@@ -519,7 +523,6 @@ bool ControlArm::sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::Tr
     // Get current joint positions ( send every joint to 0)
     getJointPositions(jointNames, currentJointPositions_);
     // Send zeros to enable joints
-    sendZeros("position");
     for (std::size_t i = jointNames.size() - 1 ; i + 1 >0 ; --i){
 
         std_msgs::Float64 jointCmd_;
@@ -532,26 +535,56 @@ bool ControlArm::sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::Tr
         // Sometimes it rotates
         // Wierd behaviour
         ROS_INFO("[ControlArm] Sending joint %s to  - %f", jointNames[i].c_str(), currentJointPositions_[i]);
-        if (i == 6){
-            ROS_INFO("[ControlArm] Having!");
-        }
+
+
         if (i == 5){
-            cmdJoint6Publisher.publish(jointCmd_);
+            for (int k=0; k<5; k++)
+            {
+                cmdJoint6Publisher.publish(jointCmd_);
+                ros::Duration(0.02).sleep();
+            }
         }
         if (i == 4){
-            cmdJoint5Publisher.publish(jointCmd_);
+            for (int k=0; k<5; k++)
+            {
+                cmdJoint5Publisher.publish(jointCmd_);
+                ros::Duration(0.02).sleep();
+
+            }
         }
         if (i == 3){
-            cmdJoint4Publisher.publish(jointCmd_);
+
+            for (int k=0; k<5; k++)
+            {
+                cmdJoint4Publisher.publish(jointCmd_);
+                ros::Duration(0.02).sleep();
+
+            }
+
         }
         if (i == 2){
-            cmdJoint3Publisher.publish(jointCmd_);
+
+            for (int k=0; k<5; k++)
+            {
+                cmdJoint3Publisher.publish(jointCmd_);
+                ros::Duration(0.02).sleep();
+            }
+
         }
         if (i == 1){
-            cmdJoint2Publisher.publish(jointCmd_);
+            for (int k=0; k<5; k++)
+            {
+                cmdJoint2Publisher.publish(jointCmd_);
+                ros::Duration(0.02).sleep();
+            }
+
         }
         if (i == 0){
-            cmdJoint1Publisher.publish(jointCmd1_);
+            for (int k=0; k<5; k++)
+            {
+                cmdJoint1Publisher.publish(jointCmd1_);
+                ros::Duration(0.02).sleep();
+            }
         }
 
         float sleep_t = abs ( currentJointPositions_[i] / 0.1 ) ; // MAX_SPEED RAD/S
@@ -594,12 +627,12 @@ bool ControlArm::sendZeros(std::string ControllerType){
         msg.data.clear();
         msg.data.insert(msg.data.end(), zeroPositions.begin(), zeroPositions.end());
 
+        cmdJointGroupPublisher.publish(msg);
+
     }
 
 
 }
-
-
 
 float ControlArm::round(float var){
 

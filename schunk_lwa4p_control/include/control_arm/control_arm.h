@@ -16,6 +16,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <std_srvs/TriggerRequest.h>
 #include <std_srvs/TriggerResponse.h>
 #include <std_srvs/Trigger.h>
@@ -102,6 +103,7 @@ class ControlArm{
         ros::Publisher cmdJoint4Publisher;
         ros::Publisher cmdJoint5Publisher;
         ros::Publisher cmdJoint6Publisher;
+        ros::Publisher cmdJointGroupPublisher;
 
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
