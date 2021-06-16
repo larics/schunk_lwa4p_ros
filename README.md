@@ -71,6 +71,14 @@ TPDO 20x
 
 `canopen_chain_node` is extension of following [link](http://wiki.ros.org/canopen_master) 
 
+Check following resources to familliarize yourself with CAN communication protocol: 
+
+ * [PDO](https://www.can-cia.org/can-knowledge/canopen/pdo-protocol/)  
+ * [SDO](https://www.can-cia.org/can-knowledge/canopen/sdo-protocol/)  
+ * [NMT](https://www.can-cia.org/can-knowledge/canopen/network-management/)   
+ * [General info](https://www.can-cia.org/canopen/)   
+ * [CAN bus](https://en.wikipedia.org/wiki/CAN_bus)  
+
 # ROS control 
 
 In order to use real arm, it's neccessary to properly configure 
