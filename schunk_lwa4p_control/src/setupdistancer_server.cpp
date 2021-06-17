@@ -201,6 +201,7 @@ public:
                     cmdLeftDistancerPublisher.publish(leftDistancerCmd);
                 }else {
                     //TODO: Add service calls for closing distancer motors
+                    // Dodati pozive na topice pravih motora
                 }
             }
 
