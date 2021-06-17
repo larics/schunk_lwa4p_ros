@@ -16,6 +16,18 @@
     <gazebo reference="separator_left_front_holder">
         <material value="Gazebo/Green" /> 
     </gazebo>
+
+    <gazebo reference="imu1">
+        <material value="Gazebo/Blue"/>
+    </gazebo>
+
+    <gazebo reference="imu2">
+        <material value="Gazebo/Blue"/>
+    </gazebo>
+
+    <gazebo reference="imu3">
+        <material value="Gazebo/Blue"/>
+    </gazebo>
    
     <transmission name="separator_right_front_trans">
         <type>transmission_interface/SimpleTransmission</type>

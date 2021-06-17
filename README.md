@@ -7,6 +7,8 @@ Available packages are:
  * schunk_lwa4p_gazebo --> launch files + controllers  
  * schunk_lwa4p_moveit_config --> ROS package for MoveIt configuration  
 
+Joint limits and some links to HW resources can be found [here](http://wiki.ros.org/schunk_description)
+
 # How to launch simulation? 
 
 If you want to use robot from simulation run one of the following commands:
@@ -19,10 +21,78 @@ Launch simulation with robotic arm and powerline model:
 roslaunch schunk_lwa4p_gazebo lwa4p_powerline_gazebo_moveit.launch
 ```
 
-Launch real robot: 
+# How to use real robot? 
+
+First you need to start CAN interface up on your PC to enable data transmission. 
+
+You can start your can interface as follows: 
+```
+sudo ip link set can0 type can bitrate 500000
+```
+
+Update frame length: 
+
+```
+sudo ifconfig txqueuelen 16
+
+```
+I think it's important to set up txqueuelen on 16-20 as stated in ROS `socketcan_interface` 
+and can be found [here](http://wiki.ros.org/socketcan_interface) in section 4.2
+
+
+Watch CAN statistics: 
+```
+watch -n 0.1 ip -details -statistics link show can0
+
+```
+
+After that you can launch real robot: 
 ```
 roslaunch schunk_lwa4p_gazebo lwa4p_real_robot_moveit.launch
 ```
+
+Really good basic introduction for CAN communication can be found [here](https://en.wikipedia.org/wiki/CANopen). 
+
+# Fetch CAN msgs and log them to the file 
+
+You can log can messages by using available scripts in `scripts` folder: 
+Run command as follows: 
+```
+./candump.sh | ./predate.sh > log.txt
+```
+
+# Current CAN communication status: 
+
+```
+RPDO 18x
+RPDO 38x
+TPDO 20x 
+```
+
+`canopen_chain_node` is extension of following [link](http://wiki.ros.org/canopen_master) 
+
+Check following resources to familliarize yourself with CAN communication protocol: 
+
+ * [PDO](https://www.can-cia.org/can-knowledge/canopen/pdo-protocol/)  
+ * [SDO](https://www.can-cia.org/can-knowledge/canopen/sdo-protocol/)  
+ * [NMT](https://www.can-cia.org/can-knowledge/canopen/network-management/)   
+ * [General info](https://www.can-cia.org/canopen/)   
+ * [CAN bus](https://en.wikipedia.org/wiki/CAN_bus)  
+
+# ROS control 
+
+In order to use real arm, it's neccessary to properly configure 
+controllers: 
+
+Controller used for trajectory planning and execution is `jointTrajectoryController`, 
+controller used for decoupled joint position moving is `jointPositionController` and 
+one used for coupled joint position movement is `jointGroupPositionController`.
+
+Each of those controllers are part of ROS control, and it is neccessary 
+to properly configure CAN + ROS control. In order to do so, check 
+following [http://wiki.ros.org/canopen_motor_node] and bear in mind 
+parameter called `required_drive_mode`. 
+
 
 # What is going on after launching 
 
@@ -73,7 +143,8 @@ Currently is not used!
  - [x] Reconfigured schunk_robots to match new joint names
  - [x] Added MoveToPose action server  
  - [x] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
- - [ ] Create node for continuous replanning (TBD) 
+ - [ ] Add gravity compensation controller in gazebo [TBD]
+ - [ ] Create node for continuous replanning [TBD] 
  - [x] Add moveit_servo / Action server
  - [ ] Find PID params for servoing (pose_tracking config) 
  - [ ] Check actions (maybe add few params/conditions, depending on real or simulated robot) 
