@@ -85,7 +85,6 @@ class GoToPoseActionServer{
 
     }
 
-    //TODO: Add checkOrientationDist
 
     float checkOrientationDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2){
 
