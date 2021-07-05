@@ -3,31 +3,49 @@
 # Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits]
 joint_limits:
   lwa4p_joint1:
+    has_position_limits: true
+    min_position: -3.14
+    max_position: 3.14
     has_velocity_limits: true
     max_velocity: 4.5
     has_acceleration_limits: false
     max_acceleration: 1.5
   lwa4p_joint2:
+    has_position_limits: true
+    min_position: -3.14
+    max_position: 3.14
     has_velocity_limits: true
     max_velocity: 4.5
     has_acceleration_limits: false
     max_acceleration: 1.5
   lwa4p_joint3:
+    has_position_limits: true
+    min_position: -3.14
+    max_position: 3.14
     has_velocity_limits: true
     max_velocity: 3.5
     has_acceleration_limits: false
     max_acceleration: 1.5
   lwa4p_joint4:
+    has_position_limits: true
+    min_position: -3.14
+    max_position: 3.14
     has_velocity_limits: true
     max_velocity: 3.5
     has_acceleration_limits: false
     max_acceleration: 1.5
   lwa4p_joint5:
+    has_position_limits: true
+    min_position: -3.14
+    max_position: 3.14
     has_velocity_limits: true
     max_velocity: 3.5
     has_acceleration_limits: false
     max_acceleration: 1.5
   lwa4p_joint6:
+    has_position_limits: true
+    min_position: -2.0943951
+    max_position: 2.0943951
     has_velocity_limits: true
     max_velocity: 3.5
     has_acceleration_limits: false
