@@ -248,8 +248,8 @@ class ServoTrackPoseServer{
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 0.1; // Add this to goal if neccessary
 
         // Start JointGroupPositionController
-        std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
-        ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
+        //std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
+        //ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
 
         r.sleep();
 
