@@ -79,6 +79,10 @@ Check following resources to familliarize yourself with CAN communication protoc
  * [General info](https://www.can-cia.org/canopen/)   
  * [CAN bus](https://en.wikipedia.org/wiki/CAN_bus)  
 
+Official presentation from Schunk about available [drivers](https://usermanual.wiki/Document/ManualPowerballCANOpenDriver.312884843/view) 
+
+Schunk [inverse kinematics and calibration].(https://foswiki.cs.rpi.edu/foswiki/pub/RoboticsWeb/LabPublications/bradley_ROBOTIC_ARM_CALIBRATION__CTRL_report.pdf)
+
 # ROS control 
 
 In order to use real arm, it's neccessary to properly configure 
