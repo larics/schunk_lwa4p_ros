@@ -247,9 +247,9 @@ class ServoTrackPoseServer{
 
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 0.1; // Add this to goal if neccessary
 
-        // Start JointGroupPositionController
-        //std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
-        //ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
+        // Start JointGroupPositionController --> start JointGroupPositionController for servoing
+        std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
+        ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
 
         r.sleep();
 
@@ -267,6 +267,11 @@ class ServoTrackPoseServer{
         target_pose.pose.position.x = current_ee_tf.transform.translation.x;
         target_pose.pose.position.y = current_ee_tf.transform.translation.y;
         target_pose.pose.position.z = current_ee_tf.transform.translation.z;
+        target_pose.pose.orientation.x = current_ee_tf.transform.rotation.x;
+        target_pose.pose.orientation.y = current_ee_tf.transform.rotation.y;
+        target_pose.pose.orientation.z = current_ee_tf.transform.rotation.z;
+        target_pose.pose.orientation.w = current_ee_tf.transform.rotation.w;
+
         // Hardcode orientation for starters
         // target_pose.pose.orientation.x = 0; target_pose.pose.orientation.y = 0;
         // target_pose.pose.orientation.z = 0; target_pose.pose.orientation.w = 1;
