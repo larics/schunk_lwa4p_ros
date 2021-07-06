@@ -83,6 +83,8 @@ Official presentation from Schunk about available [drivers](https://usermanual.w
 
 Schunk [inverse kinematics and calibration].(https://foswiki.cs.rpi.edu/foswiki/pub/RoboticsWeb/LabPublications/bradley_ROBOTIC_ARM_CALIBRATION__CTRL_report.pdf)
 
+Info about [CAN] for Schunk LWA4P. 
+
 # ROS control 
 
 In order to use real arm, it's neccessary to properly configure 
@@ -150,6 +152,9 @@ Currently is not used!
  - [ ] Add gravity compensation controller in gazebo [TBD]
  - [ ] Create node for continuous replanning [TBD] 
  - [x] Add moveit_servo / Action server
+ - [ ] Add force sensor link for better planning
+ - [ ] Add current check for dynamixels for setting up distancer
+ - [ ] Try out servoing for setting up separator 
  - [ ] Find PID params for servoing (pose_tracking config) 
  - [ ] Check actions (maybe add few params/conditions, depending on real or simulated robot) 
  - [ ] Integrate everything and test on real robot
