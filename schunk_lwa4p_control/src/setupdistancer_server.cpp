@@ -194,6 +194,8 @@ public:
                 // For starters close separator
                 // Could eventually monitor force with which motors close it
                 if(!realRobot){
+                    ROS_INFO("[SetupDistancerServer] Closing distancer...");
+                    //TODO: Get current joint positions for that motor
                     std_msgs::Float64 rightDistancerCmd; rightDistancerCmd.data = 0.5;
                     std_msgs::Float64 leftDistancerCmd; leftDistancerCmd.data = -0.5;
 
@@ -201,6 +203,7 @@ public:
                     cmdLeftDistancerPublisher.publish(leftDistancerCmd);
                 }else {
                     //TODO: Add service calls for closing distancer motors
+                    // Dodati pozive na topice pravih motora
                 }
             }
 
@@ -227,17 +230,15 @@ public:
 
             ROS_INFO("[SetupDistancerServer] Reached wanted pose: SUCCEEDDED!");
         }
-
-
         // TODO:
         // 1. Build new action and start new action server --> DONE
         // 2. Command tool service based on received goal --> DONE
-        // 3. Command tool orientation based on received goal (Doesen't move when commanded from server?!) --> Fixed WHILE
-        // 4. Add Trigger service call to enable closing motors on trigger
-        // 5. Create sequence of service calls (remove_collision, send_orientation, close motors)
+        // 3. Command tool orientation based on received goal (Doesen't move when commanded from server?!) --> DONE
+        // 4. Add Trigger service call to enable closing motors on trigger --> DONE
+        // 5. Create sequence of service calls (remove_collision, send_orientation, close motors) --> DONE
+        ///////////////////// TODO
         // 6. Check orientation in which format it's written (radians/degrees)
         // Think of arm servoing as a service moveit::servo as service that can be called during executing of this server
-
 
     }
 

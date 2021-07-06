@@ -21,6 +21,8 @@ class GoToPoseActionServer{
         // service clients
         ros::ServiceClient realRobotDriverInitServiceClient_;
 
+        ros::ServiceClient addCollisionObjectServiceClient_;
+
         // action
         schunk_lwa4p_control::GoToPoseFeedback feedback_;
         schunk_lwa4p_control::GoToPoseResult result_;
@@ -64,6 +66,10 @@ class GoToPoseActionServer{
         realRobotDriverInitServiceClient_.waitForExistence();
         std_srvs::Trigger srv;
         realRobotDriverInitServiceClient_.call(srv);
+
+        addCollisionObjectServiceClient_ = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/scene/add_collisions");
+        addCollisionObjectServiceClient_.waitForExistence();
+        addCollisionObjectServiceClient_.call(srv);
     }
 
     void initializeSubscribers()
@@ -85,7 +91,6 @@ class GoToPoseActionServer{
 
     }
 
-    //TODO: Add checkOrientationDist
 
     float checkOrientationDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2){
 

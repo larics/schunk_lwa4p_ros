@@ -121,11 +121,13 @@ void ControlArm::init() {
     listControllersServiceClient_.waitForExistence();
     switchToPositionControllerServiceClient_= nodeHandle_.serviceClient<std_srvs::Trigger>(startPositionControllersServiceName);
     switchToTrajectoryControllerServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>(startJointTrajectoryControllerServiceName);
-    addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
+    //addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
     ROS_INFO("[ControlArm] Initialized service clients. ");
 
-    /* Moved this part to gotopose_server (initializes before/loads controllers on time)
+    //Moved this part to gotopose_server (initializes before/loads controllers on time)
     nodeHandleWithoutNs_.getParam("real_robot", realRobot_);
+
+    /**
     if (realRobot_){
         ROS_INFO("[ControlArm] Starting real robot...");
         realRobotDriverInitServiceClient_ = nodeHandleWithoutNs_.serviceClient<std_srvs::Trigger>("/lwa4p/driver/init");
@@ -134,8 +136,8 @@ void ControlArm::init() {
         realRobotDriverInitServiceClient_.call(srv);
         addCollisionObjectServiceClient_.call(srv);
 
-    }
-    */
+    }**/
+
 
 
 
@@ -298,6 +300,8 @@ bool ControlArm::sendToDeltaCmdPose() {
 
 void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 
+    ROS_INFO("Adding collision object...");
+
     moveit_msgs::CollisionObject collisionObject;
     collisionObject.header.frame_id = m_moveGroupPtr->getPlanningFrame();
 
@@ -307,22 +311,25 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     shape_msgs::SolidPrimitive primitive;
     primitive.type = primitive.BOX;
     primitive.dimensions.resize(3);
-    primitive.dimensions[0] = 1.0;
-    primitive.dimensions[1] = 1.0;
-    primitive.dimensions[2] = 0.02;
+    primitive.dimensions[0] = 0.2;
+    primitive.dimensions[1] = 4.0;
+    primitive.dimensions[2] = 2.0;
 
     // A table pose (specified relative to frame_id)
     geometry_msgs::Pose table_pose;
     table_pose.orientation.w = 1.0;
-    table_pose.position.x = -0.6;
-    table_pose.position.y = 0;
-    table_pose.position.z = 0.4;
+    table_pose.position.x = -1.0;
+    table_pose.position.y = 0.0;
+    table_pose.position.z = 1.0;
 
     collisionObject.primitives.push_back(primitive);
-    collisionObject.primitive_poses.push_back(table_pose);
+    collisionObject.primitive_poses.push_back(table_pose);  
     collisionObject.operation = collisionObject.ADD;
 
     planningScene.world.collision_objects.push_back(collisionObject);
+
+    ROS_INFO("Added collisions");
+
 
     // If using multiple objects
     //std::vector<moveit_msgs::CollisionObject> collisionObjects;
@@ -477,14 +484,19 @@ bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srv
 
 bool ControlArm::addCollisionObjectServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
 
+    ROS_INFO("Entered collision object");
     // Initialize planning scene
     moveit_msgs::PlanningScene planningScene;
     m_planningScenePtr->getPlanningSceneMsg(planningScene);
+    ROS_INFO("Got planning scene.");
     addCollisionObject(planningScene);
 
+    //
     moveit_msgs::ApplyPlanningScene srv;
     srv.request.scene = planningScene;
     applyPlanningSceneServiceClient_.call(srv);
+
+    return true; 
 
     // How to add this to planning scene moveit?
     // http://docs.ros.org/en/melodic/api/moveit_tutorials/html/doc/planning_scene_ros_api/planning_scene_ros_api_tutorial.html
@@ -630,6 +642,8 @@ bool ControlArm::sendZeros(std::string ControllerType){
         cmdJointGroupPublisher.publish(msg);
 
     }
+
+    return true; 
 
 
 }
