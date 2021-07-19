@@ -302,38 +302,61 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 
     ROS_INFO("Adding collision object...");
 
-    moveit_msgs::CollisionObject collisionObject;
-    collisionObject.header.frame_id = m_moveGroupPtr->getPlanningFrame();
+    std::vector<moveit_msgs::CollisionObject> collisionObjects;
+    moveit_msgs::CollisionObject collisionObject1; moveit_msgs::CollisionObject collisionObject2;
+    collisionObject1.header.frame_id = m_moveGroupPtr->getPlanningFrame();
+    collisionObject2.header.frame_id = m_moveGroupPtr->getPlanningFrame();
 
     // Add table in basement
-    collisionObject.id = "table";
+    collisionObject1.id = "table";
 
     shape_msgs::SolidPrimitive primitive;
     primitive.type = primitive.BOX;
     primitive.dimensions.resize(3);
-    primitive.dimensions[0] = 0.2;
-    primitive.dimensions[1] = 4.0;
-    primitive.dimensions[2] = 2.0;
+    primitive.dimensions[0] = 1.0;
+    primitive.dimensions[1] = 1.0;
+    primitive.dimensions[2] = 0.02;
 
     // A table pose (specified relative to frame_id)
     geometry_msgs::Pose table_pose;
     table_pose.orientation.w = 1.0;
-    table_pose.position.x = -1.0;
+    table_pose.position.x = -0.6;
     table_pose.position.y = 0.0;
-    table_pose.position.z = 1.0;
+    table_pose.position.z = 0.5;
 
-    collisionObject.primitives.push_back(primitive);
-    collisionObject.primitive_poses.push_back(table_pose);  
-    collisionObject.operation = collisionObject.ADD;
+    collisionObject1.primitives.push_back(primitive);
+    collisionObject1.primitive_poses.push_back(table_pose);
+    collisionObject1.operation = collisionObject1.ADD;
 
-    planningScene.world.collision_objects.push_back(collisionObject);
+    collisionObjects.push_back(collisionObject1);
+
+    collisionObject2.id = "wall";
+    primitive.type = primitive.BOX;
+    primitive.dimensions.resize(3);
+    primitive.dimensions[0] = 0.1;
+    primitive.dimensions[1] = 3.0;
+    primitive.dimensions[2] = 2.0;
+
+    geometry_msgs::Pose wall_pose;
+    wall_pose.orientation.w = 1.0;
+    wall_pose.position.x = -1.0;
+    wall_pose.position.y = 0.0;
+    wall_pose.position.z = 1.0;
+
+    collisionObject2.primitives.push_back(primitive);
+    collisionObject2.primitive_poses.push_back(wall_pose);
+    collisionObject2.operation = collisionObject2.ADD;
+
+    collisionObjects.push_back(collisionObject2);
+
+
+    for(std::size_t i = 0; i < collisionObjects.size(); ++i){
+        planningScene.world.collision_objects.push_back(collisionObjects.at(i));
+    };
+
 
     ROS_INFO("Added collisions");
 
-
-    // If using multiple objects
-    //std::vector<moveit_msgs::CollisionObject> collisionObjects;
-    //collisionObjects.push_back(collisionObject);
 
 
 }
