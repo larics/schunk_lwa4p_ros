@@ -467,8 +467,10 @@ bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req
     ros::Duration(0.5).sleep();
     // TODO: Add enabling stuff for different controller type
     ROS_INFO("Sending all joints to zero"); 
-    sendZeros("group");
-    ros::Duration(0.1).sleep();
+    //sendZeros("group"); // Enables sending of commands to jointGroupController
+    //ros::Duration(0.5).sleep();
+    //TODO: Add method for sending current joint states
+
 
     return switchControllerResponse.ok;
 }

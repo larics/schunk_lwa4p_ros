@@ -83,12 +83,13 @@ class ServoTrackPoseServer{
             ros::Rate sleep_rate(1);
             sleep_rate.sleep();
         }
+
+        // Add servo_nh_
+
         initializeSubscribers();
         initializePublishers();
         initializeServices();
-        //startServo();
-        //moveit_servo::PoseTracking tracker(servo_nh_, planningSceneMonitor_);
-        //startTracker(servo_nh_, planningSceneMonitor_);
+
         as_.start();
         ROS_INFO("[ServoTrackPoseServer] Starting...");
     }
@@ -97,7 +98,6 @@ class ServoTrackPoseServer{
     {
         // TODO: Check how looks descrutor of typical action_server
     }
-
 
     bool loadPlanningSceneMonitor()
     {
@@ -144,7 +144,6 @@ class ServoTrackPoseServer{
 
     }
 
-
     float checkDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2)
     {
         float x_dist = pow((pose1.position.x - pose2.position.x), 2);
@@ -171,9 +170,9 @@ class ServoTrackPoseServer{
 
         ROS_INFO_STREAM("x_err: " << x_err << "y_err:" << y_err << "z_err" << z_err);
 
-        float abs_err_sum = std::abs(x_err) + std::abs(y_err) + std::abs(z_err);
+        float max_err_per_axis = std::max({std::abs(x_err), std::abs(y_err), std::abs(z_err)});
 
-        return abs_err_sum/3;
+        return max_err_per_axis;
 
     }
 
@@ -215,18 +214,19 @@ class ServoTrackPoseServer{
 
     }
 
-    // TODO: Fix transition between state 2 and 3
+    // TODO: Fix transition between state 2 and 3 -- ??
     void executeCB(const schunk_lwa4p_control::ServoTrackPoseGoalConstPtr &goal)
     {
         ros::Rate r(1);
         ROS_INFO("[ServoTrackPoseServer] Recieved new goal!");
 
-        // Start PoseTracking node upon recieving goal
         ros::NodeHandle servo_nh_("servo_server");
-        ROS_INFO("[ServoTrackPoseServer] Initialized servo_nh");
 
         moveit_servo::PoseTracking tracker(servo_nh_, planningSceneMonitor_);
+
         StatusMonitor status_monitor(servo_nh_, "servo_status");
+
+        // AS flags
         bool elapsed = false; // execution timeout flag
         bool reached = false; // reached wanted pose with servoing
         bool preempted = false; // as has been preempted
@@ -243,7 +243,6 @@ class ServoTrackPoseServer{
         // Setup timeout to 30 sec if not given
         int timeout = goal->timeout_sec;
         if (timeout == 0) timeout=30;
-
 
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 0.1; // Add this to goal if neccessary
 
@@ -272,15 +271,11 @@ class ServoTrackPoseServer{
         target_pose.pose.orientation.z = current_ee_tf.transform.rotation.z;
         target_pose.pose.orientation.w = current_ee_tf.transform.rotation.w;
 
-        // Hardcode orientation for starters
-        // target_pose.pose.orientation.x = 0; target_pose.pose.orientation.y = 0;
-        // target_pose.pose.orientation.z = 0; target_pose.pose.orientation.w = 1;
-
         ROS_INFO_STREAM("Target pose translation is: " << current_ee_tf.transform.translation);
         ROS_INFO_STREAM("Target pose orientation is: " << current_ee_tf.transform.rotation);
 
         target_pose.header.stamp = ros::Time::now();
-        targetPosePublisher.publish(target_pose);
+        //targetPosePublisher.publish(target_pose);
 
         std::thread move_to_pose_thread(
                 [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
@@ -299,15 +294,16 @@ class ServoTrackPoseServer{
 
             // No angle distance check, maybe use quaternions for that as stated in following link
             // https://math.stackexchange.com/questions/90081/quaternion-distance / WORKS
-            // TODO: Check commands that are being sent to joint group position contorller
+            // TODO: Check commands that are being sent to joint group position controller
             // TODO: Check PID params
-            // TODO: Check differences between controllers
+            // TODO: Check differences between controllers --> commands are sent to the ros_control
 
-            // Modify the pose target a little bit each cycle
             target_pose.header.stamp = ros::Time::now();
+
             target_pose.pose.position.x = cmdPose.position.x;
             target_pose.pose.position.y = cmdPose.position.y;
             target_pose.pose.position.z = cmdPose.position.z;
+
             // Keep same orientation
             target_pose.pose.orientation.x = cmdPose.orientation.x;
             target_pose.pose.orientation.y = cmdPose.orientation.y;
@@ -325,44 +321,55 @@ class ServoTrackPoseServer{
             {
                 ROS_INFO("[ServoTrackPoseServer] Preempted");
                 // set the action state to preempted
-                as_.setPreempted();
                 reached = false;
                 preempted = true;
                 elapsed = false;
                 tracker.stopMotion();
                 move_to_pose_thread.join();
+                ROS_INFO("[ServoTrackPoseServer] Preemption succeeded. ");
+                as_.setPreempted();
+                break;
             }
 
             float euclideanDistance = checkDist(currentPose, cmdPose);
             float orientationDist = checkOrientationDist(currentPose, cmdPose);
-            float absError = checkError(currentPose, cmdPose);
-            ROS_INFO_STREAM("current dist is: " << euclideanDistance);
-            ROS_INFO_STREAM("current err is: " << absError);
-            ROS_INFO_STREAM("epsilon is: " << epsilon);
+            float maxError = checkError(currentPose, cmdPose);
+
+
+            //ROS_INFO_STREAM("Current pose is: " << currentPose);
+            //ROS_INFO_STREAM("Commanded pose is: " << cmdPose);
+            //ROS_INFO_STREAM("current dist is: " << euclideanDistance);
+            //ROS_INFO_STREAM("current err is: " << absError);
+            //ROS_INFO_STREAM("epsilon is: " << epsilon);
 
             // This should break him if position has been reached
-            if (absError < epsilon and orientationDist < epsilon){
+            if (maxError < epsilon and orientationDist < epsilon){
                 reached = true;
                 result_.reached_pose = true;
                 break;
             }
 
-            ROS_INFO_STREAM("elapsed: " << elapsed);
-            ROS_INFO_STREAM("reached: " << reached);
-            ROS_INFO_STREAM("preempted: " << preempted);
-            ROS_INFO_STREAM("executable: " << executable);
+            // This part works!
+            //ROS_INFO_STREAM("elapsed: " << elapsed);
+            //ROS_INFO_STREAM("reached: " << reached);
+            //ROS_INFO_STREAM("preempted: " << preempted);
+            //ROS_INFO_STREAM("executable: " << executable);
         }
 
-        tracker.stopMotion();
-        move_to_pose_thread.join();
 
-        // Set as to preempted
+        if (!preempted){
+            // causes std::system_error
+            tracker.stopMotion();
+            move_to_pose_thread.join();
+        }
+
+
+        // Set as to preempted --> This executable condition needs revision
         if ((elapsed && !preempted) || !executable)
         {
-            ROS_INFO("[ServoTrackPoseServer] Timeout reached: ABORTED");
-            //tracker.stopMotion();
-            //move_to_pose_thread.join();
             as_.setAborted(result_);
+            ROS_INFO("[ServoTrackPoseServer] Timeout reached: ABORTED");
+
         }
 
         // Set as to succeeded
