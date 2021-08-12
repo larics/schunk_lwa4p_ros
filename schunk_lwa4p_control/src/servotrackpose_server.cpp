@@ -53,6 +53,7 @@ class ServoTrackPoseServer{
 
         // service clients
         ros::ServiceClient startJointGroupPositionControllerClient_;
+        ros::ServiceClient startJointGroupVelocityControllerClient_;
 
         // action
         schunk_lwa4p_control::ServoTrackPoseFeedback feedback_;
@@ -133,7 +134,8 @@ class ServoTrackPoseServer{
         // Not Good! Node name for control_arm_node is hardcoded, have that in mind
         startJointGroupPositionControllerClient_ = empty_nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_group_position_controller");
         startJointGroupPositionControllerClient_.waitForExistence();
-
+        startJointGroupVelocityControllerClient_ = empty_nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_group_velocity_controller");
+        startJointGroupVelocityControllerClient_.waitForExistence();
     }
 
     void currentPoseCB(const geometry_msgs::Pose::ConstPtr &msg)
@@ -247,8 +249,10 @@ class ServoTrackPoseServer{
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 0.1; // Add this to goal if neccessary
 
         // Start JointGroupPositionController --> start JointGroupPositionController for servoing
-        std_srvs::Trigger srv; startJointGroupPositionControllerClient_.call(srv);
+        std_srvs::Trigger srv;
+        startJointGroupPositionControllerClient_.call(srv);
         ROS_INFO("[ServoTrackPoseServer] Starting joint group position controller.");
+        //startJointGroupVelocityControllerClient_.call(srv);
 
         r.sleep();
 

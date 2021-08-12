@@ -87,7 +87,8 @@
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="${arm_id}_joint2">
       <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->    </joint>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface-->
+    </joint>
     <actuator name="${arm_id}_joint2_motor">
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
