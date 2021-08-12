@@ -1,6 +1,6 @@
 lwa4p:
   arm_controller:
-    type: position_controllers/JointTrajectoryController
+    type: velocity_controllers/JointTrajectoryController
     joints:
       - lwa4p_joint1
       - lwa4p_joint2
@@ -22,6 +22,15 @@ lwa4p:
     action_monitor_rate: 10
   joint_group_position_controller:
     type: position_controllers/JointGroupPositionController
+    joints:
+      - lwa4p_joint1
+      - lwa4p_joint2
+      - lwa4p_joint3
+      - lwa4p_joint4
+      - lwa4p_joint5
+      - lwa4p_joint6
+  joint_group_velocity_controller:
+    type: velocity_controllers/JointGroupVelocityController
     joints:
       - lwa4p_joint1
       - lwa4p_joint2

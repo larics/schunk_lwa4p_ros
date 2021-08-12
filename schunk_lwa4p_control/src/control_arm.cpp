@@ -61,15 +61,13 @@ void ControlArm::init() {
     std::string startPositionControllersServiceName;
     std::string startJointTrajectoryControllerServiceName;
     std::string startJointGroupPositionControllerServiceName;
+    std::string startJointGroupVelocityControllerServiceName;
     std::string sendArmToHomingPoseServiceName;
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
     nodeHandle_.param("publishers/current_pose", currentPoseTopicName, std::string("tool/current_pose"));
     nodeHandle_.param("publishers/queue_size", currentPoseTopicQueueSize, 1);
-
-
-
 
     nodeHandle_.param("subscribers/cmd_pose_topic", cmdPoseTopicName, std::string("arm/command/pose"));
     nodeHandle_.param("subscribers/queue_size", cmdPoseTopicQueueSize, 1); 
@@ -82,8 +80,8 @@ void ControlArm::init() {
     nodeHandle_.param("services/start_position_controllers", startPositionControllersServiceName, std::string("controllers/start_position_controllers"));
     nodeHandle_.param("services/start_joint_trajectory_controller", startJointTrajectoryControllerServiceName, std::string("controllers/start_joint_trajectory_controller"));
     nodeHandle_.param("services/start_joint_group_position_controller", startJointGroupPositionControllerServiceName, std::string("controllers/start_joint_group_position_controller"));
+    nodeHandle_.param("services/start_joint_group_velocity_controller", startJointGroupVelocityControllerServiceName, std::string("controllers/start_joint_group_velocity_controller"));
     nodeHandle_.param("services/send_arm_to_homing_pose", sendArmToHomingPoseServiceName, std::string("arm/send_arm_to_homing_pose"));
-
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
@@ -94,7 +92,8 @@ void ControlArm::init() {
     cmdJoint4Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64>(std::string("lwa4p/joint_4_position_controller/command"), 1);
     cmdJoint5Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64>(std::string("lwa4p/joint_5_position_controller/command"), 1);
     cmdJoint6Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64>(std::string("lwa4p/joint_6_position_controller/command"), 1);
-    cmdJointGroupPublisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64MultiArray>(std::string("lwa4p/joint_group_position_controller/command"), 1);
+    cmdJointGroupPositionPublisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64MultiArray>(std::string("lwa4p/joint_group_position_controller/command"), 1);
+    cmdJointGroupVelocityPublisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64MultiArray>(std::string("lwa4p/joint_group_velocity_controller/command"), 1);
 
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
     armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
@@ -108,6 +107,7 @@ void ControlArm::init() {
     startPositionControllersService_ = nodeHandle_.advertiseService(startPositionControllersServiceName, &ControlArm::startPositionControllers, this);
     startJointTrajectoryControllerService_ = nodeHandle_.advertiseService(startJointTrajectoryControllerServiceName, &ControlArm::startJointTrajectoryController, this);
     startJointGroupPositionControllerService_ = nodeHandle_.advertiseService(startJointGroupPositionControllerServiceName, &ControlArm::startJointGroupPositionController, this);
+    startJointGroupVelocityControllerService_ = nodeHandle_.advertiseService(startJointGroupVelocityControllerServiceName, &ControlArm::startJointGroupVelocityController, this);
     sendArmToHomingPoseService_ = nodeHandle_.advertiseService(sendArmToHomingPoseServiceName, &ControlArm::sendArmToHomingPose, this);
     ROS_INFO("[ControlArm] Initialized services.");
 
@@ -475,6 +475,32 @@ bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req
     return switchControllerResponse.ok;
 }
 
+bool ControlArm::startJointGroupVelocityController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
+
+    std::vector<std::string> runningControllers; getRunningControllers(runningControllers);
+
+    ROS_INFO("[ControlArm] Start JointGroupVelocityController...");
+    controller_manager_msgs::SwitchControllerRequest switchControllerRequest;
+    controller_manager_msgs::SwitchControllerResponse switchControllerResponse;
+    // Stop running controllers
+    for(std::size_t i = 0; i < runningControllers.size(); ++i){
+        switchControllerRequest.stop_controllers.push_back(runningControllers[i]);
+    }
+    switchControllerRequest.start_controllers.push_back(std::string("joint_group_velocity_controller"));
+    switchControllerRequest.start_asap = true;
+    switchControllerRequest.strictness = 2;
+    switchControllerRequest.timeout = 10;
+
+    switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
+
+    ROS_INFO("Switched to velocity controller");
+
+    return switchControllerResponse.ok;
+
+
+
+}
+
 bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
 
     std::vector<std::string> runningControllers; getRunningControllers(runningControllers);
@@ -664,7 +690,7 @@ bool ControlArm::sendZeros(std::string ControllerType){
         msg.data.clear();
         msg.data.insert(msg.data.end(), zeroPositions.begin(), zeroPositions.end());
 
-        cmdJointGroupPublisher.publish(msg);
+        cmdJointGroupPositionPublisher.publish(msg);
 
     }
 
@@ -857,7 +883,7 @@ void ControlArm::run() {
         //Eigen::MatrixXd m_; 
         //Eigen::Vector3d testVector(0.0, 0.0, 0.0);
         //m_ = getJacobian(testVector);
-        //ROS_INFO_STREAM("Jacobian: \n" << m_); 
+        // TODO: Compare outputs of moveit_servo from jacobian (tracking pose) and this!
     
         r.sleep(); 
     }
