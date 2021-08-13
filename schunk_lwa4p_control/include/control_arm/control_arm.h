@@ -103,7 +103,8 @@ class ControlArm{
         ros::Publisher cmdJoint4Publisher;
         ros::Publisher cmdJoint5Publisher;
         ros::Publisher cmdJoint6Publisher;
-        ros::Publisher cmdJointGroupPublisher;
+        ros::Publisher cmdJointGroupPositionPublisher;
+        ros::Publisher cmdJointGroupVelocityPublisher;
 
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
@@ -115,6 +116,7 @@ class ControlArm{
         ros::ServiceServer startPositionControllersService_;
         ros::ServiceServer startJointTrajectoryControllerService_;
         ros::ServiceServer startJointGroupPositionControllerService_;
+        ros::ServiceServer startJointGroupVelocityControllerService_;
         ros::ServiceServer sendArmToHomingPoseService_;
 
         // ROS Service clients
@@ -137,6 +139,7 @@ class ControlArm{
         bool startPositionControllers(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startJointTrajectoryController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startJointGroupPositionController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool startJointGroupVelocityController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory

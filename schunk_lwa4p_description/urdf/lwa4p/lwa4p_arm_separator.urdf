@@ -604,7 +604,7 @@
   </joint>
   <gazebo reference="separator_main">
     <material value="Gazebo/ZincYellow"/>
-    <gravity>false</gravity>
+    <gravity>true</gravity>
   </gazebo>
   <gazebo reference="separator_right_head">
     <material value="Gazebo/YellowGlow"/>

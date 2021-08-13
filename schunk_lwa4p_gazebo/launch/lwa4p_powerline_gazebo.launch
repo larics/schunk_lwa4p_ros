@@ -57,6 +57,7 @@
        
     <!-- Load other controllers -->
     <node name="ros_control_controller_manager" ns="lwa4p" pkg="controller_manager" type="controller_manager" respawn="false" args="load joint_group_position_controller" />
+    <!--joint_group_velocity_controller" !-->
     
 
 </launch>
