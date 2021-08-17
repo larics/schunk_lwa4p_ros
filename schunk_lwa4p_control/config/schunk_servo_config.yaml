@@ -22,8 +22,8 @@ low_latency_mode: false  # Set this to true to publish as soon as an incoming Tw
 # What type of topic does your robot driver expect?
 # Currently supported are std_msgs/Float64MultiArray (for ros_control JointGroupVelocityController or JointGroupPositionController)
 # or trajectory_msgs/JointTrajectory (for Universal Robots and other non-ros_control robots)
-command_out_type: std_msgs/Float64MultiArray
-#command_out_type: trajectory_msgs/JointTrajectory
+#command_out_type: std_msgs/Float64MultiArray
+command_out_type: trajectory_msgs/JointTrajectory
 
 # What to publish? Can save some bandwidth as most robots only require positions or velocities
 publish_joint_positions: true
@@ -56,7 +56,7 @@ joint_command_in_topic: delta_joint_cmds # Topic for incoming joint angle comman
 joint_topic: /lwa4p/joint_states
 status_topic: status # Publish status to this topic
 command_out_topic: /lwa4p/joint_group_position_controller/command # Publish outgoing commands here
-#command_out_topic: /lwa4p/joint_group_velocity_controller/command
+#command_out_topic: /lwa4p/joint_trajectory_controller/command
 
 ## Collision checking for the entire robot body
 check_collisions: true # Check collisions?
