@@ -291,7 +291,7 @@ class ServoTrackPoseServer{
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted) { // !done --> used in for loop to terminate for loop
 
-            ROS_INFO("[ServoTrackPoseServer] Currently executing...")
+            //ROS_INFO("[ServoTrackPoseServer] Currently executing...");
             feedback_.current_pose.position = currentPose.position;
             feedback_.current_pose.orientation = currentPose.orientation;
             as_.publishFeedback(feedback_);
@@ -332,6 +332,8 @@ class ServoTrackPoseServer{
             float euclideanDistance = checkDist(currentPose, cmdPose);
             float orientationDist = checkOrientationDist(currentPose, cmdPose);
             float maxError = checkError(currentPose, cmdPose);
+
+            ROS_INFO_STREAM("Current servo error is: " << maxError);
 
             // This should break him if position has been reached
             if (maxError < epsilon and orientationDist < epsilon){
