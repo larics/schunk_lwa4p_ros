@@ -23,6 +23,7 @@ public:
     StatusMonitor(ros::NodeHandle & nh, const std::string& topic)
     {
         sub_ = nh.subscribe(topic, 1, &StatusMonitor::statusCB, this);
+
     }
 private:
     void statusCB(const std_msgs::Int8ConstPtr& msg)
@@ -230,9 +231,10 @@ class ServoTrackPoseServer{
 
         ros::NodeHandle servo_nh_("servo_server");
 
+        // It subscribes to wrong topic probably
         moveit_servo::PoseTracking tracker(servo_nh_, planningSceneMonitor_);
 
-        StatusMonitor status_monitor(servo_nh_, "servo_status");
+        StatusMonitor status_monitor(servo_nh_, "status");
 
         // AS flags
         bool elapsed = false; // execution timeout flag
@@ -333,7 +335,7 @@ class ServoTrackPoseServer{
             float orientationDist = checkOrientationDist(currentPose, cmdPose);
             float maxError = checkError(currentPose, cmdPose);
 
-            ROS_INFO_STREAM("Current servo error is: " << maxError);
+            // ROS_INFO_STREAM("Current servo error is: " << maxError);
 
             // This should break him if position has been reached
             if (maxError < epsilon and orientationDist < epsilon){

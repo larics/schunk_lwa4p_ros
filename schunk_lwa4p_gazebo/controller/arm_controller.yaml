@@ -1,6 +1,7 @@
 lwa4p:
   arm_controller:
     type: velocity_controllers/JointTrajectoryController
+    verbose: true
     joints:
       - lwa4p_joint1
       - lwa4p_joint2
@@ -9,7 +10,7 @@ lwa4p:
       - lwa4p_joint5
       - lwa4p_joint6
     constraints:
-        goal_time: 5.0
+        goal_time: 10.0
         stopped_velocity_tolerance: 0.05
         lwa4p_joint1: {trajectory: 0.1, goal: 0.1}
         lwa4p_joint2: {trajectory: 0.1, goal: 0.1}
@@ -18,8 +19,8 @@ lwa4p:
         lwa4p_joint5: {trajectory: 0.1, goal: 0.1}
         lwa4p_joint6: {trajectory: 0.1, goal: 0.1}
     stop_trajectory_duration: 0.5
-    state_publish_rate:  25
-    action_monitor_rate: 10
+    state_publish_rate:  50
+    action_monitor_rate: 25
   joint_group_position_controller:
     type: position_controllers/JointGroupPositionController
     joints:

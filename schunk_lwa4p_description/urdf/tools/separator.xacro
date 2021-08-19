@@ -188,7 +188,7 @@
         <joint name="separator_imu1" type="fixed">
             <parent link="separator_base"/>
             <child link="imu1"/>
-            <origin xyz="-0.1 0.3 -0.01" rpy="0 0 0"/>
+            <origin xyz="-0.1 0.27 -0.01" rpy="0 0 0"/>
         </joint>
 
         <link name="imu2">
@@ -240,7 +240,7 @@
         <joint name="separator_imu3" type="fixed">
             <parent link="separator_base"/>
             <child link="imu3"/>
-            <origin xyz="-0.1 -0.3 -0.01" rpy="0 0 0"/>
+            <origin xyz="-0.1 -0.27 -0.01" rpy="0 0 0"/>
         </joint>
 
     </xacro:macro>
