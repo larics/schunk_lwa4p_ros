@@ -6,9 +6,19 @@
     <arg name="gui" default="true" doc="Starts gazebo gui" />
     <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
     <arg name="real_robot" default="true"/>
+    <arg name="use_imus" default="true"/>
+    <arg name="use_separator_end_effector" default="false"/>
 
     <!-- used in control arm node to call lwa4p driver initialization !--> 
     <param name="real_robot" value="true"/>
+
+    <group if="$(arg use_imus)">
+        <include file="$(find openzen_acore_imu)/launch/imu_acore.launch"/>
+    </group>
+
+    <group if="$(arg use_separator_end_effector)">
+        <include file="$(find separator_end_effector)/launch/separator_ee.launch"/>
+    </group>
 
     <!-- Send robot URDF to param server -->
     <group if="$(arg gripper)">

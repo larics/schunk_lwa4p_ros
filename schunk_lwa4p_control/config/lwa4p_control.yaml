@@ -28,5 +28,5 @@ lwa4p:
     constrains: 
       goal_time: 2.0 
       
-    state_publish_rate: 25
+    state_publish_rate: 50
 
