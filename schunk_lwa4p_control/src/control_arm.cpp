@@ -322,7 +322,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     table_pose.orientation.w = 1.0;
     table_pose.position.x = -0.6;
     table_pose.position.y = 0.0;
-    table_pose.position.z = 0.5;
+    table_pose.position.z = 0.4;
 
     collisionObject1.primitives.push_back(primitive);
     collisionObject1.primitive_poses.push_back(table_pose);
@@ -466,9 +466,11 @@ bool ControlArm::startJointGroupPositionController(std_srvs::TriggerRequest &req
     switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
     ros::Duration(0.5).sleep();
     // TODO: Add enabling stuff for different controller type
-    ROS_INFO("Sending all joints to zero"); 
-    //sendZeros("group"); // Enables sending of commands to jointGroupController
-    //ros::Duration(0.5).sleep();
+    ROS_INFO("Sending all joints to zero");
+
+    //activateJoints();
+    sendZeros("group"); // Enables sending of commands to jointGroupController
+    ros::Duration(0.5).sleep();
     //TODO: Add method for sending current joint states
 
 
@@ -527,7 +529,7 @@ bool ControlArm::startPositionControllers(std_srvs::TriggerRequest &req, std_srv
     switchControllerServiceClient_.call(switchControllerRequest, switchControllerResponse);
     ros::Duration(0.1).sleep();
 
-    sendZeros("position");
+    //sendZeros("position");
 
     return switchControllerResponse.ok;
 
@@ -680,15 +682,20 @@ bool ControlArm::sendZeros(std::string ControllerType){
     if (ControllerType == "group"){
         std_msgs::Float64MultiArray msg;
 
-        std::vector<double> zeroPositions = {0, 0, 0, 0, 0, 0};
+        std::vector<double> activationPositions = {m_jointPositions_[0],
+                                             m_jointPositions_[1],
+                                             m_jointPositions_[2],
+                                             m_jointPositions_[3],
+                                             m_jointPositions_[4],
+                                             0};
 
         msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
-        msg.layout.dim[0].size = zeroPositions.size();
+        msg.layout.dim[0].size = activationPositions.size();
         msg.layout.dim[0].stride = 1;
         msg.layout.dim[0].label = "i";
 
         msg.data.clear();
-        msg.data.insert(msg.data.end(), zeroPositions.begin(), zeroPositions.end());
+        msg.data.insert(msg.data.end(), activationPositions.begin(), activationPositions.end());
 
         cmdJointGroupPositionPublisher.publish(msg);
 
@@ -842,9 +849,11 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
                                         refPointPosition, 
                                         jacobianMatrix);
 
-    return jacobianMatrix; 
+    return jacobianMatrix;
 
 }
+
+
 
 void ControlArm::run() {
 

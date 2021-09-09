@@ -9,7 +9,7 @@ windup_limit: 0.1
 # Different PID gains affect different reaching of singularity, which is quite interesting. 
 # Sometimes it reaches singularity before, sometimes after. However, noetic has best preformance seen 
 # until now
-x_proportional_gain: 5    # gain 200
+x_proportional_gain: 5  # gain 200
 y_proportional_gain: 5    # gain: 200
 z_proportional_gain: 2.5   # gain: 275 (25Hz)   # Maybe use different params than used in simulation --> TO BIG gains
 x_integral_gain: 0.0
