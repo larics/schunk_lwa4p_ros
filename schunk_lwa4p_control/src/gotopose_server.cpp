@@ -186,6 +186,8 @@ class GoToPoseActionServer{
         {
             succeeded = true;
             result_.reached_pose = true;
+            // Added 10 seconds sleep to wait for recording magnetic measurements during execution
+            // sleep(10);
             as_.setSucceeded(result_);
 
             ROS_INFO("[GoToPoseServer] Reached wanted pose: SUCCEEDDED!");
