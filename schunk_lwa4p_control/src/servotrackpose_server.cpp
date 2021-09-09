@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <tf/transform_listener.h>
 #include <thread>
 #include <cmath>
 #include <actionlib/server/simple_action_server.h>
@@ -51,6 +52,7 @@ class ServoTrackPoseServer{
 
         ros::Publisher targetPosePublisher;
         ros::Publisher currentPoseErrorPublisher;
+        ros::Publisher magneticNavigationPublisher;
         ros::Subscriber currentPoseSubscriber;
 
         // service clients
@@ -65,6 +67,9 @@ class ServoTrackPoseServer{
         // msgs
         geometry_msgs::Pose currentPose;
         geometry_msgs::Pose cmdPose;
+
+        // transformListener
+        tf::TransformListener listener;
 
         // planningScene
         planning_scene_monitor::PlanningSceneMonitorPtr planningSceneMonitor_;
@@ -129,6 +134,7 @@ class ServoTrackPoseServer{
     {
         targetPosePublisher = servo_nh_.advertise<geometry_msgs::PoseStamped>("/servo_server/target_pose", 1, true);
         currentPoseErrorPublisher = as_nh_.advertise<geometry_msgs::Point>("/pose_error", 1, true);
+        magneticNavigationPublisher = as_nh_.advertise<geometry_msgs::PoseStamped>("/magnetic_estimation", 1, true);
     }
 
     void initializeServices()
@@ -148,6 +154,7 @@ class ServoTrackPoseServer{
         currentPose.orientation = msg->orientation;
 
     }
+
 
     float checkDist(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2)
     {
@@ -248,7 +255,7 @@ class ServoTrackPoseServer{
         float epsilon = goal->max_err_per_axis;
         // Setup tracker_rate && check if estimated_duration > timeout to abort;
         int tracker_freq = goal->cmd_freq;
-        if (tracker_freq == 0) tracker_freq = 50; ros::Rate tracker_rate(tracker_freq);
+        if (tracker_freq == 0) tracker_freq = 100; ros::Rate tracker_rate(tracker_freq);
         // Setup timeout to 30 sec if not given
         int timeout = goal->timeout_sec;
         if (timeout == 0) timeout=30;
@@ -283,7 +290,6 @@ class ServoTrackPoseServer{
         // ROS_INFO_STREAM("Target pose orientation is: " << current_ee_tf.transform.rotation);
 
         target_pose.header.stamp = ros::Time::now();
-        //targetPosePublisher.publish(target_pose);
 
         std::thread move_to_pose_thread(
                 [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
@@ -292,6 +298,29 @@ class ServoTrackPoseServer{
 
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted) { // !done --> used in for loop to terminate for loop
+
+            // Publish estimated pose from magnetic navigation
+            geometry_msgs::PoseStamped magnetic_pose;
+            if(goal->magnetic_navigation == true){
+                tf::StampedTransform transform1; tf::StampedTransform transform2;
+
+                magnetic_pose.header.frame_id="magnetic_field_dest";
+                listener.lookupTransform("base_link", "power_line0", ros::Time(0), transform1);
+                listener.lookupTransform("base_link", "power_line1", ros::Time(0), transform2);
+
+                magnetic_pose.pose.position.x = (transform1.getOrigin().x() + transform2.getOrigin().x())/2;
+                magnetic_pose.pose.position.y = (transform1.getOrigin().y() + transform2.getOrigin().y())/2;
+                magnetic_pose.pose.position.z = (transform1.getOrigin().z() + transform2.getOrigin().z())/2;
+                magnetic_pose.pose.orientation.x = cmdPose.orientation.x; //transform1.getRotation().x();
+                magnetic_pose.pose.orientation.y = cmdPose.orientation.y; //transform1.getRotation().y();
+                magnetic_pose.pose.orientation.z = cmdPose.orientation.z; //transform1.getRotation().z();
+                magnetic_pose.pose.orientation.w = cmdPose.orientation.w; //transform1.getRotation().w();
+                //ROS_INFO_STREAM("x_est: " << magnetic_pose.pose.position.x << " x_real: " << target_pose.pose.position.x);
+                //ROS_INFO_STREAM("y_est: " << magnetic_pose.pose.position.y << " y_real: " << target_pose.pose.position.y);
+                //ROS_INFO_STREAM("z_est: " << magnetic_pose.pose.position.z << " z_real: " << target_pose.pose.position.z);
+                magneticNavigationPublisher.publish(magnetic_pose);        targetPosePublisher.publish(target_pose);
+
+            }
 
             //ROS_INFO("[ServoTrackPoseServer] Currently executing...");
             feedback_.current_pose.position = currentPose.position;
@@ -303,14 +332,17 @@ class ServoTrackPoseServer{
             target_pose.pose.position.x = cmdPose.position.x;
             target_pose.pose.position.y = cmdPose.position.y;
             target_pose.pose.position.z = cmdPose.position.z;
-
-            // Keep same orientation
+            //target_pose.pose.position.x = magnetic_pose.pose.position.x;
+            //target_pose.pose.position.y = magnetic_pose.pose.position.y;
+            //target_pose.pose.position.z = magnetic_pose.pose.position.z;
+            // Keep same orientation --> align with wires
             target_pose.pose.orientation.x = cmdPose.orientation.x;
             target_pose.pose.orientation.y = cmdPose.orientation.y;
             target_pose.pose.orientation.z = cmdPose.orientation.z;
             target_pose.pose.orientation.w = cmdPose.orientation.w;
 
             targetPosePublisher.publish(target_pose);
+
             tracker_rate.sleep();   //TODO: Check what happens if tracker rate sleep is removed
 
             // Break loop if timeout elapsed
