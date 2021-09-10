@@ -149,14 +149,19 @@ Currently is not used!
  - [x] Reconfigured schunk_robots to match new joint names
  - [x] Added MoveToPose action server  
  - [x] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
+ - [x] Add moveit_servo 
+
+
+TODO: 
+ - [ ] Add Cartesian path planning to control_arm_node
+ - [ ] Add topic for cartesian path planning 
+ - [ ] Add to ros_utils some plotting methods
  - [ ] Add gravity compensation controller in gazebo [TBD]
  - [ ] Create node for continuous replanning [TBD] 
- - [x] Add moveit_servo / Action server
- - [ ] Add force sensor link for better planning
- - [ ] Add current check for dynamixels for setting up distancer
+ - [ ] Add force sensor link for better planning [TBD] 
+ - [ ] Add current check for dynamixels for setting up distancer [1200]
  - [ ] Try out servoing for setting up separator 
  - [ ] Find PID params for servoing (pose_tracking config) 
- - [ ] Check actions (maybe add few params/conditions, depending on real or simulated robot) 
  - [ ] Integrate everything and test on real robot
 
 # Possible improvements 

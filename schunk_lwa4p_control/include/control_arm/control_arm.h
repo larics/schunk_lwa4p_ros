@@ -34,6 +34,9 @@
 #include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit_msgs/ApplyPlanningScene.h>
+#include <moveit_msgs/PositionIKRequest.h>
+#include <moveit_msgs/GetPositionIKRequest.h>
+#include <moveit_msgs/GetPositionIKResponse.h>
 
 // Conversions 
 #include <tf/tf.h>
@@ -118,6 +121,7 @@ class ControlArm{
         ros::ServiceServer startJointGroupPositionControllerService_;
         ros::ServiceServer startJointGroupVelocityControllerService_;
         ros::ServiceServer sendArmToHomingPoseService_;
+        ros::ServiceServer checkIKSolutionsService_;
 
         // ROS Service clients
         ros::ServiceClient applyPlanningSceneServiceClient_;
@@ -126,6 +130,7 @@ class ControlArm{
         ros::ServiceClient switchControllerServiceClient_;
         ros::ServiceClient listControllersServiceClient_;
         ros::ServiceClient switchToPositionControllerServiceClient_;
+        ros::ServiceClient getIKSolutionsServiceClient_;
         ros::ServiceClient switchToTrajectoryControllerServiceClient_;
 
         // ROS Subscriber Callback
@@ -140,6 +145,9 @@ class ControlArm{
         bool startJointTrajectoryController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startJointGroupPositionController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool startJointGroupVelocityController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+        //https://ros-planning.github.io/moveit_tutorials/doc/trac_ik/trac_ik_tutorial.html
+        bool checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKRequest &req, moveit_msgs::GetPositionIKResponse &res);
         bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
@@ -175,6 +183,7 @@ class ControlArm{
         void getRunningControllers(std::vector<std::string> &runningControllerNames);
         bool getIK(const std::size_t attempts, double timeout);
         Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution
+        Eigen::MatrixXd getInertiaMatrix(Eigen::Vector3d refPointPosition);
 
        
 };
