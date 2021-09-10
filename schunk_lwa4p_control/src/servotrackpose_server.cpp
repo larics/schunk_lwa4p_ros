@@ -11,6 +11,8 @@
 #include <moveit_servo/pose_tracking.h>
 #include <moveit_servo/status_codes.h>
 #include <moveit_servo/make_shared_from_pool.h>
+#include <moveit_msgs/PositionIKRequest.h>
+#include <moveit_msgs/GetPositionIK.h>
 // action specific stuff
 #include "schunk_lwa4p_control/ServoTrackPoseAction.h"
 
@@ -58,6 +60,7 @@ class ServoTrackPoseServer{
         // service clients
         ros::ServiceClient startJointGroupPositionControllerClient_;
         ros::ServiceClient startJointGroupVelocityControllerClient_;
+        ros::ServiceClient checkIKSolutionsClient_;
 
         // action
         schunk_lwa4p_control::ServoTrackPoseFeedback feedback_;
@@ -145,6 +148,8 @@ class ServoTrackPoseServer{
         startJointGroupPositionControllerClient_.waitForExistence();
         startJointGroupVelocityControllerClient_ = empty_nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_group_velocity_controller");
         startJointGroupVelocityControllerClient_.waitForExistence();
+        checkIKSolutionsClient_ = empty_nh_.serviceClient<moveit_msgs::GetPositionIK>("/control_arm_node/arm/check_ik_solutions");
+        //checkIKSolutionsClient_.waitForExistence();
     }
 
     void currentPoseCB(const geometry_msgs::Pose::ConstPtr &msg)
@@ -260,7 +265,11 @@ class ServoTrackPoseServer{
         int timeout = goal->timeout_sec;
         if (timeout == 0) timeout=30;
 
-        Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 0.1; // Add this to goal if neccessary
+
+
+
+        // PoseTracking tolerances./sc
+        Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 2; // Add this to goal if neccessary
 
         // Start JointGroupPositionController --> start JointGroupPositionController for servoing
         std_srvs::Trigger srv;
@@ -277,6 +286,7 @@ class ServoTrackPoseServer{
 
         // Create target pose
         geometry_msgs::PoseStamped target_pose;
+        target_pose.header.stamp = ros::Time::now();
         target_pose.header.frame_id = current_ee_tf.header.frame_id;
         target_pose.pose.position.x = current_ee_tf.transform.translation.x;
         target_pose.pose.position.y = current_ee_tf.transform.translation.y;
@@ -286,15 +296,15 @@ class ServoTrackPoseServer{
         target_pose.pose.orientation.z = current_ee_tf.transform.rotation.z;
         target_pose.pose.orientation.w = current_ee_tf.transform.rotation.w;
 
-        // ROS_INFO_STREAM("Target pose translation is: " << current_ee_tf.transform.translation);
-        // ROS_INFO_STREAM("Target pose orientation is: " << current_ee_tf.transform.rotation);
-
-        target_pose.header.stamp = ros::Time::now();
+        // Check existence of IK for wanted pose --> if exists continue, else break;
+        moveit_msgs::GetPositionIK ik_req;
+        ik_req.request.ik_request.pose_stamped = target_pose;
+        checkIKSolutionsClient_.call(ik_req);
+        ROS_INFO_STREAM("Checking IK!");
 
         std::thread move_to_pose_thread(
                 [&tracker, &lin_tol, &rot_tol] { tracker.moveToPose(lin_tol, rot_tol, 0.1 /* target pose timeout */);
                 });
-
 
         // Added reached instead of check distance
         while (!reached && !elapsed && !preempted) { // !done --> used in for loop to terminate for loop

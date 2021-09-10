@@ -63,6 +63,7 @@ void ControlArm::init() {
     std::string startJointGroupPositionControllerServiceName;
     std::string startJointGroupVelocityControllerServiceName;
     std::string sendArmToHomingPoseServiceName;
+    std::string checkIKSolutionsServiceName;
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
@@ -82,6 +83,7 @@ void ControlArm::init() {
     nodeHandle_.param("services/start_joint_group_position_controller", startJointGroupPositionControllerServiceName, std::string("controllers/start_joint_group_position_controller"));
     nodeHandle_.param("services/start_joint_group_velocity_controller", startJointGroupVelocityControllerServiceName, std::string("controllers/start_joint_group_velocity_controller"));
     nodeHandle_.param("services/send_arm_to_homing_pose", sendArmToHomingPoseServiceName, std::string("arm/send_arm_to_homing_pose"));
+    nodeHandle_.param("services/check_ik_soutions", checkIKSolutionsServiceName, std::string("arm/check_ik_solutions"));
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
@@ -109,6 +111,7 @@ void ControlArm::init() {
     startJointGroupPositionControllerService_ = nodeHandle_.advertiseService(startJointGroupPositionControllerServiceName, &ControlArm::startJointGroupPositionController, this);
     startJointGroupVelocityControllerService_ = nodeHandle_.advertiseService(startJointGroupVelocityControllerServiceName, &ControlArm::startJointGroupVelocityController, this);
     sendArmToHomingPoseService_ = nodeHandle_.advertiseService(sendArmToHomingPoseServiceName, &ControlArm::sendArmToHomingPose, this);
+    checkIKSolutionsService_ = nodeHandle_.advertiseService(checkIKSolutionsServiceName, &ControlArm::checkIKSolutionsServiceCallback, this);
     ROS_INFO("[ControlArm] Initialized services.");
 
     // Initialize Clients for other services
@@ -121,25 +124,10 @@ void ControlArm::init() {
     listControllersServiceClient_.waitForExistence();
     switchToPositionControllerServiceClient_= nodeHandle_.serviceClient<std_srvs::Trigger>(startPositionControllersServiceName);
     switchToTrajectoryControllerServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>(startJointTrajectoryControllerServiceName);
+    getIKSolutionsServiceClient_ = nodeHandle_.serviceClient<moveit_msgs::GetPositionIKRequest>(checkIKSolutionsServiceName);
+    getIKSolutionsServiceClient_.waitForExistence();
     //addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
     ROS_INFO("[ControlArm] Initialized service clients. ");
-
-    //Moved this part to gotopose_server (initializes before/loads controllers on time)
-    nodeHandleWithoutNs_.getParam("real_robot", realRobot_);
-
-    /**
-    if (realRobot_){
-        ROS_INFO("[ControlArm] Starting real robot...");
-        realRobotDriverInitServiceClient_ = nodeHandleWithoutNs_.serviceClient<std_srvs::Trigger>("/lwa4p/driver/init");
-        realRobotDriverInitServiceClient_.waitForExistence();
-        std_srvs::Trigger srv;
-        realRobotDriverInitServiceClient_.call(srv);
-        addCollisionObjectServiceClient_.call(srv);
-
-    }**/
-
-
-
 
 }
 
@@ -178,7 +166,9 @@ bool ControlArm::setCmdPose() {
     if (moveGroupInitialized_) {
 
         m_moveGroupPtr->setPoseTarget(m_cmdPose);
+        return true;
     }
+    return false;
 
 }
 
@@ -294,7 +284,9 @@ bool ControlArm::sendToDeltaCmdPose() {
     // set CMD pose
     m_cmdPose = cmdPose; 
 
-    sendToCmdPose();      
+    sendToCmdPose();
+
+    return true;
 
 }
 
@@ -359,6 +351,42 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 
 
 
+}
+
+bool ControlArm::checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKRequest &req, moveit_msgs::GetPositionIKResponse &res){
+
+
+    moveit_msgs::GetPositionIKRequest ik_req; moveit_msgs::GetPositionIKResponse ik_res;
+    sensor_msgs::JointState current_joint_state;
+
+    std::vector<std::string> joint_names;
+    std::vector<double> joint_values;
+
+    joint_names = m_moveGroupPtr->getJointNames();
+    joint_values = m_moveGroupPtr->getCurrentJointValues();
+
+    //ROS_INFO_STREAM("Joint values: " << joint_values);
+
+    current_joint_state.name = joint_names;
+    current_joint_state.position = joint_values;
+
+    ik_req.ik_request.group_name = m_moveGroupPtr->getName();
+    ik_req.ik_request.robot_state.joint_state = current_joint_state;
+    ik_req.ik_request.ik_link_name = m_moveGroupPtr->getEndEffectorLink();
+    ik_req.ik_request.avoid_collisions = true;
+
+    geometry_msgs::PoseStamped ik_pose;
+    ik_pose = req.ik_request.pose_stamped;
+    ik_req.ik_request.pose_stamped = ik_pose;
+
+    //getIKSolutionsServiceClient_.call(ik_req, res);
+    ROS_INFO_STREAM("IK solutions are: " << res);
+
+    getCurrentArmState();
+    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, ik_pose);
+    ROS_INFO_STREAM("Found IK solution for wanted pose: " << found_ik);
+
+    return false;
 }
 
 bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
@@ -852,8 +880,6 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
     return jacobianMatrix;
 
 }
-
-
 
 void ControlArm::run() {
 
