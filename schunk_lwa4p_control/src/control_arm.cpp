@@ -312,9 +312,9 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     // A table pose (specified relative to frame_id)
     geometry_msgs::Pose table_pose;
     table_pose.orientation.w = 1.0;
-    table_pose.position.x = -0.6;
+    table_pose.position.x = -0.5;
     table_pose.position.y = 0.0;
-    table_pose.position.z = 0.4;
+    table_pose.position.z = 0.75;
 
     collisionObject1.primitives.push_back(primitive);
     collisionObject1.primitive_poses.push_back(table_pose);
@@ -356,37 +356,57 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 bool ControlArm::checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKRequest &req, moveit_msgs::GetPositionIKResponse &res){
 
 
-    moveit_msgs::GetPositionIKRequest ik_req; moveit_msgs::GetPositionIKResponse ik_res;
-    sensor_msgs::JointState current_joint_state;
+    //moveit_msgs::GetPositionIKRequest ik_req; moveit_msgs::GetPositionIKResponse ik_res;
+    //sensor_msgs::JointState current_joint_state;
 
-    std::vector<std::string> joint_names;
-    std::vector<double> joint_values;
+    //std::vector<std::string> joint_names;
+    //std::vector<double> joint_values;
 
-    joint_names = m_moveGroupPtr->getJointNames();
-    joint_values = m_moveGroupPtr->getCurrentJointValues();
+    //joint_names = m_moveGroupPtr->getJointNames();
+    //joint_values = m_moveGroupPtr->getCurrentJointValues();
 
     //ROS_INFO_STREAM("Joint values: " << joint_values);
+    //ROS_INFO_STREAM("Joint names: " << joint_names);
 
-    current_joint_state.name = joint_names;
-    current_joint_state.position = joint_values;
+    //current_joint_state.name = joint_names;
+    //current_joint_state.position = joint_values;
 
-    ik_req.ik_request.group_name = m_moveGroupPtr->getName();
-    ik_req.ik_request.robot_state.joint_state = current_joint_state;
-    ik_req.ik_request.ik_link_name = m_moveGroupPtr->getEndEffectorLink();
-    ik_req.ik_request.avoid_collisions = true;
+    //ik_req.ik_request.group_name = m_moveGroupPtr->getName();
+    //ik_req.ik_request.robot_state.joint_state = current_joint_state;
+    //ik_req.ik_request.ik_link_name = m_moveGroupPtr->getEndEffectorLink();
+    //ik_req.ik_request.avoid_collisions = true;
 
     geometry_msgs::PoseStamped ik_pose;
     ik_pose = req.ik_request.pose_stamped;
-    ik_req.ik_request.pose_stamped = ik_pose;
+    req.ik_request.pose_stamped = ik_pose;
 
-    //getIKSolutionsServiceClient_.call(ik_req, res);
-    ROS_INFO_STREAM("IK solutions are: " << res);
+    ROS_INFO_STREAM("Calling IK check service: " << req);
+
+    //getIKSolutionsServiceClient_.call(ik_req, ik_res);
+    //ros::Duration(1).sleep();
+    //ROS_INFO_STREAM("IK solutions are: " << ik_res);
+
+    geometry_msgs::Pose pose;
+    pose = req.ik_request.pose_stamped.pose;
 
     getCurrentArmState();
-    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, ik_pose);
-    ROS_INFO_STREAM("Found IK solution for wanted pose: " << found_ik);
 
-    return false;
+    bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, pose,0.1);
+    ROS_INFO_STREAM("Found IK solution for wanted pose: " << found_ik);
+    std::vector<double> joint_values;
+    if (found_ik){
+        m_currentRobotStatePtr->copyJointGroupPositions(m_jointModelGroupPtr, joint_values);
+    }
+    if (found_ik){
+        for(std::size_t i = 0; i < joint_values.size(); ++i)
+        {
+            ROS_INFO("Joint %i: %f", i, joint_values[i]);
+        }
+    }
+
+    // bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, ik_pose, 10, 1);
+
+    return found_ik;
 }
 
 bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
