@@ -27,20 +27,20 @@
   <!-- foot for arm -->
   <link name="base_link">
 	<visual>
-		<origin xyz="0 0 0.25" rpy="0 0 0" />
+		<origin xyz="0 0 0.4" rpy="0 0 0" />
 		<geometry>
-			<cylinder radius="0.1" length="0.5"/>
+			<cylinder radius="0.1" length="0.8"/>
 		</geometry>
 		<material name="Gazebo/Black" />
 	</visual>
 	<collision>
-		<origin xyz="0 0 0.25" rpy="0 0 0" />
+		<origin xyz="0 0 0.4" rpy="0 0 0" />
 		<geometry>
-			<cylinder radius="0.1" length="0.5"/>
+			<cylinder radius="0.1" length="0.8"/>
 		</geometry>
 	</collision>
 	<inertial>
-		<origin xyz="0 0 0.25" rpy="0 0 0"/>
+		<origin xyz="0 0 0.4" rpy="0 0 0"/>
 		<mass value="10000.0"/>
 		<inertia ixx="10000.0"  ixy="0"  ixz="0" iyy="10000.0" iyz="0" izz="10000.0" />
 	</inertial>
@@ -48,7 +48,7 @@
  
   <!-- arm -->
   <xacro:lwa4p_arm arm_id="lwa4p" parent="base_link" has_podest="true" >
-    <origin xyz="0 0 0.50" rpy="0 0 0" />
+    <origin xyz="0 0 0.8" rpy="0 0 0" />
   </xacro:lwa4p_arm>
 
   <!-- tool -->
@@ -58,6 +58,6 @@
   <xacro:separator_distancer ns="lwa4p" rpy="0 0 0" xyz="0 0 0.05"/>
   
   <!-- powerline --> 
-  <xacro:powerline base_x="0" base_y="0" powerline_height="1.195" x_distance="0.2" y_distance="1.25" gazebo="true" two_cables="true" cable_distance="0.4"/>
+  <xacro:powerline base_x="0" base_y="0" powerline_height="1.45" x_distance="0.05" y_distance="1.25" gazebo="true" two_cables="true" cable_distance="0.4"/>
 
 </robot>
