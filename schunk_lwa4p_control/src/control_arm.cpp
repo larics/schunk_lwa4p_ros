@@ -64,6 +64,7 @@ void ControlArm::init() {
     std::string startJointGroupVelocityControllerServiceName;
     std::string sendArmToHomingPoseServiceName;
     std::string checkIKSolutionsServiceName;
+    std::string executeCartesianPathServiceName;
 
     nodeHandle_.param("publishers/display_trajectory_topic", displayTrajectoryTopicName, std::string("move_group/display_planned_path")); 
     nodeHandle_.param("publishers/queue_size", displayTrajectoryQueueSize, 1);
@@ -84,6 +85,7 @@ void ControlArm::init() {
     nodeHandle_.param("services/start_joint_group_velocity_controller", startJointGroupVelocityControllerServiceName, std::string("controllers/start_joint_group_velocity_controller"));
     nodeHandle_.param("services/send_arm_to_homing_pose", sendArmToHomingPoseServiceName, std::string("arm/send_arm_to_homing_pose"));
     nodeHandle_.param("services/check_ik_soutions", checkIKSolutionsServiceName, std::string("arm/check_ik_solutions"));
+    nodeHandle_.param("services/execute_cartesian_path", executeCartesianPathServiceName, std::string("arm/execute_cartesian_path"));
 
     ROS_INFO("[ControlArm] Initializing subscribers/publishers..." );
     displayTrajectoryPublisher_ = nodeHandle_.advertise<moveit_msgs::DisplayTrajectory>(displayTrajectoryTopicName, displayTrajectoryQueueSize);
@@ -112,6 +114,7 @@ void ControlArm::init() {
     startJointGroupVelocityControllerService_ = nodeHandle_.advertiseService(startJointGroupVelocityControllerServiceName, &ControlArm::startJointGroupVelocityController, this);
     sendArmToHomingPoseService_ = nodeHandle_.advertiseService(sendArmToHomingPoseServiceName, &ControlArm::sendArmToHomingPose, this);
     checkIKSolutionsService_ = nodeHandle_.advertiseService(checkIKSolutionsServiceName, &ControlArm::checkIKSolutionsServiceCallback, this);
+    executeCartesianPathService_ = nodeHandle_.advertiseService(executeCartesianPathServiceName, &ControlArm::executeCartesianServiceCallback, this);
     ROS_INFO("[ControlArm] Initialized services.");
 
     // Initialize Clients for other services
@@ -126,6 +129,7 @@ void ControlArm::init() {
     switchToTrajectoryControllerServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>(startJointTrajectoryControllerServiceName);
     getIKSolutionsServiceClient_ = nodeHandle_.serviceClient<moveit_msgs::GetPositionIKRequest>(checkIKSolutionsServiceName);
     getIKSolutionsServiceClient_.waitForExistence();
+
     //addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
     ROS_INFO("[ControlArm] Initialized service clients. ");
 
@@ -382,10 +386,6 @@ bool ControlArm::checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKReque
 
     ROS_INFO_STREAM("Calling IK check service: " << req);
 
-    //getIKSolutionsServiceClient_.call(ik_req, ik_res);
-    //ros::Duration(1).sleep();
-    //ROS_INFO_STREAM("IK solutions are: " << ik_res);
-
     geometry_msgs::Pose pose;
     pose = req.ik_request.pose_stamped.pose;
 
@@ -403,8 +403,6 @@ bool ControlArm::checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKReque
             ROS_INFO("Joint %i: %f", i, joint_values[i]);
         }
     }
-
-    // bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, ik_pose, 10, 1);
 
     return found_ik;
 }
@@ -797,11 +795,61 @@ void ControlArm::getJointPositions(const std::vector<std::string>& jointNames, s
   
 }
 
+bool ControlArm::executeCartesianServiceCallback(schunk_lwa4p_control::CartesianPath::Request &req, schunk_lwa4p_control::CartesianPath::Response &res)
+{
+
+    ROS_INFO_STREAM("Request is: " << req);
+
+    //for(int i=0; i<req.waypoints.size())
+
+    m_moveGroupPtr->setMaxVelocityScalingFactor(0.2);
+    double eefStep = 0.01; double jumpThreshold = 0.01;
+    moveit_msgs::RobotTrajectory trajectory;
+    double fraction = m_moveGroupPtr->computeCartesianPath(req.waypoints,
+                                                           eefStep,
+                                                           jumpThreshold,
+                                                           trajectory);
+
+    //stuff for cartesian path planning
+    //if (cartesian){
+    //    if(first){
+    //        points.push_back(currentPose);
+    //       geometry_msgs::Pose mid_pose;
+    //      int num_points = 10;
+    //     for (int i=0; i<num_points; ++i){
+    /*        geometry_msgs::Pose tmp_pose;
+            tmp_pose.position = currentPose.position; mid_pose.orientation = currentPose.orientation;
+            tmp_pose.position.z = currentPose.position.z + i * (target_pose.pose.position.z - currentPose.position.z)/num_points;
+            points.push_back(tmp_pose);
+        }
+        points.push_back(target_pose.pose);
+        first = false;
+        schunk_lwa4p_control::CartesianPath cp;
+        cp.request.waypoints = points;
+        executeCartesianPathClient_.call(cp);
+    }
+    //ROS_INFO_STREAM("Cartesian path execution:" << cp.response.succedded);
+}*/
+
+
+
+
+    ROS_INFO_NAMED("tutorial", "Visualizing plan  (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
+
+
+    //m_moveGroupPtr->execute(plannedPath);
+
+    return true;
+
+
+
+}
+
 bool ControlArm::executeDummyCartesianPath(){
     geometry_msgs::Pose startPose = m_moveGroupPtr->getCurrentPose().pose; 
     
     std::vector<geometry_msgs::Pose> waypoints;
-    startPose.position.z -= 0.45; 
+    startPose.position.z += 0.35;
     waypoints.push_back(startPose);
 
     startPose.position.x += 0.35; 
