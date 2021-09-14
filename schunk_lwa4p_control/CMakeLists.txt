@@ -27,7 +27,11 @@ find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
 
 #add_message_files()
-#add_service_files()
+add_service_files(
+        FILES
+        CartesianPath.srv
+)
+
 add_action_files(
         DIRECTORY action
         FILES GoToPose.action SetupDistancer.action ServoTrackPose.action
@@ -35,6 +39,7 @@ add_action_files(
 
 generate_messages(
         DEPENDENCIES actionlib_msgs std_msgs geometry_msgs
+
 )
 
 catkin_package(
