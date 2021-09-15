@@ -3,7 +3,7 @@
 ###############################################
 use_gazebo: true # Whether the robot is started in a Gazebo simulation environment
 
-target_control_rate: 40 # [Hz] Control rate --> Keep control rate same as controllers for robotic arm to enable plotting of both
+target_control_rate: 40 #Hz] Control rate --> Keep control rate same as controllers for robotic arm to enable plotting of both
 
 ## Properties of incoming commands
 command_in_type: "speed_units" # "unitless"> in the range [-1:1], as if from joystick. "speed_units"> cmds are in m/s and rad/s

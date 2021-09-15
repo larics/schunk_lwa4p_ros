@@ -61,11 +61,13 @@
   <build_depend>moveit_ros_planning_interface</build_depend>
   <build_depend>moveit_ros_move_group</build_depend>
   <build_depend>moveit_servo</build_depend>
+  <build_depend>separator_end_effector</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>tf_conversions</build_depend>
   <build_depend>eigen_conversions</build_depend>
   <build_depend>trajectory_msgs</build_depend>
   <build_depend>actionlib_msgs</build_depend>
+  <build_depend>separator_end_effector</build_depend>
   <exec_depend>actionlib</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
@@ -83,6 +85,7 @@
   <exec_depend>actionlib_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>moveit_servo</exec_depend>
+  <exec_depend>separator_end_effector</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

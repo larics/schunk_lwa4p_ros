@@ -297,7 +297,6 @@ class ServoTrackPoseServer{
         target_pose.pose.orientation.z = current_ee_tf.transform.rotation.z;
         target_pose.pose.orientation.w = current_ee_tf.transform.rotation.w;
 
-
         ROS_INFO_STREAM("Enabling drift dimensions. ");
         moveit_msgs::ChangeDriftDimensions cdd_req;
         cdd_req.request.drift_y_translation = true;
@@ -336,7 +335,8 @@ class ServoTrackPoseServer{
                 //ROS_INFO_STREAM("x_est: " << magnetic_pose.pose.position.x << " x_real: " << target_pose.pose.position.x);
                 //ROS_INFO_STREAM("y_est: " << magnetic_pose.pose.position.y << " y_real: " << target_pose.pose.position.y);
                 //ROS_INFO_STREAM("z_est: " << magnetic_pose.pose.position.z << " z_real: " << target_pose.pose.position.z);
-                magneticNavigationPublisher.publish(magnetic_pose);        targetPosePublisher.publish(target_pose);
+                magneticNavigationPublisher.publish(magnetic_pose);
+                targetPosePublisher.publish(target_pose);
 
             }
 

@@ -20,7 +20,6 @@ class GoToPoseActionServer{
 
         // service clients
         ros::ServiceClient realRobotDriverInitServiceClient_;
-
         ros::ServiceClient addCollisionObjectServiceClient_;
 
         // action

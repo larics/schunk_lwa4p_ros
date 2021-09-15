@@ -4,11 +4,20 @@
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
+#include <sensor_msgs/JointState.h>
 #include <std_srvs/Trigger.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/convert.h>
+
+// Specific includes
 #include "schunk_lwa4p_control/SetupDistancerAction.h"
+#include "dynamixel_workbench_msgs/DynamixelStateList.h"
+// TODO: Include separator service
+#include "separator_end_effector/separator_service.h"
+#include "separator_end_effector/separator_serviceRequest.h"
+#include "separator_end_effector/separator_serviceResponse.h"
+
 
 class SetupDistancerActionServer{
 protected:
@@ -25,6 +34,8 @@ protected:
 
     // subscribers
     ros::Subscriber currentPoseSubscriber;
+    ros::Subscriber dynamixelStateSubscriber;
+    ros::Subscriber jointStateSubscriber;
 
     // service clients
     // ros::ServiceClient toolCmdServiceClient;
@@ -33,6 +44,7 @@ protected:
     ros::ServiceClient setUpSeparatorServiceClient;
     ros::ServiceClient startJointPositionControllersClient;
     ros::ServiceClient startJointTrajectoryControllerClient;
+    ros::ServiceClient toolCmdServiceClient;
 
     // action
     schunk_lwa4p_control::SetupDistancerFeedback feedback_;
@@ -42,12 +54,20 @@ protected:
     // msgs
     geometry_msgs::Pose currentPose;
     geometry_msgs::Point cmdOrientation;
+    sensor_msgs::JointState jointState;
+
+    // services
+    separator_end_effector::separator_serviceRequest separatorServiceReq;
+    separator_end_effector::separator_serviceResponse separatorServiceRes;
 
     // wanted tool rotations
     tf2Scalar roll; tf2Scalar pitch; tf2Scalar yaw;
 
     // real robot
     bool realRobot;
+    int rightMotor; float rightMotorPosition;
+    int leftMotor; float leftMotorPosition;
+    float yaw_;
 
 
 public:
@@ -80,6 +100,8 @@ public:
     void initializeSubscribers()
     {
         currentPoseSubscriber = nh_.subscribe<geometry_msgs::Pose>("/control_arm_node/tool/current_pose", 10, &SetupDistancerActionServer::currentPoseCB, this);
+        dynamixelStateSubscriber = nh_.subscribe<dynamixel_workbench_msgs::DynamixelStateList>("/dynamixel_workbench/dynamixel_state", 10, &SetupDistancerActionServer::dynamixelStateCB, this);
+        jointStateSubscriber = nh_.subscribe<sensor_msgs::JointState>("/lwa4p/joint_state", 10, &SetupDistancerActionServer::jointStateCB, this);
 
     }
 
@@ -99,8 +121,32 @@ public:
         startJointPositionControllersClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_position_controllers");
         startJointTrajectoryControllerClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_trajectory_controller");
 
-        // toolCmdServiceClient = nh_.serviceClient<separator_end_effector::separator_service>("/tool_service");
+        //toolCmdServiceClient = nh_.serviceClient<separator_end_effector::separator_service>("/tool_service");
 
+    }
+
+    void jointStateCB(const sensor_msgs::JointStateConstPtr &msg){
+
+        yaw_ = msg->position[5];
+    }
+
+    void dynamixelStateCB(const dynamixel_workbench_msgs::DynamixelStateListConstPtr &msg)
+    {
+        for(size_t i =0; i!= msg->dynamixel_state.size(); i++)
+        {
+            if (msg->dynamixel_state[i].name == "right"){
+                rightMotor = msg->dynamixel_state[i].present_current;
+                rightMotorPosition = msg->dynamixel_state[i].present_position;
+            }
+
+            if (msg->dynamixel_state[i].name == "left"){
+                leftMotor = msg->dynamixel_state[i].present_current;
+                leftMotorPosition = msg->dynamixel_state[i].present_position;
+            }
+
+            //ROS_INFO_STREAM("Right motor value is: " << rightMotor);
+            //ROS_INFO_STREAM("Left motor value is: " << leftMotor);
+        }
     }
 
     void currentPoseCB(const geometry_msgs::Pose::ConstPtr &msg)
@@ -141,6 +187,11 @@ public:
         // 3. Close motors
         bool called_close_motors_srv = false;
         bool separator_on_powerlines = false;
+        // 4. Check if motors have been closed
+        bool closed_right = false;
+        bool closed_left = false;
+        bool closed_both = false;
+        // 5. Pull arm back down in some linear motion --> servoing
 
         int tRecvGoal = ros::Time::now().toSec();
         int timeout = goal->timeout_sec;
@@ -171,15 +222,22 @@ public:
                     // cmdOrientation = goal->goal_orientation;
                     //cmdOrientationPublisher.publish(cmdOrientation);
                     std_msgs::Float64 jointCmd;
-                    jointCmd.data = goal->goal_orientation.z;
+                    jointCmd.data = 0.0;
                     cmdLwa4pJoint6Publisher.publish(jointCmd);
+                    ros::Duration(0.1).sleep();
+                    jointCmd.data = goal->goal_orientation.z;
+                    cmdLwa4pJoint6Publisher.publish(jointCmd);  // This is in radians
                     orientation_cmd_sent = true;
             }
 
             // This condition may fail because of type comparison, check how to transform tf2scalar to float
-            if (cmdOrientation.z -  yaw > epsilon){
+            if (abs(goal->goal_orientation.z -  yaw_) > epsilon){
+                //TODO: Check this, doesn't work as it should
                 ROS_INFO("[SetupDistancerServer] Rotating tool...");
                 tool_rotation_completed = false;
+
+                // Could possibly add opening of a tool
+
             } else{
                 ROS_INFO("[SetupDistancerServer] Rotation complete.");
                 tool_rotation_completed = true;
@@ -202,8 +260,25 @@ public:
                     cmdRightDistancerPublisher.publish(rightDistancerCmd);
                     cmdLeftDistancerPublisher.publish(leftDistancerCmd);
                 }else {
-                    //TODO: Add service calls for closing distancer motors
-                    // Dodati pozive na topice pravih motora
+
+                    separatorServiceReq.req = "close both";
+
+                    toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
+
+                    if (rightMotor > 1150){
+                        separatorServiceReq.req = "stop right";
+                        toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
+                        closed_right = true;
+
+                    }
+                    if (leftMotor > 1150){
+                        separatorServiceReq.req = "stop left";
+                        toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
+                        closed_left = true;
+                    }
+
+                    closed_both = (closed_right && closed_left);
+
                 }
             }
 
@@ -223,7 +298,7 @@ public:
             ROS_INFO("[SetupDistancerServer] Timeout reached: ABORTED");
             as_.setAborted(result_);
         }
-        if (!preempted && !elapsed && tool_rotation_completed && separator_on_powerlines)
+        if (!preempted && !elapsed && tool_rotation_completed && separator_on_powerlines && closed_both)
         {
             result_.distancer_on_powerlines = true;
             as_.setSucceeded(result_);
