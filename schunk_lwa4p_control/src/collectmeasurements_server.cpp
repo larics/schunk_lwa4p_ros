@@ -109,6 +109,9 @@ class CollectMeasurementsServer{
             r.sleep();
             elapsed = ( ros::Time::now().toSec() - tRecvGoal) > timeout;
 
+            std::vector<geometry_msgs::PoseStamped> measured_poses;
+            measured_poses.push_back(magnetic_pose);
+
             // TODO: Subscribe to collect available measurements
 
             // Check preemption

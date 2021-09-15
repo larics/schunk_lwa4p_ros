@@ -56,6 +56,10 @@
         <node pkg="schunk_lwa4p_control" type="servotrackpose_server" name="servo_track_pose_server" output="screen">
         </node>
 
+        <!-- Start CollectMeasurementsServer -->
+        <node pkg="schunk_lwa4p_control" type="collectmeasurements_server" name="collect_measurements_server" output="screen">
+        </node>
+
     </group>
 
 

@@ -11,14 +11,14 @@ windup_limit: 0.1
 # until now
 x_proportional_gain: 5  # gain 200
 y_proportional_gain: 5    # gain: 200
-z_proportional_gain: 2.5   # gain: 275 (25Hz)   # Maybe use different params than used in simulation --> TO BIG gains
-x_integral_gain: 0.0
-y_integral_gain: 0.0
-z_integral_gain: 0.0
-x_derivative_gain: 0.0
-y_derivative_gain: 0.0
-z_derivative_gain: 0.0
+z_proportional_gain: 10  #gain: 275 (25Hz)   # Maybe use different params than used in simulation --> TO BIG gains
+x_integral_gain: 0.01
+y_integral_gain: 0.01
+z_integral_gain: 0.01
+x_derivative_gain: 0.1
+y_derivative_gain: 0.1
+z_derivative_gain: 0.1
 
-angular_proportional_gain: 10
+angular_proportional_gain: 1
 angular_integral_gain: 0.0
 angular_derivative_gain: 0.0
