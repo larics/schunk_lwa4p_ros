@@ -1,0 +1,8 @@
+# Goal
+int32 timeout_sec
+---
+# Result
+bool averaged_pose
+---
+# Feedback
+geometry_msgs/Pose current_estimate
