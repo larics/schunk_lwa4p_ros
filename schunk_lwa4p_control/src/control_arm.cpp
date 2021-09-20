@@ -309,7 +309,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     shape_msgs::SolidPrimitive primitive;
     primitive.type = primitive.BOX;
     primitive.dimensions.resize(3);
-    primitive.dimensions[0] = 1.0;
+    primitive.dimensions[0] = 1.5;
     primitive.dimensions[1] = 1.0;
     primitive.dimensions[2] = 0.02;
 
@@ -335,7 +335,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 
     geometry_msgs::Pose wall_pose;
     wall_pose.orientation.w = 1.0;
-    wall_pose.position.x = -1.0;
+    wall_pose.position.x = -0.75;
     wall_pose.position.y = 0.0;
     wall_pose.position.z = 1.0;
 

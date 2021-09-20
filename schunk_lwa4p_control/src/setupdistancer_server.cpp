@@ -41,7 +41,6 @@ protected:
     // ros::ServiceClient toolCmdServiceClient;
     ros::ServiceClient addCollisionsServiceClient;
     ros::ServiceClient disableToolCollisionsServiceClient;
-    ros::ServiceClient setUpSeparatorServiceClient;
     ros::ServiceClient startJointPositionControllersClient;
     ros::ServiceClient startJointTrajectoryControllerClient;
     ros::ServiceClient toolCmdServiceClient;
@@ -101,7 +100,7 @@ public:
     {
         currentPoseSubscriber = nh_.subscribe<geometry_msgs::Pose>("/control_arm_node/tool/current_pose", 10, &SetupDistancerActionServer::currentPoseCB, this);
         dynamixelStateSubscriber = nh_.subscribe<dynamixel_workbench_msgs::DynamixelStateList>("/dynamixel_workbench/dynamixel_state", 10, &SetupDistancerActionServer::dynamixelStateCB, this);
-        jointStateSubscriber = nh_.subscribe<sensor_msgs::JointState>("/lwa4p/joint_state", 10, &SetupDistancerActionServer::jointStateCB, this);
+        jointStateSubscriber = nh_.subscribe<sensor_msgs::JointState>("/lwa4p/joint_states", 10, &SetupDistancerActionServer::jointStateCB, this);
 
     }
 
@@ -120,8 +119,7 @@ public:
         disableToolCollisionsServiceClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/tool/disable_collision");
         startJointPositionControllersClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_position_controllers");
         startJointTrajectoryControllerClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_trajectory_controller");
-
-        //toolCmdServiceClient = nh_.serviceClient<separator_end_effector::separator_service>("/tool_service");
+        toolCmdServiceClient = nh_.serviceClient<separator_end_effector::separator_service>("/tool_service");
 
     }
 
@@ -179,6 +177,7 @@ public:
         bool sentCmd = false;
         bool elapsed = false;
         bool preempted = false;
+        int i = 0;
         // 1. Disable tool collisions
         bool disabled_tool_collisions = false;
         // 2. Rotate tool
@@ -192,7 +191,7 @@ public:
         bool closed_left = false;
         bool closed_both = false;
         // 5. Pull arm back down in some linear motion --> servoing
-
+        std_msgs::Float64 jointCmd;
         int tRecvGoal = ros::Time::now().toSec();
         int timeout = goal->timeout_sec;
         float epsilon = goal->epsilon;
@@ -204,6 +203,9 @@ public:
 
             // Remove collisions for tool
             std_srvs::Trigger srv;
+
+            float wanted_rotation = goal->goal_orientation.z;
+            float cmd_ = - yaw_;
             if (!disabled_tool_collisions) {
                 ROS_INFO("[SetupDistancerServer] Removing tool collisions.");
                 disableToolCollisionsServiceClient.call(srv);
@@ -214,40 +216,59 @@ public:
                     ROS_INFO("[SetupDistancerServer] Starting tool rotation..");
 
                     // call services to load position controllers
+                    std_srvs::Trigger srv;
                     startJointPositionControllersClient.call(srv);
+                    ros::Duration(3.0).sleep();
+                    ROS_INFO_STREAM("[SetupDistancerServer] Response: " << srv.response);
 
                     // Wait to reload controllers
-                    r.sleep();
-                    // This gets published but somehow trajectory Start fails (not guaranteed that plan will only rotate end effector)
-                    // cmdOrientation = goal->goal_orientation;
-                    //cmdOrientationPublisher.publish(cmdOrientation);
-                    std_msgs::Float64 jointCmd;
                     jointCmd.data = 0.0;
                     cmdLwa4pJoint6Publisher.publish(jointCmd);
-                    ros::Duration(0.1).sleep();
-                    jointCmd.data = goal->goal_orientation.z;
-                    cmdLwa4pJoint6Publisher.publish(jointCmd);  // This is in radians
+                    ros::Duration(1.0).sleep();
+                    jointCmd.data = goal->goal_orientation.z; // 90° currently, but should be relative to current orientation
                     orientation_cmd_sent = true;
             }
 
-            // This condition may fail because of type comparison, check how to transform tf2scalar to float
-            if (abs(goal->goal_orientation.z -  yaw_) > epsilon){
+            // Yaw_ is current measurement for last joint
+            // TODO: Check different condition to rotate Tool for 90 degrees
+            if (( abs(yaw_ - wanted_rotation) > epsilon)){
+
+                // Added this condition to prevent tool rotation in certain configuration which could damage tool
+                if (roll > 0.1 || pitch > 0.1){
+                    as_.setAborted(result_);
+                }
                 //TODO: Check this, doesn't work as it should
                 ROS_INFO("[SetupDistancerServer] Rotating tool...");
-                tool_rotation_completed = false;
+                ROS_INFO_STREAM("[SetupDistancerServer] Yaw calculated: " << yaw);
+                ROS_INFO_STREAM("[SetupDistancerServer] Yaw measured:" << yaw_);
+                ROS_INFO_STREAM("[SetupDistancerServer] Diff value: " << abs(yaw_ - wanted_rotation));
+                ROS_DEBUG_STREAM("[SetupDistancerServer] Publishing : " << jointCmd.data);
+                ROS_DEBUG_STREAM("[SetupDistancerServer] Roll: " << roll << "Pitch: " << pitch);
+                if (i < 5){
+                    jointCmd.data = 0.0;
+                    cmdLwa4pJoint6Publisher.publish(jointCmd);  // This is in radians
+                    i += 1;
+                    separatorServiceReq.req = "open_both";
+                    toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
+                    // Could possibly add opening of a tool
 
-                // Could possibly add opening of a tool
+                }else {
+                    separatorServiceReq.req = "stop";
+                    toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
+                    jointCmd.data = cmd_;
+                    cmdLwa4pJoint6Publisher.publish(jointCmd);
+                    ROS_INFO_STREAM("Passing...");
+                }
 
             } else{
                 ROS_INFO("[SetupDistancerServer] Rotation complete.");
+                ROS_INFO_STREAM("[SetupDistancerServer] called_close_motors_srv" << called_close_motors_srv);
                 tool_rotation_completed = true;
             }
 
-            if (tool_rotation_completed && !called_close_motors_srv) {
+            if (tool_rotation_completed && (!closed_right || !closed_left)) {
                 ROS_INFO("[SetupDistancerServer] Setting distancer on powerlines...");
-                std_srvs::Trigger srv;
-                setUpSeparatorServiceClient.call(srv);
-                called_close_motors_srv = true;
+
                 // Wait for response maybe (How to wait for response)
                 // For starters close separator
                 // Could eventually monitor force with which motors close it
@@ -256,23 +277,23 @@ public:
                     //TODO: Get current joint positions for that motor
                     std_msgs::Float64 rightDistancerCmd; rightDistancerCmd.data = 0.5;
                     std_msgs::Float64 leftDistancerCmd; leftDistancerCmd.data = -0.5;
-
                     cmdRightDistancerPublisher.publish(rightDistancerCmd);
                     cmdLeftDistancerPublisher.publish(leftDistancerCmd);
                 }else {
 
-                    separatorServiceReq.req = "close both";
-
+                    ROS_INFO_STREAM("[SetupDistancerServer] Entered else!");
+                    separatorServiceReq.req = "close_both";
                     toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
 
+                    ROS_INFO_STREAM("rightMotor: " << rightMotor);
+                    ROS_INFO_STREAM("leftMotor: " << leftMotor);
                     if (rightMotor > 1150){
-                        separatorServiceReq.req = "stop right";
+                        separatorServiceReq.req = "stop1";
                         toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
                         closed_right = true;
-
                     }
                     if (leftMotor > 1150){
-                        separatorServiceReq.req = "stop left";
+                        separatorServiceReq.req = "stop2";
                         toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
                         closed_left = true;
                     }
@@ -300,21 +321,14 @@ public:
         }
         if (!preempted && !elapsed && tool_rotation_completed && separator_on_powerlines && closed_both)
         {
+            std_srvs::Trigger trajectorySrv;
+            startJointTrajectoryControllerClient.call(trajectorySrv);
             result_.distancer_on_powerlines = true;
             as_.setSucceeded(result_);
 
+
             ROS_INFO("[SetupDistancerServer] Reached wanted pose: SUCCEEDDED!");
         }
-        // TODO:
-        // 1. Build new action and start new action server --> DONE
-        // 2. Command tool service based on received goal --> DONE
-        // 3. Command tool orientation based on received goal (Doesen't move when commanded from server?!) --> DONE
-        // 4. Add Trigger service call to enable closing motors on trigger --> DONE
-        // 5. Create sequence of service calls (remove_collision, send_orientation, close motors) --> DONE
-        ///////////////////// TODO
-        // 6. Check orientation in which format it's written (radians/degrees)
-        // Think of arm servoing as a service moveit::servo as service that can be called during executing of this server
-
     }
 
 
