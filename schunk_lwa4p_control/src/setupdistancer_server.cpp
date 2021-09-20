@@ -101,7 +101,7 @@ public:
     {
         currentPoseSubscriber = nh_.subscribe<geometry_msgs::Pose>("/control_arm_node/tool/current_pose", 10, &SetupDistancerActionServer::currentPoseCB, this);
         dynamixelStateSubscriber = nh_.subscribe<dynamixel_workbench_msgs::DynamixelStateList>("/dynamixel_workbench/dynamixel_state", 10, &SetupDistancerActionServer::dynamixelStateCB, this);
-        jointStateSubscriber = nh_.subscribe<sensor_msgs::JointState>("/lwa4p/joint_state", 10, &SetupDistancerActionServer::jointStateCB, this);
+        jointStateSubscriber = nh_.subscribe<sensor_msgs::JointState>("/lwa4p/joint_states", 10, &SetupDistancerActionServer::jointStateCB, this);
 
     }
 
@@ -179,6 +179,7 @@ public:
         bool sentCmd = false;
         bool elapsed = false;
         bool preempted = false;
+        int i = 0;
         // 1. Disable tool collisions
         bool disabled_tool_collisions = false;
         // 2. Rotate tool
@@ -193,6 +194,7 @@ public:
         bool closed_both = false;
         // 5. Pull arm back down in some linear motion --> servoing
 
+        std_msgs::Float64 jointCmd;
         int tRecvGoal = ros::Time::now().toSec();
         int timeout = goal->timeout_sec;
         float epsilon = goal->epsilon;
@@ -214,27 +216,37 @@ public:
                     ROS_INFO("[SetupDistancerServer] Starting tool rotation..");
 
                     // call services to load position controllers
+                    std_srvs::Trigger srv;
                     startJointPositionControllersClient.call(srv);
+                    ros::Duration(3.0).sleep();
+                    ROS_INFO_STREAM("[SetupDistancerServer] Response: " << srv.response);
 
                     // Wait to reload controllers
-                    r.sleep();
-                    // This gets published but somehow trajectory Start fails (not guaranteed that plan will only rotate end effector)
-                    // cmdOrientation = goal->goal_orientation;
-                    //cmdOrientationPublisher.publish(cmdOrientation);
-                    std_msgs::Float64 jointCmd;
                     jointCmd.data = 0.0;
                     cmdLwa4pJoint6Publisher.publish(jointCmd);
-                    ros::Duration(0.1).sleep();
-                    jointCmd.data = goal->goal_orientation.z;
-                    cmdLwa4pJoint6Publisher.publish(jointCmd);  // This is in radians
+                    ros::Duration(1.0).sleep();
+                    jointCmd.data = goal->goal_orientation.z; // 90° currently, but should be relative to current orientation
                     orientation_cmd_sent = true;
             }
 
             // This condition may fail because of type comparison, check how to transform tf2scalar to float
-            if (abs(goal->goal_orientation.z -  yaw_) > epsilon){
+            // Yaw_ is current measurement for last joint
+            // TODO: Check different condition to rotate Tool for 90 degrees
+            if (abs(yaw_ - goal->goal_orientation.z) > epsilon){
                 //TODO: Check this, doesn't work as it should
                 ROS_INFO("[SetupDistancerServer] Rotating tool...");
-                tool_rotation_completed = false;
+                ROS_INFO_STREAM("[SetupDistancerServer] Yaw: " << yaw);
+                ROS_INFO_STREAM("[SetupDistancerServer] Yaw:" << yaw_);
+                ROS_INFO_STREAM("[SetupDistancerServer] Publishing : " << jointCmd.data);
+                if (i < 5){
+                    jointCmd.data = 0.0;
+                    cmdLwa4pJoint6Publisher.publish(jointCmd);  // This is in radians
+                    i += 1;
+                }else {
+                    jointCmd.data = yaw_;
+                    cmdLwa4pJoint6Publisher.publish(jointCmd);
+                    ROS_INFO_STREAM("Passing...");
+                }
 
                 // Could possibly add opening of a tool
 
