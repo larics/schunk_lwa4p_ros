@@ -335,7 +335,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 
     geometry_msgs::Pose wall_pose;
     wall_pose.orientation.w = 1.0;
-    wall_pose.position.x = -0.75;
+    wall_pose.position.x = -0.60;
     wall_pose.position.y = 0.0;
     wall_pose.position.z = 1.0;
 

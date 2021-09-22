@@ -269,7 +269,7 @@ class ServoTrackPoseServer{
         int timeout = goal->timeout_sec;
         if (timeout == 0) timeout=30;
 
-        // PoseTracking tolerances./sc
+        // PoseTracking tolerances
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 2; // Add this to goal if neccessary
 
         // Start JointGroupPositionController --> start JointGroupPositionController for servoing
@@ -318,16 +318,24 @@ class ServoTrackPoseServer{
 
             // Publish estimated pose from magnetic navigation
             geometry_msgs::PoseStamped magnetic_pose;
-            if(goal->magnetic_navigation == true){
-                tf::StampedTransform transform1; tf::StampedTransform transform2;
+            bool magnetic_navigation = false;
+            if(magnetic_navigation){
+                tf::StampedTransform transform1; tf::StampedTransform transform2; tf::StampedTransform transform3;
 
                 magnetic_pose.header.frame_id="magnetic_field_dest";
-                listener.lookupTransform("base_link", "power_line0", ros::Time(0), transform1);
-                listener.lookupTransform("base_link", "power_line1", ros::Time(0), transform2);
+                listener.lookupTransform("world", "power_line0", ros::Time(0), transform1);
+                listener.lookupTransform("world", "power_line1", ros::Time(0), transform2);
+                // Transform from last link (ee frame) to the end of the separator main link of the separator
+                listener.lookupTransform("lwa4p_link6", "separator_main", ros::Time(0), transform3);
 
+                ROS_INFO_STREAM("[world] x: " << (transform1.getOrigin().x() + transform2.getOrigin().x()) / 2);
+                ROS_INFO_STREAM("[world] y: " << transform1.getOrigin().y());
+                ROS_INFO_STREAM("[world] z: " << transform1.getOrigin().z());
+
+                // This should be valid pose estimate + valid rotation
                 magnetic_pose.pose.position.x = (transform1.getOrigin().x() + transform2.getOrigin().x())/2;
-                magnetic_pose.pose.position.y = (transform1.getOrigin().y() + transform2.getOrigin().y())/2;
-                magnetic_pose.pose.position.z = (transform1.getOrigin().z() + transform2.getOrigin().z())/2;
+                magnetic_pose.pose.position.y = (transform1.getOrigin().y() + transform2.getOrigin().y())/2; // Not important! (Drift dimension is on)
+                magnetic_pose.pose.position.z = transform1.getOrigin().z() - transform3.getOrigin().z();
                 magnetic_pose.pose.orientation.x = cmdPose.orientation.x; //transform1.getRotation().x();
                 magnetic_pose.pose.orientation.y = cmdPose.orientation.y; //transform1.getRotation().y();
                 magnetic_pose.pose.orientation.z = cmdPose.orientation.z; //transform1.getRotation().z();
@@ -336,8 +344,6 @@ class ServoTrackPoseServer{
                 //ROS_INFO_STREAM("y_est: " << magnetic_pose.pose.position.y << " y_real: " << target_pose.pose.position.y);
                 //ROS_INFO_STREAM("z_est: " << magnetic_pose.pose.position.z << " z_real: " << target_pose.pose.position.z);
                 magneticNavigationPublisher.publish(magnetic_pose);
-                targetPosePublisher.publish(target_pose);
-
             }
 
             //ROS_INFO("[ServoTrackPoseServer] Currently executing...");
