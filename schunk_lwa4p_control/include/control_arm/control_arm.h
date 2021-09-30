@@ -22,6 +22,8 @@
 #include <std_srvs/Trigger.h>
 #include <controller_manager_msgs/SwitchController.h>
 #include <controller_manager_msgs/ListControllers.h>
+#include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
 
 
 // MoveIt
@@ -100,6 +102,10 @@ class ControlArm{
         // ROS node handle  
         ros::NodeHandle nodeHandle_;
         ros::NodeHandle nodeHandleWithoutNs_;
+
+        // transformListener
+        tf::TransformListener listener;
+        tf::TransformBroadcaster broadcaster;
 
         // ROS Publishers
         ros::Publisher displayTrajectoryPublisher_;
@@ -191,7 +197,12 @@ class ControlArm{
         Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution
         Eigen::MatrixXd getInertiaMatrix(Eigen::Vector3d refPointPosition);
 
-       
+        double VectorSize(geometry_msgs::Vector3 vector);
+        double DotProduct(geometry_msgs::Vector3 v_A, geometry_msgs::Vector3 v_B);
+        geometry_msgs::Vector3 getClosestPointOnLine(geometry_msgs::Vector3 line_point,geometry_msgs::Vector3 line_vector, geometry_msgs::Vector3 point);
+
+
+
 };
 
 

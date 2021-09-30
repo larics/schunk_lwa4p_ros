@@ -208,6 +208,9 @@ public:
                 if (!orientation_cmd_sent) {
                     ROS_INFO("[SetupDistancerServer] Starting tool rotation..");
 
+                    separatorServiceReq.req = "open_both";
+                    toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
+
                     // call services to load position controllers
                     std_srvs::Trigger srv;
                     startJointPositionControllersClient.call(srv);

@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
 #include <thread>
 #include <cmath>
 #include <actionlib/server/simple_action_server.h>
@@ -76,6 +77,7 @@ class ServoTrackPoseServer{
 
         // transformListener
         tf::TransformListener listener;
+        tf::TransformBroadcaster broadcaster;
 
         // planningScene
         planning_scene_monitor::PlanningSceneMonitorPtr planningSceneMonitor_;
@@ -239,6 +241,41 @@ class ServoTrackPoseServer{
 
     }
 
+    double VectorSize(geometry_msgs::Vector3 vector)
+    {
+        return sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+    }
+    double DotProduct(geometry_msgs::Vector3 v_A, geometry_msgs::Vector3 v_B)
+    {
+        return v_A.x * v_B.x + v_A.y * v_B.y + v_A.z * v_B.z;
+    }
+
+    geometry_msgs::Vector3 getClosestPointOnLine(geometry_msgs::Vector3 line_point,geometry_msgs::Vector3 line_vector, geometry_msgs::Vector3 point)
+    {
+        double x1 = line_point.x-point.x;
+        double y1 = line_point.y-point.y;
+        double z1 = line_point.z-point.z;
+        double vx = line_vector.x;
+        double vy = line_vector.x;
+        double vz = line_vector.x;
+        geometry_msgs::Vector3 p1, vector, result;
+        p1.x = x1;
+        p1.y = y1;
+        p1.z = z1;
+        // std::cout<<"transform base power_line "<<p1;
+        vector.x = vx;
+        vector.y = vy;
+        vector.z = vz;
+        // std::cout<<"line vector "<<vector;
+        double t=-DotProduct(p1,vector)/VectorSize(vector)/VectorSize(p1);
+        //std::cout<<"t "<<t<<std::endl;
+        result.x = x1 + t * vx;
+        result.y = y1 + t * vy;
+        result.z = z1 + t * vz;
+        return result;
+
+    }
+
     // TODO: Fix transition between state 2 and 3 -- ??
     void executeCB(const schunk_lwa4p_control::ServoTrackPoseGoalConstPtr &goal)
     {
@@ -323,26 +360,51 @@ class ServoTrackPoseServer{
                 tf::StampedTransform transform1; tf::StampedTransform transform2; tf::StampedTransform transform3;
 
                 magnetic_pose.header.frame_id="magnetic_field_dest";
-                listener.lookupTransform("world", "power_line0", ros::Time(0), transform1);
-                listener.lookupTransform("world", "power_line1", ros::Time(0), transform2);
+                listener.lookupTransform("world", "power_line0_n", ros::Time(0), transform1);
+                listener.lookupTransform("world", "power_line1_n", ros::Time(0), transform2);
+                magnetic_pose.pose.orientation.x = transform1.getRotation().x();
+                magnetic_pose.pose.orientation.y = transform1.getRotation().y();
+                magnetic_pose.pose.orientation.z = transform1.getRotation().z();
+                magnetic_pose.pose.orientation.w = transform1.getRotation().w();
+
+                tf::Matrix3x3 rotation_matrix(transform1.getRotation()); //getBasis
+                tf::Vector3 x_dir = rotation_matrix.getColumn(0);
+                geometry_msgs::Vector3 x_dir_converted; geometry_msgs::Vector3 line1; geometry_msgs::Vector3 line2;
+                geometry_msgs::Vector3 base; base.x = 0; base.y = 0; base.z = 0;
+                x_dir_converted.x = x_dir.x(); x_dir_converted.y = x_dir.y(); x_dir_converted.z =  x_dir.z();
+                line1.x = transform1.getOrigin().x(); line1.y = transform1.getOrigin().y(); line1.z = transform1.getOrigin().z();
+                line2.x = transform2.getOrigin().x(); line2.y = transform2.getOrigin().y(); line2.z = transform2.getOrigin().z();
+                geometry_msgs::Vector3 close1; geometry_msgs::Vector3 close2;
+                close1 = getClosestPointOnLine(line1, x_dir_converted, base);
+                close2 = getClosestPointOnLine(line2, x_dir_converted, base);
+
                 // Transform from last link (ee frame) to the end of the separator main link of the separator
                 listener.lookupTransform("lwa4p_link6", "separator_main", ros::Time(0), transform3);
 
-                ROS_INFO_STREAM("[world] x: " << (transform1.getOrigin().x() + transform2.getOrigin().x()) / 2);
-                ROS_INFO_STREAM("[world] y: " << transform1.getOrigin().y());
-                ROS_INFO_STREAM("[world] z: " << transform1.getOrigin().z());
+                //ROS_INFO_STREAM("[world] x: " << (transform1.getOrigin().x() + transform2.getOrigin().x()) / 2);
+                //ROS_INFO_STREAM("[world] y: " << transform1.getOrigin().y());
+                //ROS_INFO_STREAM("[world] z: " << transform1.getOrigin().z());
+
+                tf::Transform final_transform;
+                tf::Vector3 final_translation;
+                final_translation.setX((close1.x + close2.x)/2);
+                final_translation.setY((close1.y + close2.y)/2);
+                final_translation.setZ((close1.z + close2.z)/2 - transform3.getOrigin().z());
+                final_transform.setRotation(transform1.getRotation());
+                final_transform.setOrigin(final_translation);
 
                 // This should be valid pose estimate + valid rotation
-                magnetic_pose.pose.position.x = (transform1.getOrigin().x() + transform2.getOrigin().x())/2;
-                magnetic_pose.pose.position.y = (transform1.getOrigin().y() + transform2.getOrigin().y())/2; // Not important! (Drift dimension is on)
-                magnetic_pose.pose.position.z = transform1.getOrigin().z() - transform3.getOrigin().z();
-                magnetic_pose.pose.orientation.x = cmdPose.orientation.x; //transform1.getRotation().x();
-                magnetic_pose.pose.orientation.y = cmdPose.orientation.y; //transform1.getRotation().y();
-                magnetic_pose.pose.orientation.z = cmdPose.orientation.z; //transform1.getRotation().z();
-                magnetic_pose.pose.orientation.w = cmdPose.orientation.w; //transform1.getRotation().w();
-                //ROS_INFO_STREAM("x_est: " << magnetic_pose.pose.position.x << " x_real: " << target_pose.pose.position.x);
-                //ROS_INFO_STREAM("y_est: " << magnetic_pose.pose.position.y << " y_real: " << target_pose.pose.position.y);
-                //ROS_INFO_STREAM("z_est: " << magnetic_pose.pose.position.z << " z_real: " << target_pose.pose.position.z);
+                magnetic_pose.pose.position.x = final_translation.x();
+                magnetic_pose.pose.position.y = final_translation.y(); // Not important! (Drift dimension is on)
+                magnetic_pose.pose.position.z = final_translation.z();
+                //magnetic_pose.pose.orientation.x = cmdPose.orientation.x; //transform1.getRotation().x();
+                //magnetic_pose.pose.orientation.y = cmdPose.orientation.y; //transform1.getRotation().y();
+                //magnetic_pose.pose.orientation.z = cmdPose.orientation.z; //transform1.getRotation().z();
+                //magnetic_pose.pose.orientation.w = cmdPose.orientation.w; //transform1.getRotation().w();
+                // Comparison of target pose and pose estimated by magnetic field
+                ROS_INFO_STREAM("x_est: " << magnetic_pose.pose.position.x << " x_real: " << currentPose.position.x);
+                ROS_INFO_STREAM("y_est: " << magnetic_pose.pose.position.y << " y_real: " << currentPose.position.y);
+                ROS_INFO_STREAM("z_est: " << magnetic_pose.pose.position.z << " z_real: " << currentPose.position.z);
                 magneticNavigationPublisher.publish(magnetic_pose);
             }
 
@@ -362,7 +424,7 @@ class ServoTrackPoseServer{
             // Keep same orientation --> align with wires
             target_pose.pose.orientation.x = cmdPose.orientation.x;
             target_pose.pose.orientation.y = cmdPose.orientation.y;
-            target_pose.pose.orientation.z = cmdPose.orientation.z;
+            target_pose.pose.orientation.z = cmdPose.orientation.z; // TODO: Take from estimate
             target_pose.pose.orientation.w = cmdPose.orientation.w;
 
             targetPosePublisher.publish(target_pose);

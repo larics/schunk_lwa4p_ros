@@ -133,6 +133,8 @@ void ControlArm::init() {
     //addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
     ROS_INFO("[ControlArm] Initialized service clients. ");
 
+
+
 }
 
 bool ControlArm::setMoveGroup() {
@@ -335,7 +337,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 
     geometry_msgs::Pose wall_pose;
     wall_pose.orientation.w = 1.0;
-    wall_pose.position.x = -0.60;
+    wall_pose.position.x = -0.70;
     wall_pose.position.y = 0.0;
     wall_pose.position.z = 1.0;
 
@@ -949,6 +951,41 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
 
 }
 
+double ControlArm::VectorSize(geometry_msgs::Vector3 vector)
+{
+    return sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+}
+double ControlArm::DotProduct(geometry_msgs::Vector3 v_A, geometry_msgs::Vector3 v_B)
+{
+    return v_A.x * v_B.x + v_A.y * v_B.y + v_A.z * v_B.z;
+}
+
+geometry_msgs::Vector3 ControlArm::getClosestPointOnLine(geometry_msgs::Vector3 line_point,geometry_msgs::Vector3 line_vector, geometry_msgs::Vector3 point)
+{
+    double x1 = line_point.x-point.x;
+    double y1 = line_point.y-point.y;
+    double z1 = line_point.z-point.z;
+    double vx = line_vector.x;
+    double vy = line_vector.x;
+    double vz = line_vector.x;
+    geometry_msgs::Vector3 p1, vector, result;
+    p1.x = x1;
+    p1.y = y1;
+    p1.z = z1;
+    // std::cout<<"transform base power_line "<<p1;
+    vector.x = vx;
+    vector.y = vy;
+    vector.z = vz;
+    // std::cout<<"line vector "<<vector;
+    double t=-DotProduct(p1,vector)/VectorSize(vector)/VectorSize(p1);
+    //std::cout<<"t "<<t<<std::endl;
+    result.x = x1 + t * vx;
+    result.y = y1 + t * vy;
+    result.z = z1 + t * vz;
+    return result;
+
+}
+
 void ControlArm::run() {
 
     ros::Rate r(25);
@@ -981,7 +1018,55 @@ void ControlArm::run() {
         std::size_t attempts = 10; 
         double timeout = 1; 
         bool successIK; 
-        successIK = getIK(attempts, timeout); 
+        successIK = getIK(attempts, timeout);
+
+        bool magnetic_localization = true;
+        try {
+
+            if(magnetic_localization){
+                tf::StampedTransform transform1; tf::StampedTransform transform2; tf::StampedTransform transform3;
+
+                std::string target_frame = "lwa4p_base_link";
+                listener.lookupTransform(target_frame, "power_line0_n", ros::Time(0), transform1);
+                listener.lookupTransform(target_frame, "power_line1_n", ros::Time(0), transform2);
+
+                tf::Matrix3x3 rotation_matrix(transform1.getRotation()); //getBasis
+                tf::Vector3 x_dir = rotation_matrix.getColumn(0);
+                geometry_msgs::Vector3 x_dir_converted; geometry_msgs::Vector3 line1; geometry_msgs::Vector3 line2;
+                geometry_msgs::Vector3 base; base.x = 0; base.y = 0; base.z = 0;
+                x_dir_converted.x = x_dir.x(); x_dir_converted.y = x_dir.y(); x_dir_converted.z =  x_dir.z();
+                line1.x = transform1.getOrigin().x(); line1.y = transform1.getOrigin().y(); line1.z = transform1.getOrigin().z();
+                line2.x = transform2.getOrigin().x(); line2.y = transform2.getOrigin().y(); line2.z = transform2.getOrigin().z();
+                geometry_msgs::Vector3 close1; geometry_msgs::Vector3 close2;
+                close1 = getClosestPointOnLine(line1, x_dir_converted, base);
+                close2 = getClosestPointOnLine(line2, x_dir_converted, base);
+
+                // Transform from last link (ee frame) to the end of the separator main link of the separator
+                listener.lookupTransform("lwa4p_link6", "separator_main", ros::Time(0), transform3);
+
+                //ROS_INFO_STREAM("[world] x: " << (transform1.getOrigin().x() + transform2.getOrigin().x()) / 2);
+                //ROS_INFO_STREAM("[world] y: " << transform1.getOrigin().y());
+                //ROS_INFO_STREAM("[world] z: " << transform1.getOrigin().z());
+
+                tf::Transform final_transform;
+                tf::Vector3 final_translation;
+                final_translation.setX((close1.x + close2.x)/2);
+                final_translation.setY((close1.y + close2.y)/2);
+                final_translation.setZ((close1.z + close2.z)/2 - transform3.getOrigin().z());
+                final_transform.setRotation(transform1.getRotation());
+                final_transform.setOrigin(final_translation);
+                broadcaster.sendTransform(tf::StampedTransform(final_transform, ros::Time::now(), target_frame, "goal_frame"));
+
+            }
+        }catch(const std::exception& e){
+                ROS_DEBUG_STREAM("Failed...");
+            }
+
+
+
+
+
+
 
         //Eigen::MatrixXd m_; 
         //Eigen::Vector3d testVector(0.0, 0.0, 0.0);
