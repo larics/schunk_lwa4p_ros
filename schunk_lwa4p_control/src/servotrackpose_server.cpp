@@ -311,6 +311,7 @@ class ServoTrackPoseServer{
         int timeout = goal->timeout_sec;
         if (timeout == 0) timeout=30;
         bool magnetic_navigation = goal->magnetic_navigation;
+        float down_dec = 0;
 
         // PoseTracking tolerances
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 2; // Add this to goal if neccessary
@@ -401,13 +402,33 @@ class ServoTrackPoseServer{
                 final_transform.setRotation(transform1.getRotation());
                 final_transform.setOrigin(final_translation);
                 // This should be valid pose estimate + valid rotation
-                target_pose.pose.position.x = final_translation.x();
-                target_pose.pose.position.y = final_translation.y(); // Not important! (Drift dimension is on)
-                target_pose.pose.position.z = final_translation.z();
+
+                if (goal->direction == "up"){
+
+                    target_pose.pose.position.x = final_translation.x();
+                    target_pose.pose.position.y = final_translation.y(); // Not important! (Drift dimension is on)
+                    target_pose.pose.position.z = final_translation.z();
+                }
+
+                if (goal->direction == "down"){
+
+                    target_pose.pose.position.x = final_translation.x();
+                    target_pose.pose.position.y = final_translation.y();
+                    float z_dist = 0.1;
+
+                    if (down_dec < z_dist){
+                        float decrement = 0.001;
+                        target_pose.pose.position.z = final_translation.z() - decrement;
+                        down_dec += decrement;
+                        ROS_INFO_STREAM("[ServoTrackPoseServer] Moving arrm down to z:" << target_pose.pose.position.z);
+                    }
+                }
+
                 // Added this to handle maxError criterium
-                cmdPose.position.x = final_translation.x();
-                cmdPose.position.y = final_translation.y();
-                cmdPose.position.z = final_translation.z();
+                target_pose.pose.position.x = final_translation.x();
+                target_pose.pose.position.y = final_translation.y();
+                target_pose.pose.position.z = final_translation.z();
+
                 //magnetic_pose.pose.orientation.x = cmdPose.orientation.x; //transform1.getRotation().x();
                 //magnetic_pose.pose.orientation.y = cmdPose.orientation.y; //transform1.getRotation().y();
                 //magnetic_pose.pose.orientation.z = cmdPose.orientation.z; //transform1.getRotation().z();

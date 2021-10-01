@@ -1060,13 +1060,7 @@ void ControlArm::run() {
             }
         }catch(const std::exception& e){
                 ROS_DEBUG_STREAM("Failed...");
-            }
-
-
-
-
-
-
+        }
 
         //Eigen::MatrixXd m_; 
         //Eigen::Vector3d testVector(0.0, 0.0, 0.0);

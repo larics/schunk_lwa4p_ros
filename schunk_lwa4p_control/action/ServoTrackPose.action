@@ -4,6 +4,7 @@ int32 timeout_sec
 int32 cmd_freq
 float32 max_err_per_axis
 bool magnetic_navigation
+string direction
 ---
 # Result
 bool reached_pose

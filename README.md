@@ -153,18 +153,21 @@ Currently is not used!
 
 
 TODO: 
- - [ ] Add Cartesian path planning to control_arm_node
- - [ ] Add topic for cartesian path planning 
  - [ ] Add to ros_utils some plotting methods
  - [ ] Add gravity compensation controller in gazebo [TBD]
  - [ ] Create node for continuous replanning [TBD] 
  - [ ] Add force sensor link for better planning [TBD] 
- - [ ] Add current check for dynamixels for setting up distancer [1200]
- - [ ] Try out servoing for setting up separator 
- - [ ] Find PID params for servoing (pose_tracking config) 
- - [ ] Integrate everything and test on real robot
-
+ - [x] Add current check for dynamixels for setting up distancer [1200]
+ - [x] Try out servoing for setting up separator 
+ - [x] Find PID params for servoing (pose_tracking config) 
+ - [x] Integrate everything and test on real robot
+ 
 # Possible improvements 
 
  - [x] Add powerline as Git submodule into schunk_ros_package, and use it if neccessary (not neccessary) 
  - [ ] Think of algorithm for removing separator distancer (information about powerline location is not enough)  
+ - [ ] Add Cartesian path plannig to control_arm_node
+ - [ ] Add topic/service for cartesian path planning 
+ - [ ] Remove deprecation warnings from moveit for noetic 
+ - [ ] Add [SMACC](git@github.com:reelrbtx/SMACC.git) state machine instead of smach 
+ 
