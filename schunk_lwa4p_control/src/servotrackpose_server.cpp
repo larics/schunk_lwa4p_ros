@@ -184,12 +184,17 @@ class ServoTrackPoseServer{
         return dist;
     }
 
-    float checkError(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2)
+    float checkError(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2, bool drift)
 
     {
-        float x_err = pose1.position.x - pose2.position.x;
-        float y_err = pose1.position.y - pose2.position.y;
-        float z_err = pose1.position.z - pose2.position.z;
+        float x_err; float y_err; float z_err;
+        x_err = pose1.position.x - pose2.position.x;
+        if(!drift){
+            y_err = pose1.position.y - pose2.position.y;
+        }else{
+            y_err = 0;
+        }
+        z_err = pose1.position.z - pose2.position.z;
 
         // Added it to topic for publishing
         //ROS_INFO_STREAM("x_err: " << x_err << "y_err:" << y_err << "z_err" << z_err);
@@ -305,6 +310,7 @@ class ServoTrackPoseServer{
         // Setup timeout to 30 sec if not given
         int timeout = goal->timeout_sec;
         if (timeout == 0) timeout=30;
+        bool magnetic_navigation = goal->magnetic_navigation;
 
         // PoseTracking tolerances
         Eigen::Vector3d lin_tol {0.005, 0.005, 0.005}; double rot_tol = 2; // Add this to goal if neccessary
@@ -338,6 +344,7 @@ class ServoTrackPoseServer{
         moveit_msgs::ChangeDriftDimensions cdd_req;
         cdd_req.request.drift_y_translation = true;
         cdd_req.request.drift_x_translation = false;
+        cdd_req.request.drift_z_translation = false;
         changeDriftDimensionsClient_.call(cdd_req);
 
         // Check existence of IK for wanted pose --> if exists continue, else break;
@@ -355,8 +362,9 @@ class ServoTrackPoseServer{
 
             // Publish estimated pose from magnetic navigation
             geometry_msgs::PoseStamped magnetic_pose;
-            bool magnetic_navigation = false;
-            if(magnetic_navigation){
+            // add this to goal to enable servoing after setting up distancer
+
+            if(goal->magnetic_navigation){
                 tf::StampedTransform transform1; tf::StampedTransform transform2; tf::StampedTransform transform3;
 
                 magnetic_pose.header.frame_id="magnetic_field_dest";
@@ -392,20 +400,25 @@ class ServoTrackPoseServer{
                 final_translation.setZ((close1.z + close2.z)/2 - transform3.getOrigin().z());
                 final_transform.setRotation(transform1.getRotation());
                 final_transform.setOrigin(final_translation);
-
                 // This should be valid pose estimate + valid rotation
-                magnetic_pose.pose.position.x = final_translation.x();
-                magnetic_pose.pose.position.y = final_translation.y(); // Not important! (Drift dimension is on)
-                magnetic_pose.pose.position.z = final_translation.z();
+                target_pose.pose.position.x = final_translation.x();
+                target_pose.pose.position.y = final_translation.y(); // Not important! (Drift dimension is on)
+                target_pose.pose.position.z = final_translation.z();
+                // Added this to handle maxError criterium
+                cmdPose.position.x = final_translation.x();
+                cmdPose.position.y = final_translation.y();
+                cmdPose.position.z = final_translation.z();
                 //magnetic_pose.pose.orientation.x = cmdPose.orientation.x; //transform1.getRotation().x();
                 //magnetic_pose.pose.orientation.y = cmdPose.orientation.y; //transform1.getRotation().y();
                 //magnetic_pose.pose.orientation.z = cmdPose.orientation.z; //transform1.getRotation().z();
                 //magnetic_pose.pose.orientation.w = cmdPose.orientation.w; //transform1.getRotation().w();
                 // Comparison of target pose and pose estimated by magnetic field
-                ROS_INFO_STREAM("x_est: " << magnetic_pose.pose.position.x << " x_real: " << currentPose.position.x);
-                ROS_INFO_STREAM("y_est: " << magnetic_pose.pose.position.y << " y_real: " << currentPose.position.y);
-                ROS_INFO_STREAM("z_est: " << magnetic_pose.pose.position.z << " z_real: " << currentPose.position.z);
                 magneticNavigationPublisher.publish(magnetic_pose);
+            }else{
+                // If not magnetic navigation use pose commanded from state machine
+                target_pose.pose.position.x = goal->final_pose.position.x;
+                target_pose.pose.position.y = goal->final_pose.position.y;
+                target_pose.pose.position.z = goal->final_pose.position.z;
             }
 
             //ROS_INFO("[ServoTrackPoseServer] Currently executing...");
@@ -415,12 +428,6 @@ class ServoTrackPoseServer{
 
             target_pose.header.stamp = ros::Time::now();
 
-            target_pose.pose.position.x = cmdPose.position.x;
-            target_pose.pose.position.y = cmdPose.position.y;
-            target_pose.pose.position.z = cmdPose.position.z;
-            //target_pose.pose.position.x = magnetic_pose.pose.position.x;
-            //target_pose.pose.position.y = magnetic_pose.pose.position.y;
-            //target_pose.pose.position.z = magnetic_pose.pose.position.z;
             // Keep same orientation --> align with wires
             target_pose.pose.orientation.x = cmdPose.orientation.x;
             target_pose.pose.orientation.y = cmdPose.orientation.y;
@@ -451,12 +458,22 @@ class ServoTrackPoseServer{
 
             float euclideanDistance = checkDist(currentPose, cmdPose);
             float orientationDist = checkOrientationDist(currentPose, cmdPose);
-            float maxError = checkError(currentPose, cmdPose);
+            float maxError = checkError(currentPose, cmdPose, true);
 
             // ROS_INFO_STREAM("Current servo error is: " << maxError);
 
             // This should break him if position has been reached
-            if (maxError < epsilon and orientationDist < epsilon){
+            ROS_INFO_STREAM("MaxError is: " << maxError);
+            if (maxError < epsilon){
+                ROS_INFO_STREAM("Servo reached position!");
+            }
+
+            ROS_INFO_STREAM("OrientationDist is: " << orientationDist);
+            float orientation_epsilon = 0.05;
+            if (orientationDist < orientation_epsilon) {
+                ROS_INFO_STREAM("Orientation reached!");
+            }
+            if (maxError < epsilon and orientationDist < orientation_epsilon){
                 reached = true;
                 result_.reached_pose = true;
                 break;

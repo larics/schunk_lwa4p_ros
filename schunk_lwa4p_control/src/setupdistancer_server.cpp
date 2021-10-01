@@ -38,12 +38,12 @@ protected:
     ros::Subscriber jointStateSubscriber;
 
     // service clients
-    // ros::ServiceClient toolCmdServiceClient;
     ros::ServiceClient addCollisionsServiceClient;
     ros::ServiceClient disableToolCollisionsServiceClient;
     ros::ServiceClient startJointPositionControllersClient;
     ros::ServiceClient startJointTrajectoryControllerClient;
     ros::ServiceClient toolCmdServiceClient;
+    ros::ServiceClient recoverDriverClient;
 
     // action
     schunk_lwa4p_control::SetupDistancerFeedback feedback_;
@@ -116,6 +116,7 @@ public:
         disableToolCollisionsServiceClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/tool/disable_collision");
         startJointPositionControllersClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_position_controllers");
         startJointTrajectoryControllerClient = nh_.serviceClient<std_srvs::Trigger>("/control_arm_node/controllers/start_joint_trajectory_controller");
+        recoverDriverClient = nh_.serviceClient<std_srvs::Trigger>("/lwa4p/driver/recover");
         toolCmdServiceClient = nh_.serviceClient<separator_end_effector::separator_service>("/tool_service");
 
     }
@@ -246,6 +247,7 @@ public:
                         cmdLwa4pJoint6Publisher.publish(jointCmd);  // This is in radians
                         i += 1;
 
+                        // Commented this out to prevent unneccessary opening of a separator tool
                         separatorServiceReq.req = "open_both";
                         toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
                         // Could possibly add opening of a tool
@@ -312,21 +314,26 @@ public:
                     as_.setPreempted();
                     preempted = true;
                 }
+
+                if (elapsed && !preempted) {
+                    ROS_INFO("[SetupDistancerServer] Timeout reached: ABORTED");
+                    as_.setAborted(result_);
+                }
+
+                if (!preempted && !elapsed && tool_rotation_completed &&  closed_both) {
+
+                    std_srvs::Trigger trajectorySrv;
+                    // Activate JointGroupPositionController
+                    //.call(trajectorySrv);
+                    recoverDriverClient.call(trajectorySrv);
+                    ros::Duration(1.0).sleep();
+                    result_.distancer_on_powerlines = true;
+                    as_.setSucceeded(result_);
+                    ROS_INFO("[SetupDistancerServer] Reached wanted pose: SUCCEEDDED!");
+                }
             }
 
-            if (elapsed && !preempted) {
-                ROS_INFO("[SetupDistancerServer] Timeout reached: ABORTED");
-                as_.setAborted(result_);
-            }
-            if (!preempted && !elapsed && tool_rotation_completed && separator_on_powerlines && closed_both) {
-                std_srvs::Trigger trajectorySrv;
-                startJointTrajectoryControllerClient.call(trajectorySrv);
-                result_.distancer_on_powerlines = true;
-                as_.setSucceeded(result_);
 
-
-                ROS_INFO("[SetupDistancerServer] Reached wanted pose: SUCCEEDDED!");
-            }
         }
 };
 

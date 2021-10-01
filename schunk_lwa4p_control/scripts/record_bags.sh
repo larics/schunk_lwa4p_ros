@@ -15,7 +15,9 @@ rosbag record /lwa4p/joint_states \
               /imu2/mag \
               /imu3/data \
               /imu3/mag \
-              /control_arm_node/tool/current_pose
+              /control_arm_node/tool/current_pose \
+              /magnetic_estimation \
+              /tf
 
 
 
