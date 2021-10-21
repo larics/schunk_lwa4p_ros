@@ -7,7 +7,7 @@
     <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
     <arg name="real_robot" default="true"/>
     <arg name="use_imus" default="true"/>
-    <arg name="use_separator_end_effector" default="false"/>
+    <arg name="use_separator_end_effector" default="true"/>
 
     <!-- used in control arm node to call lwa4p driver initialization !--> 
     <param name="real_robot" value="true"/>
