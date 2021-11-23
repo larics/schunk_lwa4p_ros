@@ -1,0 +1,13 @@
+controller_list:
+  - name: fake_arm_controller
+    type: $(arg execution_type)
+    joints:
+      - lwa4p_joint1
+      - lwa4p_joint2
+      - lwa4p_joint3
+      - lwa4p_joint4
+      - lwa4p_joint5
+      - lwa4p_joint6
+initial:  # Define initial robot poses.
+  - group: arm
+    pose: pick1_pose

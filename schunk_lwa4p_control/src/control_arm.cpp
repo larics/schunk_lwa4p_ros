@@ -98,6 +98,8 @@ void ControlArm::init() {
     cmdJoint6Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64>(std::string("lwa4p/joint_6_position_controller/command"), 1);
     cmdJointGroupPositionPublisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64MultiArray>(std::string("lwa4p/joint_group_position_controller/command"), 1);
     cmdJointGroupVelocityPublisher = nodeHandleWithoutNs_.advertise<std_msgs::Float64MultiArray>(std::string("lwa4p/joint_group_velocity_controller/command"), 1);
+    powerline0PosePublisher = nodeHandle_.advertise<geometry_msgs::PoseStamped>("/powerline0_pose",1);
+    powerline1PosePublisher = nodeHandle_.advertise<geometry_msgs::PoseStamped>("/powerline1_pose",1);
 
     armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback, this);
     armCmdToolOrientationSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Point>(cmdToolOrientationTopicName, cmdToolOrientationTopicQueueSize, &ControlArm::cmdToolOrientationCallback, this); 
@@ -410,6 +412,7 @@ bool ControlArm::checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKReque
 }
 
 bool ControlArm::disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
+    // TODO: Move this to specific script because it's related to magnetic localization
 
     if (planningSceneInitialized_){
         collision_detection::AllowedCollisionMatrix acm = m_planningScenePtr->getAllowedCollisionMatrix();
@@ -712,7 +715,7 @@ bool ControlArm::sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::Tr
 bool ControlArm::sendZeros(std::string ControllerType){
     // NOTE: This method is used to activate joint control for each arm joint.
     // Joints do not move before recieving 0 as command, after recieving 0, you can send
-    // anything and it should be fine
+    // anything and it should be fine --> Check schunk documentation for this
 
     if (ControllerType == "position"){
 
@@ -749,16 +752,7 @@ bool ControlArm::sendZeros(std::string ControllerType){
 
     }
 
-    return true; 
-
-
-}
-
-float ControlArm::round(float var){
-
-    float value = (int)(var * 1000 + .5); 
-    return (float) value/1000; 
-
+    return true;
 }
 
 void ControlArm::getCurrentArmState() {
@@ -951,17 +945,22 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
 
 }
 
+
+
+// TODO: Move this to utils.cpp
 double ControlArm::VectorSize(geometry_msgs::Vector3 vector)
 {
+    // TODO: Add this to utils method
     return sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }
 double ControlArm::DotProduct(geometry_msgs::Vector3 v_A, geometry_msgs::Vector3 v_B)
 {
+    // TODO: Move this to utils method
     return v_A.x * v_B.x + v_A.y * v_B.y + v_A.z * v_B.z;
 }
-
 geometry_msgs::Vector3 ControlArm::getClosestPointOnLine(geometry_msgs::Vector3 line_point,geometry_msgs::Vector3 line_vector, geometry_msgs::Vector3 point)
 {
+    // TODO: Add this to utils methods
     double x1 = line_point.x-point.x;
     double y1 = line_point.y-point.y;
     double z1 = line_point.z-point.z;
@@ -983,6 +982,12 @@ geometry_msgs::Vector3 ControlArm::getClosestPointOnLine(geometry_msgs::Vector3 
     result.y = y1 + t * vy;
     result.z = z1 + t * vz;
     return result;
+
+}
+float ControlArm::round(float var){
+
+    float value = (int)(var * 1000 + .5);
+    return (float) value/1000;
 
 }
 
@@ -1020,13 +1025,21 @@ void ControlArm::run() {
         bool successIK; 
         successIK = getIK(attempts, timeout);
 
-        bool magnetic_localization = true;
+        bool magnetic_localization = false;
         try {
 
             if(magnetic_localization){
+                // TODO: Add to specific method or class to handle this, maybe create ControlArm node as virtual
+                // class and this could be MagneticArm which inherits that class
                 tf::StampedTransform transform1; tf::StampedTransform transform2; tf::StampedTransform transform3;
+                tf::StampedTransform powerline0_transform; tf::StampedTransform powerline1_transform;
+                geometry_msgs::PoseStamped powerline0Pose; geometry_msgs::PoseStamped powerline1Pose;
+                geometry_msgs::Quaternion poseQuaternion;
 
+                std::string needed_frame = "base_link";
                 std::string target_frame = "lwa4p_base_link";
+                listener.lookupTransform(needed_frame, "power_line0_n", ros::Time(0), powerline0_transform);
+                listener.lookupTransform(needed_frame, "power_line1_n", ros::Time(0), powerline1_transform);
                 listener.lookupTransform(target_frame, "power_line0_n", ros::Time(0), transform1);
                 listener.lookupTransform(target_frame, "power_line1_n", ros::Time(0), transform2);
 
@@ -1056,6 +1069,30 @@ void ControlArm::run() {
                 final_transform.setRotation(transform1.getRotation());
                 final_transform.setOrigin(final_translation);
                 broadcaster.sendTransform(tf::StampedTransform(final_transform, ros::Time::now(), target_frame, "goal_frame"));
+
+                powerline0Pose.pose.position.x = powerline0_transform.getOrigin().x();
+                powerline0Pose.pose.position.y = powerline0_transform.getOrigin().y();
+                powerline0Pose.pose.position.z = powerline0_transform.getOrigin().z();
+
+                powerline0Pose.pose.orientation.x = powerline0_transform.getRotation().x();
+                powerline0Pose.pose.orientation.y = powerline0_transform.getRotation().y();
+                powerline0Pose.pose.orientation.z = powerline0_transform.getRotation().z();
+                powerline0Pose.pose.orientation.w = powerline0_transform.getRotation().w();
+
+                powerline1Pose.pose.position.x = powerline1_transform.getOrigin().x();
+                powerline1Pose.pose.position.y = powerline1_transform.getOrigin().y();
+                powerline1Pose.pose.position.z = powerline1_transform.getOrigin().z();
+
+                powerline1Pose.pose.orientation.x = powerline1_transform.getRotation().x();
+                powerline1Pose.pose.orientation.y = powerline1_transform.getRotation().y();
+                powerline1Pose.pose.orientation.z = powerline1_transform.getRotation().z();
+                powerline1Pose.pose.orientation.w = powerline1_transform.getRotation().w();
+
+                powerline0Pose.header.stamp = ros::Time::now();
+                powerline0PosePublisher.publish(powerline0Pose);
+
+                powerline1Pose.header.stamp = ros::Time::now();
+                powerline1PosePublisher.publish(powerline1Pose);
 
             }
         }catch(const std::exception& e){

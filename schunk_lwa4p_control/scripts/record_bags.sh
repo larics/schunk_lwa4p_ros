@@ -18,14 +18,16 @@ rosbag record -O $1 /lwa4p/joint_states \
                     /control_arm_node/tool/current_pose \
                     /magnetic_estimation \
                     /tf \
+                    /magnetic_vector0 \
                     /magnetic_vector1 \
                     /magnetic_vector2 \
-                    /magnetic_vector3 \
                     /dynamixel_workbench/dynamixel_state \
                     /dynamixel_workbench/joint_states \
                     /start_time \
                     /end_time \
-                    /reached_pose 
+                    /reached_pose \
+		    /powerline0_pose \
+	            /powerline1_pose
  
 
 

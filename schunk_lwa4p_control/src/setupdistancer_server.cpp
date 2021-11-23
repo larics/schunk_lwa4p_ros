@@ -231,8 +231,10 @@ public:
                 if ((abs(yaw_ - wanted_rotation) > epsilon)) {
 
                     // Added this condition to prevent tool rotation in certain configuration which could damage tool
-                    if (roll > 0.1 || pitch > 0.1) {
+                    if (roll > 0.175 || pitch > 0.175) {
                         as_.setAborted(result_);
+                        ROS_INFO_STREAM("Roll is: " << roll);
+                        ROS_INFO_STREAM("Pitch is: " << pitch);
                     }
                     //TODO: Check this, doesn't work as it should
                     ROS_INFO("[SetupDistancerServer] Rotating tool...");
@@ -290,12 +292,12 @@ public:
 
                         ROS_INFO_STREAM("rightMotor: " << rightMotor);
                         ROS_INFO_STREAM("leftMotor: " << leftMotor);
-                        if (rightMotor > 1150) {
+                        if (rightMotor > 1300) {
                             separatorServiceReq.req = "stop1";
                             toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
                             closed_right = true;
                         }
-                        if (leftMotor > 1150) {
+                        if (leftMotor > 1300) {
                             separatorServiceReq.req = "stop2";
                             toolCmdServiceClient.call(separatorServiceReq, separatorServiceRes);
                             closed_left = true;

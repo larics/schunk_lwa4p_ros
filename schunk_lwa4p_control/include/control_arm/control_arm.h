@@ -15,6 +15,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <std_srvs/TriggerRequest.h>
@@ -24,6 +25,8 @@
 #include <controller_manager_msgs/ListControllers.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
+#include <tf2/convert.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 
 // MoveIt
@@ -90,7 +93,8 @@ class ControlArm{
         // Run method
         void run(); 
 
-
+    // It's not possible to access private members of this class from another clas
+    // Link to issue that explains it: https://stackoverflow.com/questions/18944451/how-to-make-a-derived-class-access-the-private-member-data
     private: 
         
         // Reads and verifies ROS parameters 
@@ -118,6 +122,8 @@ class ControlArm{
         ros::Publisher cmdJoint6Publisher;
         ros::Publisher cmdJointGroupPositionPublisher;
         ros::Publisher cmdJointGroupVelocityPublisher;
+        ros::Publisher powerline0PosePublisher;
+        ros::Publisher powerline1PosePublisher;
 
         // ROS Subscribers
         ros::Subscriber armCmdPoseSubscriber_;
@@ -179,7 +185,6 @@ class ControlArm{
         // Vectors and arrays
         std::vector<double> m_jointPositions_;
 
-        float round(float var);
         bool sendZeros(std::string ControllerType);
         bool sendToCmdPose(); 
         bool sendToDeltaCmdPose(); 
@@ -197,9 +202,11 @@ class ControlArm{
         Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution
         Eigen::MatrixXd getInertiaMatrix(Eigen::Vector3d refPointPosition);
 
+        // TODO: Move this to utils.cpp
+        float round(float var);
         double VectorSize(geometry_msgs::Vector3 vector);
         double DotProduct(geometry_msgs::Vector3 v_A, geometry_msgs::Vector3 v_B);
-        geometry_msgs::Vector3 getClosestPointOnLine(geometry_msgs::Vector3 line_point,geometry_msgs::Vector3 line_vector, geometry_msgs::Vector3 point);
+        geometry_msgs::Vector3 getClosestPointOnLine(geometry_msgs::Vector3 line_point, geometry_msgs::Vector3 line_vector, geometry_msgs::Vector3 point);
 
 
 
