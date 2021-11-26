@@ -4,10 +4,10 @@
 
     <arg name="paused" default="false" doc="Started gazebo in paused mode" />
     <arg name="gui" default="true" doc="Starts gazebo gui" />
-    <arg name="gripper" default="true" doc="Loads different model and different controllers with gripper on" />
+    <arg name="gripper" default="false" doc="Loads different model and different controllers with gripper on" />
     <arg name="real_robot" default="true"/>
-    <arg name="use_imus" default="true"/>
-    <arg name="use_separator_end_effector" default="true"/>
+    <arg name="use_imus" default="false"/>
+    <arg name="use_separator_end_effector" default="false"/>
 
     <!-- used in control arm node to call lwa4p driver initialization !--> 
     <param name="real_robot" value="true"/>
@@ -29,6 +29,7 @@
             <!--node name="arm_controller_spawner" ns="lwa4p" pkg="controller_manager" type="controller_manager" args="spawn arm_controller joint_state_controller" respawn="false" output="screen"/-->
         </group>
     </group>
+
     <group unless="$(arg gripper)">
         <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_upload.launch"/>
         <!-- Start arm controller -->
