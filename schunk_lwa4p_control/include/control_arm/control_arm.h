@@ -178,7 +178,7 @@ class ControlArm{
         bool moveGroupInitialized_;   
         bool planningSceneInitialized_; 
         bool firstTrajectoryExecution_ = true;
-        bool blockingMovement = false; 
+        bool blockingMovement = true;
         geometry_msgs::Pose m_cmdPose;    
         geometry_msgs::Pose m_cmdDeltaPose;
 
@@ -186,7 +186,8 @@ class ControlArm{
         std::vector<double> m_jointPositions_;
 
         bool sendZeros(std::string ControllerType);
-        bool sendToCmdPose(); 
+        bool sendToCmdPose();
+        void sendToCmdPoses(std::vector<geometry_msgs::Pose> poses);
         bool sendToDeltaCmdPose(); 
         bool sendToZeroPose();
         bool planPathToCmdPose();

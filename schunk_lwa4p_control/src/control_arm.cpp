@@ -169,6 +169,7 @@ bool ControlArm::setPlanningScene() {
     return true; 
 }
 
+// This is wrong, we should pass cmdPose as argument into function and then set it if we plan to use setters
 bool ControlArm::setCmdPose() {
 
     if (moveGroupInitialized_) {
@@ -266,6 +267,21 @@ bool ControlArm::sendToCmdPose(){
     }
 
     return success;
+}
+
+void ControlArm::sendToCmdPoses(std::vector<geometry_msgs::Pose> poses)
+{
+    for (int i; i < poses.size(); ++i)
+    {
+        ROS_INFO_STREAM("[ControlArmNode] Visiting pose " << i);
+        m_cmdPose.position = poses.at(i).position;
+        m_cmdPose.orientation = poses.at(i).orientation;
+        sendToCmdPose();
+        //if (m_moveGroupPtr->state)
+    }
+
+
+
 }
 
 bool ControlArm::sendToDeltaCmdPose() {
@@ -946,7 +962,6 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
 }
 
 
-
 // TODO: Move this to utils.cpp
 double ControlArm::VectorSize(geometry_msgs::Vector3 vector)
 {
@@ -1102,6 +1117,26 @@ void ControlArm::run() {
         //Eigen::MatrixXd m_; 
         //Eigen::Vector3d testVector(0.0, 0.0, 0.0);
         //m_ = getJacobian(testVector);
+
+        bool christmas_fair = true;
+        if (christmas_fair){
+
+            geometry_msgs::Pose pick_pose; geometry_msgs::Pose middle_pose; geometry_msgs::Pose place_pose;
+
+            pick_pose.position.x = 0.43; pick_pose.position.y = 0.19; pick_pose.position.z = 0.96;
+            pick_pose.orientation.x = -0.2; pick_pose.orientation.y = 0.88; pick_pose.orientation.z = 0.09; pick_pose.orientation.w = 0.42;
+
+            middle_pose.position.x = 0.24; middle_pose.position.y = 0.1; middle_pose.position.z = 1.36;
+            middle_pose.orientation.x = -0.11; middle_pose.orientation.y = 0.1; middle_pose.orientation.z = 0.17; middle_pose.orientation.w = 0.81;
+
+            place_pose.position.x = 0.29; place_pose.position.y = 0.38; place_pose.position.z = 0.89;
+            place_pose.orientation.x = -0.41; place_pose.orientation.y = 0.83; place_pose.orientation.z = 0.16; place_pose.orientation.w = 0.33;
+
+            std::vector<geometry_msgs::Pose> executionStreamPoses = {pick_pose, middle_pose, place_pose, middle_pose};
+
+            sendToCmdPoses(executionStreamPoses);
+        }
+
         // TODO: Compare outputs of moveit_servo from jacobian (tracking pose) and this!
     
         r.sleep(); 
