@@ -1118,21 +1118,28 @@ void ControlArm::run() {
         //Eigen::Vector3d testVector(0.0, 0.0, 0.0);
         //m_ = getJacobian(testVector);
 
-        bool christmas_fair = true;
+        bool christmas_fair = false;
         if (christmas_fair){
 
-            geometry_msgs::Pose pick_pose; geometry_msgs::Pose middle_pose; geometry_msgs::Pose place_pose;
+            geometry_msgs::Pose pose1; geometry_msgs::Pose pose2; geometry_msgs::Pose pose3;
+            geometry_msgs::Pose pose4; geometry_msgs::Pose pose5; geometry_msgs::Pose pose6;
 
-            pick_pose.position.x = 0.43; pick_pose.position.y = 0.19; pick_pose.position.z = 0.96;
-            pick_pose.orientation.x = -0.2; pick_pose.orientation.y = 0.88; pick_pose.orientation.z = 0.09; pick_pose.orientation.w = 0.42;
+            pose1.position.x = 0.474; pose1.position.y = 0.007; pose1.position.z = 1.04;
+            pose1.orientation.x = 0.6799; pose1.orientation.y = 0.7330; pose1.orientation.z = 0.0146; pose1.orientation.w = 0.0085;
 
-            middle_pose.position.x = 0.24; middle_pose.position.y = 0.1; middle_pose.position.z = 1.36;
-            middle_pose.orientation.x = -0.11; middle_pose.orientation.y = 0.1; middle_pose.orientation.z = 0.17; middle_pose.orientation.w = 0.81;
+            pose2.position.x = 0.46; pose2.position.y = 0.0; pose2.position.z = 1.28;
+            pose2.orientation.x = 0.6799; pose2.orientation.y = 0.7330; pose2.orientation.z = 0.0146; pose2.orientation.w = 0.0085;
 
-            place_pose.position.x = 0.29; place_pose.position.y = 0.38; place_pose.position.z = 0.89;
-            place_pose.orientation.x = -0.41; place_pose.orientation.y = 0.83; place_pose.orientation.z = 0.16; place_pose.orientation.w = 0.33;
+            pose3.position.x = 0.227; pose3.position.y = 0.279; pose3.position.z = 1.280;
+            pose3.orientation.x = 0.6799; pose3.orientation.y =  0.7330; pose3.orientation.z = 0.0146; pose3.orientation.w = 0.0085;
 
-            std::vector<geometry_msgs::Pose> executionStreamPoses = {pick_pose, middle_pose, place_pose, middle_pose};
+            pose4.position.x = 0.06; pose4.position.y = 0.46; pose4.position.z = 1.196;
+            pose4.orientation.x = 0.6799; pose4.orientation.y =  0.7330; pose4.orientation.z = 0.0146; pose4.orientation.w = 0.0085;
+
+            pose5.position.x = 0.069; pose5.position.y = 0.462; pose5.position.z = 0.98;
+            pose5.orientation.x = 0.6799; pose5.orientation.y =  0.7330; pose5.orientation.z = 0.0146; pose5.orientation.w = 0.0085;
+
+            std::vector<geometry_msgs::Pose> executionStreamPoses = {pose2, pose1, pose2, pose3, pose4, pose5, pose4};
 
             sendToCmdPoses(executionStreamPoses);
         }

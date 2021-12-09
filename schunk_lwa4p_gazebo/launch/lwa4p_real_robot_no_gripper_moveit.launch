@@ -11,7 +11,7 @@
     <param name="real_robot" value="true"/>
 
     <!-- Send robot URDF to param server -->
-    <!-- TODO: Add WG-50 gripper -->
+    <!-- TODO: Add WSG-50 gripper -->
     <!-- There's no CAN communication set up with SocketCAN for that gripper -->
     <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_upload.launch"/>
 
