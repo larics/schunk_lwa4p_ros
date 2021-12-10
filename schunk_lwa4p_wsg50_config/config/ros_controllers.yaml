@@ -24,7 +24,7 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 50
 controller_list:
-  - name: arm_controller
+  - name: lwa4p/arm_controller
     action_ns: follow_joint_trajectory
     default: True
     type: FollowJointTrajectory
