@@ -41,8 +41,6 @@
     <!-- Use action servers -->
     <group if="$(arg use_action_servers)">
 
-
-
         <!-- Start GoToPoseServer -->
         <node pkg="schunk_lwa4p_control" type="gotopose_server" name="go_to_pose_server" output="screen" >
         </node>

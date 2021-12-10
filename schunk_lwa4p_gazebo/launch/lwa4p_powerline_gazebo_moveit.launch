@@ -12,7 +12,6 @@
         <!-- Add argument for real_robot flag -->
     </include>
 
-
     <!-- Start MoveIt! -->
     <include file="$(find schunk_lwa4p_moveit_config)/launch/demo_planning_execution.launch">
         <arg name="respawn_robot" value="false" />
