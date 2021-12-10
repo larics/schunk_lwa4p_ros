@@ -28,7 +28,6 @@
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-
 // MoveIt
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
@@ -54,6 +53,8 @@
 #include <tf2/LinearMath/Quaternion.h>
 
 #include "schunk_lwa4p_control/CartesianPath.h"
+#include "wsg_50_common/Move.h"
+#include "wsg_50_common/Conf.h"
 
 
 
@@ -150,6 +151,11 @@ class ControlArm{
         ros::ServiceClient switchToPositionControllerServiceClient_;
         ros::ServiceClient getIKSolutionsServiceClient_;
         ros::ServiceClient switchToTrajectoryControllerServiceClient_;
+
+        // Only gripper clients! --> Move to action server
+        ros::ServiceClient gripperGraspServiceClient_;
+        ros::ServiceClient gripperMoveServiceClient_;
+        ros::ServiceClient gripperSetForceClient_;
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);

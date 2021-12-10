@@ -132,6 +132,10 @@ void ControlArm::init() {
     getIKSolutionsServiceClient_ = nodeHandle_.serviceClient<moveit_msgs::GetPositionIKRequest>(checkIKSolutionsServiceName);
     getIKSolutionsServiceClient_.waitForExistence();
 
+    gripperGraspServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Move>("/wsg_50_driver/grasp");
+    gripperMoveServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Move>("/wsg_50_driver/move");
+    gripperSetForceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Conf>("/wsg_50_driver/set_force");
+
     //addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
     ROS_INFO("[ControlArm] Initialized service clients. ");
 
@@ -249,7 +253,9 @@ bool ControlArm::sendToCmdPose(){
     setCmdPose(); 
 
     // Call planner, compute plan and visualize it
-    moveit::planning_interface::MoveGroupInterface::Plan plannedPath; 
+    moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
+
+
 
     // plan Path   
     bool success = (m_moveGroupPtr->plan(plannedPath) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
@@ -271,8 +277,12 @@ bool ControlArm::sendToCmdPose(){
 
 void ControlArm::sendToCmdPoses(std::vector<geometry_msgs::Pose> poses)
 {
-    for (int i; i < poses.size(); ++i)
+    ROS_INFO_STREAM("Entered sendToCmdPoses!");
+    ROS_INFO_STREAM("Poses size: " << poses.size());
+
+    for (int i = 0; i < poses.size(); ++i)
     {
+
         ROS_INFO_STREAM("[ControlArmNode] Visiting pose " << i);
         m_cmdPose.position = poses.at(i).position;
         m_cmdPose.orientation = poses.at(i).orientation;
@@ -961,7 +971,6 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
 
 }
 
-
 // TODO: Move this to utils.cpp
 double ControlArm::VectorSize(geometry_msgs::Vector3 vector)
 {
@@ -1009,6 +1018,7 @@ float ControlArm::round(float var){
 void ControlArm::run() {
 
     ros::Rate r(25);
+    bool executed = false;
 
     while(ros::ok)
     {
@@ -1118,30 +1128,178 @@ void ControlArm::run() {
         //Eigen::Vector3d testVector(0.0, 0.0, 0.0);
         //m_ = getJacobian(testVector);
 
-        bool christmas_fair = false;
+        // argument in launch
+        bool christmas_fair = true;
         if (christmas_fair){
 
-            geometry_msgs::Pose pose1; geometry_msgs::Pose pose2; geometry_msgs::Pose pose3;
-            geometry_msgs::Pose pose4; geometry_msgs::Pose pose5; geometry_msgs::Pose pose6;
+            geometry_msgs::Pose pa_object_pose; geometry_msgs::Pose ma_object_pose; geometry_msgs::Pose f_object_pose;
+            geometry_msgs::Pose a_object_pose; geometry_msgs::Pose pg_object_pose; geometry_msgs::Pose g_object_pose;
 
-            pose1.position.x = 0.474; pose1.position.y = 0.007; pose1.position.z = 1.04;
-            pose1.orientation.x = 0.6799; pose1.orientation.y = 0.7330; pose1.orientation.z = 0.0146; pose1.orientation.w = 0.0085;
+            ROS_INFO("Starting run!");
 
-            pose2.position.x = 0.46; pose2.position.y = 0.0; pose2.position.z = 1.28;
-            pose2.orientation.x = 0.6799; pose2.orientation.y = 0.7330; pose2.orientation.z = 0.0146; pose2.orientation.w = 0.0085;
+            double tolerance = m_moveGroupPtr->getGoalOrientationTolerance();
+            ROS_INFO_STREAM("Current orientation tolerance is:" << tolerance);
+            double position_tolerance = m_moveGroupPtr->getGoalPositionTolerance();
+            ROS_INFO_STREAM("Current position tolerance is: " << position_tolerance);
 
-            pose3.position.x = 0.227; pose3.position.y = 0.279; pose3.position.z = 1.280;
-            pose3.orientation.x = 0.6799; pose3.orientation.y =  0.7330; pose3.orientation.z = 0.0146; pose3.orientation.w = 0.0085;
 
-            pose4.position.x = 0.06; pose4.position.y = 0.46; pose4.position.z = 1.196;
-            pose4.orientation.x = 0.6799; pose4.orientation.y =  0.7330; pose4.orientation.z = 0.0146; pose4.orientation.w = 0.0085;
+            //m_moveGroupPtr->setGoalOrientationTolerance(0.3);
+            //m_moveGroupPtr->setGoalPositionTolerance(0.1);
+            //m_moveGroupPtr->setGoalJointTolerance(0.2);
+            //m_moveGroupPtr->setPlanningTime(10);
+            //m_moveGroupPtr->setNumPlanningAttempts(20);
+            std::string PlanningFrame = m_moveGroupPtr->getPlanningFrame().c_str();
+            ROS_INFO_STREAM("Current planning frame is: " << PlanningFrame);
 
-            pose5.position.x = 0.069; pose5.position.y = 0.462; pose5.position.z = 0.98;
-            pose5.orientation.x = 0.6799; pose5.orientation.y =  0.7330; pose5.orientation.z = 0.0146; pose5.orientation.w = 0.0085;
+            if (!executed){
 
-            std::vector<geometry_msgs::Pose> executionStreamPoses = {pose2, pose1, pose2, pose3, pose4, pose5, pose4};
+                // first pose
+                f_object_pose.position.x = 0.165296;
+                f_object_pose.position.y = 0.140568;
+                f_object_pose.position.z = 1.424110;
+                f_object_pose.orientation.x = -0.710811162646768;
+                f_object_pose.orientation.y = 0.08204007671239139;
+                f_object_pose.orientation.z = -0.6959485631842474;
+                f_object_pose.orientation.w = 0.06060127285426858;
 
-            sendToCmdPoses(executionStreamPoses);
+                // preapproach pose
+                pa_object_pose.position.x = 0.135296;
+                pa_object_pose.position.y = 0.140568;
+                pa_object_pose.position.z = 1.324110;
+                pa_object_pose.orientation.x =  -0.710811162646768;
+                pa_object_pose.orientation.y = 0.08204007671239139;
+                pa_object_pose.orientation.z = -0.6959485631842474;
+                pa_object_pose.orientation.w = 0.06060127285426858;
+
+                // midapproach pose
+                ma_object_pose.position.x = 0.135296;
+                ma_object_pose.position.y = 0.190568;
+                ma_object_pose.position.z = 1.324110;
+                ma_object_pose.orientation.x =  -0.710811162646768;
+                ma_object_pose.orientation.y = 0.08204007671239139;
+                ma_object_pose.orientation.z = -0.6959485631842474;
+                ma_object_pose.orientation.w = 0.06060127285426858;
+
+                // approach pose
+                a_object_pose.position.x = 0.115296;
+                a_object_pose.position.y = 0.270568;
+                a_object_pose.position.z = 1.294110;
+                a_object_pose.orientation.x =  -0.710811162646768;
+                a_object_pose.orientation.y = 0.08204007671239139;
+                a_object_pose.orientation.z = -0.6959485631842474;
+                a_object_pose.orientation.w = 0.06060127285426858;
+
+                // approach pose
+                pg_object_pose.position.x = 0.115296;
+                pg_object_pose.position.y = 0.295568;
+                pg_object_pose.position.z = 1.2954110;
+                pg_object_pose.orientation.x =  -0.710811162646768;
+                pg_object_pose.orientation.y = 0.08204007671239139;
+                pg_object_pose.orientation.z = -0.6959485631842474;
+                pg_object_pose.orientation.w = 0.06060127285426858;
+
+                // approach pose
+                g_object_pose.position.x = 0.17796;
+                g_object_pose.position.y = 0.298568;
+                g_object_pose.position.z = 1.2964110;
+                g_object_pose.orientation.x =  -0.710811162646768;
+                g_object_pose.orientation.y = 0.08204007671239139;
+                g_object_pose.orientation.z = -0.6959485631842474;
+                g_object_pose.orientation.w = 0.06060127285426858;
+
+            }
+
+
+
+            // approach pose
+            //a_object_pose.position.x = 0.14120; a_object_pose.position.y = 0.2863; a_object_pose.position.z = 1.284;
+            //a_object_pose.orientation.x = -0.695; a_object_pose.orientation.y = 0.0556; a_object_pose.orientation.z = -0.7109; pa_object_pose.orientation.w = 0.09165;
+
+            // approach pose
+            //g_object_pose.position.x = 0.16620; g_object_pose.position.y = 0.2863; g_object_pose.position.z = 1.284;
+            //g_object_pose.orientation.x = -0.695; g_object_pose.orientation.y = 0.0556; g_object_pose.orientation.z = -0.7109; g_object_pose.orientation.w = 0.09165;
+
+
+            std::vector<geometry_msgs::Pose> objectPoses;
+            objectPoses = {f_object_pose, pa_object_pose, ma_object_pose, a_object_pose, pg_object_pose, g_object_pose}; /**, a_object_pose, g_object_pose}**/;
+
+            if (!executed){
+
+
+                wsg_50_common::Move moveSrv;
+                moveSrv.request.width = 50;
+                moveSrv.request.speed = 25;
+                gripperMoveServiceClient_.call(moveSrv.request, moveSrv.response);
+
+                wsg_50_common::Conf setForceSrv;
+                setForceSrv.request.val = 25;
+
+                gripperSetForceClient_.call(setForceSrv.request, setForceSrv.response);
+
+                sendToCmdPoses(objectPoses, status);
+
+                //TODO: Implement grasping and moving that grasp to some other location
+                //TODO: Implement
+
+
+                wsg_50_common::Move graspSrv;
+                graspSrv.request.width = 30;
+                graspSrv.request.speed = 10;
+                gripperGraspServiceClient_.call(graspSrv.request, graspSrv.response);
+                ROS_INFO_STREAM("Grasp response is: " << graspSrv.response);
+                // TODO: wait for execution
+                executed = true;
+            }
+            else{
+
+            }
+
+            /**
+             *
+             *             pa_object_pose.orientation.x = 0.0; pa_object_pose.orientation.y = -0.707; pa_object_pose.orientation.z = 0.0; pa_object_pose.orientation.w = -0.707;
+
+             */
+
+
+
+            /** PREAPPROACH POSE
+            position:
+            x: 0.1411664385193203
+            y: 0.201405752110852
+            z: 1.2998051245160938
+            orientation:
+            x: -0.6963955510677962
+            y: 0.05535079012760424
+            z: -0.7095385491701548
+            w: 0.0923286181351339
+            **/
+
+            /** APPROACH POSE
+             *
+             position:
+              x: 0.14120174622820364
+              y: 0.28630113618491954
+              z: 1.2848661898417062
+             orientation:
+              x: -0.6950509554248238
+              y: 0.05561874910503131
+              z: -0.7109218578246164
+              w: 0.09165607551181923
+             */
+
+            /**
+             * position:
+              x: 0.10611216266472234
+              y: 0.23762567408408705
+              z: 1.3558752487083063
+            orientation:
+              x: 0.026348993799069895
+              y: 0.7145184676892993
+              z: 0.08519941979562559
+              w: 0.6939093231274541
+
+             */
+
         }
 
         // TODO: Compare outputs of moveit_servo from jacobian (tracking pose) and this!

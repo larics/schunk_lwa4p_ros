@@ -31,4 +31,7 @@
     <!-- Start Arm control node -->
     <include file="$(find schunk_lwa4p_control)/launch/arm_control.launch"></include>
 
+    <!-- Start WSG50 driver -->
+    <include file="$(find wsg_50_driver)/launch/wsg_50_tcp.launch"></include>
+
 </launch>

@@ -9,6 +9,8 @@
     <arg name="propagate_pose_ctl" value="false"/>
     <arg name="use_action_servers" value="true"/>
     <arg name="servo" value="true"/>
+    <arg name="collect_measurements" value="true"/>
+    <arg name="gripper_dist" value="false"/>
     <arg name="pose_detection_frequency" value="1"/>
     <param name="use_sim_time" value="false"/>
 
@@ -46,17 +48,23 @@
         </node>
 
         <!-- Start SetupDistancerServer -->
-        <node pkg="schunk_lwa4p_control" type="setupdistancer_server" name="setup_distancer_server" output="screen">
-        </node>
-
+        <group if="$(arg gripper_dist)">
+            <node pkg="schunk_lwa4p_control" type="setupdistancer_server" name="setup_distancer_server" output="screen">
+            </node>
+        </group>
 
         <!-- Start ServoTrackPoseServer -->
-        <node pkg="schunk_lwa4p_control" type="servotrackpose_server" name="servo_track_pose_server" output="screen">
-        </node>
+        <group if="$(arg servo)">
+            <node pkg="schunk_lwa4p_control" type="servotrackpose_server" name="servo_track_pose_server" output="screen">
+            </node>
+        </group>
 
         <!-- Start CollectMeasurementsServer -->
-        <node pkg="schunk_lwa4p_control" type="collectmeasurements_server" name="collect_measurements_server" output="screen">
-        </node>
+        <group if="$(arg collect_measurements)">
+            <node pkg="schunk_lwa4p_control" type="collectmeasurements_server" name="collect_measurements_server" output="screen">
+            </node>
+        </group>
+
 
     </group>
 
