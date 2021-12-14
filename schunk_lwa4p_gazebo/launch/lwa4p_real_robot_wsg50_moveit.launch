@@ -9,6 +9,7 @@
 
     <!-- used in control arm node to call lwa4p driver initialization !-->
     <param name="real_robot" value="true"/>
+    <param name="start_christmas" value="true"/>
 
     <!-- Send robot URDF to param server -->
     <!-- TODO: Add WSG-50 gripper -->

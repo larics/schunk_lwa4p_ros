@@ -155,7 +155,8 @@ class ControlArm{
         // Only gripper clients! --> Move to action server
         ros::ServiceClient gripperGraspServiceClient_;
         ros::ServiceClient gripperMoveServiceClient_;
-        ros::ServiceClient gripperSetForceClient_;
+        ros::ServiceClient gripperSetForceServiceClient_;
+        ros::ServiceClient gripperReleaseServiceClient_;
 
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
@@ -179,7 +180,7 @@ class ControlArm{
 
         // Private variables
         int sleepMs_;
-        bool realRobot_;
+        bool startChristmas_;
         bool enableVisualization_;
         bool moveGroupInitialized_;   
         bool planningSceneInitialized_; 
