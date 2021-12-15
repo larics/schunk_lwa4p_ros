@@ -16,6 +16,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <std_srvs/TriggerRequest.h>
@@ -126,6 +127,11 @@ class ControlArm{
         ros::Publisher powerline0PosePublisher;
         ros::Publisher powerline1PosePublisher;
 
+        // CHRISMAS Action schunks
+        ros::Publisher schunkAction1Publisher;
+        ros::Publisher schunkAction2Publisher;
+        ros::Publisher schunkAction3Publisher;
+
         // ROS Subscribers
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
@@ -141,6 +147,11 @@ class ControlArm{
         ros::ServiceServer sendArmToHomingPoseService_;
         ros::ServiceServer checkIKSolutionsService_;
         ros::ServiceServer executeCartesianPathService_;
+
+        // CHRISTMAS Services
+        ros::ServiceServer pickSugarService_;
+        ros::ServiceServer putSugarService_;
+        ros::ServiceServer returnSugarService_;
 
         // ROS Service clients
         ros::ServiceClient applyPlanningSceneServiceClient_;
@@ -161,7 +172,12 @@ class ControlArm{
         // ROS Subscriber Callback
         void cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg);
         void cmdDeltaPoseCallback(const geometry_msgs::Pose::ConstPtr& msg); 
-        void cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg); 
+        void cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg);
+
+        // CHRISTMAS service callbacks
+        bool schunkPickSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool schunkPutSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool schunkReturnSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // ROS Services callbacks
         bool disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
@@ -176,17 +192,23 @@ class ControlArm{
         bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
-        moveit_msgs::DisplayTrajectory displayTrajectory_;         
+        moveit_msgs::DisplayTrajectory displayTrajectory_;
 
         // Private variables
         int sleepMs_;
         bool startChristmas_;
         bool enableVisualization_;
-        bool moveGroupInitialized_;   
-        bool planningSceneInitialized_; 
+        bool moveGroupInitialized_;
+        bool planningSceneInitialized_;
         bool firstTrajectoryExecution_ = true;
         bool blockingMovement = true;
-        geometry_msgs::Pose m_cmdPose;    
+
+        // CHRISTMAS booleans
+        bool m_startSchunkPick = false;
+        bool m_putSchunkSugar = false;
+        bool m_returnSchunkSugar = false;
+
+        geometry_msgs::Pose m_cmdPose;
         geometry_msgs::Pose m_cmdDeltaPose;
 
         // Vectors and arrays
@@ -195,14 +217,14 @@ class ControlArm{
         bool sendZeros(std::string ControllerType);
         bool sendToCmdPose();
         void sendToCmdPoses(std::vector<geometry_msgs::Pose> poses);
-        bool sendToDeltaCmdPose(); 
+        bool sendToDeltaCmdPose();
         bool sendToZeroPose();
         bool planPathToCmdPose();
         bool planPathToZeroPose();
         bool isNodeRunning();
         bool executeDummyCartesianPath();
         void addCollisionObject(moveit_msgs::PlanningScene& planningScene);
-        void getCurrentArmState(); 
+        void getCurrentArmState();
         void getCurrentEndEffectorState(const std::string linkName);
         void getJointPositions(const std::vector<std::string>& jointNames, std::vector<double> &jointGroupPositions) ;
         void getRunningControllers(std::vector<std::string> &runningControllerNames);

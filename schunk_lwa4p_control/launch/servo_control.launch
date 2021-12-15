@@ -19,4 +19,5 @@
         <node pkg="schunk_lwa4p_control" type="simulate_dummy_joystick.py" name="dummy_joy_node" output="screen" args="$(arg servo_sim_pub_freq)">
         </node>
     </group>
+
 </launch>
