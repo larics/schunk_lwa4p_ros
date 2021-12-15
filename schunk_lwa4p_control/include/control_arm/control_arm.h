@@ -56,6 +56,7 @@
 #include "schunk_lwa4p_control/CartesianPath.h"
 #include "wsg_50_common/Move.h"
 #include "wsg_50_common/Conf.h"
+#include "christmas_fair_common/StartTrajectorySrv.h"
 
 
 
@@ -175,9 +176,9 @@ class ControlArm{
         void cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg);
 
         // CHRISTMAS service callbacks
-        bool schunkPickSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool schunkPickSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
         bool schunkPutSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
-        bool schunkReturnSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+        bool schunkReturnSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
 
         // ROS Services callbacks
         bool disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
@@ -203,6 +204,9 @@ class ControlArm{
         bool firstTrajectoryExecution_ = true;
         bool blockingMovement = true;
 
+        int m_schunkPickId = 0;
+        int m_returnPickId = 0;
+
         // CHRISTMAS booleans
         bool m_startSchunkPick = false;
         bool m_putSchunkSugar = false;
@@ -215,6 +219,8 @@ class ControlArm{
         std::vector<double> m_jointPositions_;
 
         bool sendZeros(std::string ControllerType);
+        bool planToCmdPose();
+        bool executeMovement();
         bool sendToCmdPose();
         void sendToCmdPoses(std::vector<geometry_msgs::Pose> poses);
         bool sendToDeltaCmdPose();

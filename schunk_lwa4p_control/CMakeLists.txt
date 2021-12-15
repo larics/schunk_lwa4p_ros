@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
     tf_conversions
     trajectory_msgs
     wsg_50_common
+    christmas_fair_common
 )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -74,7 +75,7 @@ catkin_package(
 
 # Added wsg_50_common for wsg50 gripper
 include_directories(
- include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} wsg_50_common
+ include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} wsg_50_common christmas_fair_common
 )
 
 ###########

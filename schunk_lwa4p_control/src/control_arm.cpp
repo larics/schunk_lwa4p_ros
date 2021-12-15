@@ -107,8 +107,6 @@ void ControlArm::init() {
     armCmdDeltaPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(cmdDeltaPoseTopicName, cmdDeltaPoseTopicQueueSize, &ControlArm::cmdDeltaPoseCallback, this); 
     ROS_INFO("[ControlArm] Initialized subscribers/publishers.");
 
-
-
     // Initialize Services
     ROS_INFO("[ControlArm] Initializing services...");
     disableCollisionService_ = nodeHandle_.advertiseService(disableCollisionServiceName, &ControlArm::disableCollisionServiceCallback, this);
@@ -300,6 +298,40 @@ bool ControlArm::sendToCmdPose(){
 
     return success;
 }
+
+bool ControlArm::planToCmdPose(){
+    setCmdPose();
+
+    // Call planner, compute plan and visualize it
+    moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
+
+    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
+    m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
+
+    //TODO: Set start state :) as it could be correctly
+
+    getCurrentArmState();
+
+    // Update current joint values --> This should solve problem of deviates from current state
+    m_moveGroupPtr->setStartStateToCurrentState();
+
+    //m_currentRobotStatePtr->getJointPositions(plannedPath.start_state_.joint_state);
+
+    // plan Path
+    bool success = (m_moveGroupPtr->plan(plannedPath) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
+    return success;
+}
+
+bool ControlArm::executeMovement(){
+
+    if (blockingMovement){
+        m_moveGroupPtr->move();
+    }else {
+        m_moveGroupPtr->asyncMove();
+    }
+
+};
 
 void ControlArm::sendToCmdPoses(std::vector<geometry_msgs::Pose> poses)
 {
@@ -1070,9 +1102,10 @@ float ControlArm::round(float var){
 }
 
 // ChristmasServices
-bool ControlArm::schunkPickSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
+bool ControlArm::schunkPickSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
 
     m_startSchunkPick = true;
+    m_schunkPickId = req.id;
 
     res.success = true;
 
@@ -1089,9 +1122,10 @@ bool ControlArm::schunkPutSugarServiceCallback(std_srvs::TriggerRequest &req, st
     return res.success;
 }
 
-bool ControlArm::schunkReturnSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
+bool ControlArm::schunkReturnSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
 
     m_returnSchunkSugar = true;
+    m_returnPickId = req.id;
 
     res.success = true;
 
@@ -1229,8 +1263,6 @@ void ControlArm::run() {
             wsg_50_common::Conf setForceSrv;
             wsg_50_common::Move graspSrv;
 
-            if(!executed){
-
                 // WORKS OK!
                 // TODO: Fix service type (enable integer passing to choose pick place)
                 // TODO: Check pick place for gripper
@@ -1276,14 +1308,25 @@ void ControlArm::run() {
                     ma_object_pose.orientation.z = 0.49861912985012724;
                     ma_object_pose.orientation.w = 0.49782644824294775;
 
-                    // approach pose
-                    g_object_pose.position.x = 0.016498857741437112;
-                    g_object_pose.position.y = -0.23466345718719833;
-                    g_object_pose.position.z = 1.2286069967594317;
+                    g_object_pose.position.y = -0.24466345718719833;
+                    g_object_pose.position.z = 1.2186069967594317;
                     g_object_pose.orientation.x =  0.4876572924215413;
                     g_object_pose.orientation.y = -0.47621777600895293;
                     g_object_pose.orientation.z = 0.5532136412977633;
                     g_object_pose.orientation.w = 0.4789171766007652;
+
+
+                    // FIRST CUP
+                    if(m_schunkPickId == 0){
+
+                        // approach pose
+                        g_object_pose.position.x = 0.016498857741437112;
+                    }
+
+                    // SECOND CUP
+                    if (m_schunkPickId == 1){
+                        g_object_pose.position.x += 0.2;
+                    }
 
                     // graspgrasp pose
                     gp_object_pose = g_object_pose;
@@ -1291,10 +1334,11 @@ void ControlArm::run() {
                     gp_object_pose.position.y -= 0.07;
                     gp_object_pose.position.z -= 0.0075;
 
+
                     objectPoses = {f_object_pose, pa_object_pose, ma_object_pose, g_object_pose, gp_object_pose};
 
 
-                    moveSrv.request.width = 60;
+                    moveSrv.request.width = 55;
                     moveSrv.request.speed = 25;
                     gripperMoveServiceClient_.call(moveSrv.request,
                                                    moveSrv.response);
@@ -1426,16 +1470,30 @@ void ControlArm::run() {
                 // TODO: Check pose orientation constraints
                 if(m_returnSchunkSugar){
 
-                    ROS_INFO_STREAM("Returning sugar!"); 
+                    ROS_INFO_STREAM("Returning sugar!");
                     //ros::Duration(1.0).sleep();
 
-                    /*
-                    ROS_INFO_STREAM("m_cmdPose" << m_cmdPose);
+                    // Return first cup
+                    if (m_returnPickId == 0){
+                        g_object_pose.position.x = 0.016498857741437112;
 
-                    sugary_pose.position.y = 0.05;
-                    sugary_pose.position.z = 1.25;
-                    m_cmdPose = sugary_pose;
-                    sendToCmdPose();*/
+                    }
+                    // Return second cup
+                    if (m_returnPickId == 1){
+                        g_object_pose.position.x += 0.175;
+                    }
+
+                    g_object_pose.position.y = -0.23466345718719833;
+                    g_object_pose.position.z = 1.2286069967594317;
+                    g_object_pose.orientation.x =  0.4876572924215413;
+                    g_object_pose.orientation.y = -0.47621777600895293;
+                    g_object_pose.orientation.z = 0.5532136412977633;
+                    g_object_pose.orientation.w = 0.4789171766007652;
+
+                    gp_object_pose = g_object_pose;
+                    gp_object_pose.position.x += 0.005;
+                    gp_object_pose.position.y -= 0.07;
+                    gp_object_pose.position.z -= 0.0075;
 
                     ROS_INFO_STREAM("m_cmdPose" << m_cmdPose);
 
@@ -1446,7 +1504,7 @@ void ControlArm::run() {
                     ROS_INFO_STREAM("m_cmdPose" << m_cmdPose);
 
 
-                    gp_object_pose.position.z -= 0.05;
+                    gp_object_pose.position.z -= 0.08;
                     m_cmdPose = gp_object_pose;
                     sendToCmdPose();
 
@@ -1468,12 +1526,10 @@ void ControlArm::run() {
                     action3.data = true;
                     schunkAction2Publisher.publish(action3);
 
-                    // GLOBAL execute!
-                    executed = true;
+
 
                 }
 
-            }
 
         }
 
