@@ -75,7 +75,8 @@ class ControlArm{
         geometry_msgs::Pose currentEEPose; 
         
         // Setters 
-        bool setCmdPose(); 
+        bool setCmdPose();
+        bool setCmdJoint();
         bool setMoveGroup(); 
         bool setPlanningScene();
 
@@ -214,15 +215,19 @@ class ControlArm{
 
         geometry_msgs::Pose m_cmdPose;
         geometry_msgs::Pose m_cmdDeltaPose;
+        sensor_msgs::JointState m_cmdJoint;
 
-        // Vectors and arrays
+
+    // Vectors and arrays
         std::vector<double> m_jointPositions_;
 
         bool sendZeros(std::string ControllerType);
         bool planToCmdPose();
         bool executeMovement();
         bool sendToCmdPose();
+        bool sendToCmdJoint();
         void sendToCmdPoses(std::vector<geometry_msgs::Pose> poses);
+        void sendToJointCmdPoses(std::vector<sensor_msgs::JointState> joint_poses);
         bool sendToDeltaCmdPose();
         bool sendToZeroPose();
         bool planPathToCmdPose();
