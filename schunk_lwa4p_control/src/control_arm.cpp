@@ -314,7 +314,7 @@ bool ControlArm::sendToCmdJoint(){
 
     moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
 
-    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
+    m_moveGroupPtr->setMaxVelocityScalingFactor(0.25);
     m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
 
     //TODO: Set start state :) as it could be correctly
@@ -1146,9 +1146,7 @@ bool ControlArm::schunkPickSugarServiceCallback(christmas_fair_common::StartTraj
     m_startSchunkPick = true;
     m_schunkPickId = req.id;
 
-    res.success = true;
-
-    return res.success;
+    return true;
 
 }
 
@@ -1156,9 +1154,7 @@ bool ControlArm::schunkPutSugarServiceCallback(std_srvs::TriggerRequest &req, st
 
     m_putSchunkSugar = true;
 
-    res.success = true;
-
-    return res.success;
+    return true;
 }
 
 bool ControlArm::schunkReturnSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
@@ -1166,9 +1162,16 @@ bool ControlArm::schunkReturnSugarServiceCallback(christmas_fair_common::StartTr
     m_returnSchunkSugar = true;
     m_returnPickId = req.id;
 
+
+    return true;
+}
+
+bool ControlArm::schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
+    m_homingSchunk = true;
+
     res.success = true;
 
-    return res.success;
+    return true;
 }
 
 void ControlArm::run() {
@@ -1435,6 +1438,7 @@ void ControlArm::run() {
                 // TODO: Check orientation constraints
                 if(m_putSchunkSugar){
 
+
                     grasped_object = true;
 
                     // Object 0
@@ -1567,12 +1571,15 @@ void ControlArm::run() {
                     m_returnSchunkSugar = false;
                     std_msgs::Bool action3;
                     action3.data = true;
-                    schunkAction2Publisher.publish(action3);
+                    schunkAction3Publisher.publish(action3);
 
 
 
                 }
 
+                //if(m_homingSchunk){
+                //    m_moveGroupPtr->sen
+                //}
 
         }
 

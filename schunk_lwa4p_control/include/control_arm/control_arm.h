@@ -180,6 +180,8 @@ class ControlArm{
         bool schunkPickSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
         bool schunkPutSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool schunkReturnSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
+        bool schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
 
         // ROS Services callbacks
         bool disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
@@ -212,6 +214,7 @@ class ControlArm{
         bool m_startSchunkPick = false;
         bool m_putSchunkSugar = false;
         bool m_returnSchunkSugar = false;
+        bool m_homingSchunk = false;
 
         geometry_msgs::Pose m_cmdPose;
         geometry_msgs::Pose m_cmdDeltaPose;

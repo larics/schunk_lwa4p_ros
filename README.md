@@ -115,6 +115,24 @@ Following nodes are started:
 Following packages have been used with ROS melodic, Gazebo 11 on Ubuntu 18.04. 
 There is available [Dockerfile](https://github.com/larics/docker_files/blob/master/ros-melodic/moveit_ros/Dockerfile) for installing all dependencies/requirements.
 
+# Multimaster 
+
+ROS Multimaster is used for Christmas. 
+
+In order to use it run following: 
+
+Run master discovery: 
+```
+rosrun fkie_master_discovery master_discovery __ns:="schunk"
+
+```
+
+Run master sync: 
+```
+rosrun fkie_master_sync master_sync _sync_hosts:="["christmas_state_machine"]" __ns:="schunk" 
+```
+
+
 # Dependencies 
 
 If using `power line model` it's neccessary to download, source and build Gazebo plugin from this [link](https://github.com/goranvasilj/power_line_simulation/blob/master/src/power_line_simulation.cpp)
