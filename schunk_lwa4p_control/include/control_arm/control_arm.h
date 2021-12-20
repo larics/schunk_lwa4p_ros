@@ -133,6 +133,7 @@ class ControlArm{
         ros::Publisher schunkAction1Publisher;
         ros::Publisher schunkAction2Publisher;
         ros::Publisher schunkAction3Publisher;
+        ros::Publisher schunkAction4Publisher;
 
         // ROS Subscribers
         ros::Subscriber armCmdPoseSubscriber_;
@@ -154,6 +155,7 @@ class ControlArm{
         ros::ServiceServer pickSugarService_;
         ros::ServiceServer putSugarService_;
         ros::ServiceServer returnSugarService_;
+        ros::ServiceServer homingService_;
 
         // ROS Service clients
         ros::ServiceClient applyPlanningSceneServiceClient_;
