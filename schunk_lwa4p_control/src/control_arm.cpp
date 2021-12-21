@@ -1287,10 +1287,6 @@ void ControlArm::run() {
                 ROS_DEBUG_STREAM("Failed...");
         }
 
-        //Eigen::MatrixXd m_; 
-        //Eigen::Vector3d testVector(0.0, 0.0, 0.0);
-        //m_ = getJacobian(testVector);
-
         if (startChristmas_){
 
             wsg_50_common::Move moveSrv;
@@ -1329,48 +1325,22 @@ void ControlArm::run() {
                     // FIRST CUP
                     if(m_schunkPickId == 0){
 
-                        // pregrasp pose
-                        //m_cmdJoint.position = {-2.521337544016048, 0.10229374745938764, 1.4690087248185872, 1.4239966834096536, 0.9746965740687532, -1.1745018668370641};
                         m_cmdJoint.position = {-2.6376986452465103, 0.5326744877086694, 1.9774754958020953, 1.4957471689591404, 1.0800795543041708, -1.3866815440020148};
                         setCmdJoint();
                         sendToCmdJoint();
 
-                        //m_cmdJoint.position = {-2.521337544016048, 0.10229374745938764, 1.4690436314036273, 1.4239443235320937, 0.9746267608986734, -1.1744146003744644};
                         m_cmdJoint.position = {-2.112459260151337, 0.2746624643863476, 1.8682353379197703, 1.6077973069371763, 0.5483126378065385, -1.5812508490143424};
                         setCmdJoint();
                         sendToCmdJoint();
 
-                        // aDD 3RD POINT
-
-                        //m_cmdJoint.position = {-2.430789862422582, 0.04305727264670011, 1.4006441780179693, 1.387466942165412, 0.8886343886529129, -1.1449534426008};
                         m_cmdJoint.position = {-1.9779641879926535, 0.09211847792026072, 1.7232333836640814, 1.6983798951156819, 0.4154407218522103, -1.6779071829897885};
                         setCmdJoint();
                         sendToCmdJoint();
-
-                        //m_cmdJoint.position = {-2.3728623845488905, 8.726646259971647e-05, 1.3590704352354643, 1.3671862162572381, 0.832888572344214, -1.132352165401401};
-
-
-
-
-                        //position: [-0.2339439329373199, 1.1447265497980408, 1.9574740225742402, -1.3984625164529765, 1.3990733816911745, 0.8330980118544533]
-
-                        // position: [-0.2339439329373199, 1.1447265497980408, 1.9574740225742402, -1.3984625164529765, 1.3990733816911745, 0.8330980118544533]
-
-                        // position: [-0.2339439329373199, 1.1447265497980408, 1.9574740225742402, -1.3984625164529765, 1.3990733816911745, 0.8330980118544533]
-
-                        // position: [-0.2339439329373199, 1.1447265497980408, 1.9574740225742402, -1.3984625164529765, 1.3990733816911745, 0.8330980118544533]
-
-                        // position: [-1.7381559487686327, 0.4680623987998393, 1.952622007253696, 1.0925935650409702, 0.1977807108359974, -0.9645038512371064]
-
-
 
                     }
 
                     // SECOND CUP
                     if (m_schunkPickId == 1){
-
-                        //approach 1
-                        // -1.1062594930840857, 0.3081902393171587, 1.8847112460585969, -1.570412354359458, 0.45607198683863825, 1.6090539439986122]
 
                         m_cmdJoint.position = {-0.9215687516380459, 0.45505969587248146, 1.9722395080461121, -1.487526668182247, 0.6415481264480757, 1.5076677677502617};
                         setCmdJoint();
@@ -1384,20 +1354,12 @@ void ControlArm::run() {
                         setCmdJoint();
                         sendToCmdJoint();
 
-                        // GRASP:
-
-                        // AFTERGRASP:
-                        //[]
-
                     }
 
                     setForceSrv.request.val = 15;
 
                     gripperSetForceServiceClient_.call(setForceSrv.request,
                                                        setForceSrv.response);
-
-                    // PICK SUGAR
-                    //sendToCmdPoses(objectPoses);
 
 
                     ROS_INFO_STREAM("Grasping cup! ");
@@ -1428,9 +1390,6 @@ void ControlArm::run() {
                             m_cmdJoint.position = {-0.9776112739195838, -0.07499679795819635, 1.0752973521537061, -0.2780833097202565, 0.42339942324130436, 0.28763026072866554};
                             setCmdJoint();
                             sendToCmdJoint();
-
-                            // TODO: Dodati i ovo za aftergrasp pose
-                            //position: [-2.4059363738741832, -0.14360569085409344, 0.87416560915388, 1.1288440536048925, 0.972305472993521, -0.7320958080415415]
 
                         }
 
@@ -1465,11 +1424,6 @@ void ControlArm::run() {
 
 
                     grasped_object = true;
-
-                    // Object 0
-                    // position: [-2.3892335729325977, -0.05419247327442393, 1.150555949499702, 1.246845764332229, 0.888337682680074, -0.9412735188930619]
-
-                    //position: [-2.4197593815499787, -0.27689648582890036, 0.5253266515577732, 1.0253983888391887, 1.0845825037743162, -0.516216032862363]
 
                     // SUGAR MOVEMENT
                     m_cmdJoint.position = {-0.0007330382858376184, 0.3463605900582747, 1.329417291244081, 0.16505578736110374, 0.5575803361346285, -0.05927138139772743};
@@ -1539,13 +1493,11 @@ void ControlArm::run() {
                 if(m_returnSchunkSugar){
 
                     ROS_INFO_STREAM("Returning sugar!");
-                    //ros::Duration(1.0).sleep();
 
                     // Return first cup
                     if (m_returnPickId == 0){
 
-                        //m_cmdJoint.position = {-1.133853148558116, -0.09463175204313255, 0.6761580055151232, 0.07298966931840287, 0.8074242185576168, 0.0999375529691953};
-                        // SUGAR MOVEMENT
+
                         m_cmdJoint.position = {-0.9776112739195838, -0.07499679795819635, 1.0752973521537061, -0.2780833097202565, 0.42339942324130436, 0.28763026072866554};
                         setCmdJoint();
                         sendToCmdJoint();
@@ -1562,8 +1514,6 @@ void ControlArm::run() {
                         setCmdJoint();
                         sendToCmdJoint();
 
-
-
                         moveSrv.request.width = 65;
                         moveSrv.request.speed = 10;
                         gripperReleaseServiceClient_.call(moveSrv.request,
@@ -1579,14 +1529,6 @@ void ControlArm::run() {
                         setCmdJoint();
                         sendToCmdJoint();
 
-                        // aDD 3RD POINT
-
-                        //m_cmdJoint.position = {-2.430789862422582, 0.04305727264670011, 1.4006441780179693, 1.387466942165412, 0.8886343886529129, -1.1449534426008};
-
-
-
-
-
                     }
                     // Return second cup
                     if (m_returnPickId == 1){
@@ -1594,9 +1536,6 @@ void ControlArm::run() {
                         m_cmdJoint.position = {-1.2331798362891133, 0.06825982704549823, 1.3154372039356061, -0.811927168027762, 0.46060984289382345, 0.7941946228274996};
                         setCmdJoint();
                         sendToCmdJoint();
-                        // ADD for second pose
-
-
 
                         m_cmdJoint.position =  {-1.2268617443968939, 0.10458012877950022, 1.5461871843417765, -1.202584214501653, 0.3593109331080726, 1.217908205334163};
                         setCmdJoint();
@@ -1624,20 +1563,13 @@ void ControlArm::run() {
 
                     }
 
-
-
                     ROS_INFO_STREAM("============================");
                     ROS_INFO_STREAM("Releasing");
-
-
-
 
                     m_returnSchunkSugar = false;
                     std_msgs::Bool action3;
                     action3.data = true;
                     schunkAction3Publisher.publish(action3);
-
-
 
                 }
 
