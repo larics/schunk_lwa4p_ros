@@ -29,8 +29,8 @@ find_package(Eigen3 REQUIRED)
 
 #add_message_files()
 add_service_files(
-        FILES
-        CartesianPath.srv
+        DIRECTORY srv
+        FILES CartesianPath.srv
 )
 
 add_action_files(
