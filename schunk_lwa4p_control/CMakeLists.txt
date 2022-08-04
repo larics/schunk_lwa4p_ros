@@ -30,12 +30,17 @@ find_package(Eigen3 REQUIRED)
 #add_message_files()
 add_service_files(
         DIRECTORY srv
-        FILES CartesianPath.srv
+        FILES
+       	CartesianPath.srv
 )
 
 add_action_files(
         DIRECTORY action
-        FILES GoToPose.action SetupDistancer.action ServoTrackPose.action CollectMeasurements.action
+        FILES
+       	GoToPose.action
+       	SetupDistancer.action
+       	ServoTrackPose.action
+       	CollectMeasurements.action
 )
 
 generate_messages(
@@ -44,7 +49,7 @@ generate_messages(
 )
 
 catkin_package(
-  INCLUDE_DIRS include action
+  INCLUDE_DIRS include action srv
   LIBRARIES
     ${PROJECT_NAME}_lib
   CATKIN_DEPENDS
