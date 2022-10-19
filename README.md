@@ -81,7 +81,7 @@ Check following resources to familliarize yourself with CAN communication protoc
 
 Official presentation from Schunk about available [drivers](https://usermanual.wiki/Document/ManualPowerballCANOpenDriver.312884843/view) 
 
-Schunk [inverse kinematics and calibration].(https://foswiki.cs.rpi.edu/foswiki/pub/RoboticsWeb/LabPublications/bradley_ROBOTIC_ARM_CALIBRATION__CTRL_report.pdf)
+Schunk [inverse kinematics and calibration](https://foswiki.cs.rpi.edu/foswiki/pub/RoboticsWeb/LabPublications/bradley_ROBOTIC_ARM_CALIBRATION__CTRL_report.pdf)
 
 Info about [CAN] for Schunk LWA4P. 
 
