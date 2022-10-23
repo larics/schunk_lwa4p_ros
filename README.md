@@ -16,7 +16,25 @@ If you want to use robot from simulation run one of the following commands:
 roslaunch schunk_lwa4p_gazebo lwa4p_gazebo_moveit.launch
 ```
 
+# Interfacing with a robot? 
+
+## Send commands 
+
+## Read current arm state 
+
+## Command current arm state 
+
+## RVIZ control 
+
 # ROS control 
+
+Controllers which are used are: 
+
+## Joint state controller 
+
+## Joint trajectory controller 
+
+## Joint position control
 
 In order to use real arm, it's neccessary to properly configure 
 controllers: 
@@ -24,8 +42,3 @@ controllers:
 Controller used for trajectory planning and execution is `jointTrajectoryController`, 
 controller used for decoupled joint position moving is `jointPositionController` and 
 one used for coupled joint position movement is `jointGroupPositionController`.
-
-Each of those controllers are part of ROS control, and it is neccessary 
-to properly configure CAN + ROS control. In order to do so, check 
-following [http://wiki.ros.org/canopen_motor_node] and bear in mind 
-parameter called `required_drive_mode`. 
