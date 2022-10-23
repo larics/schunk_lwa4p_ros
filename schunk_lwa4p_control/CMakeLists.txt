@@ -17,7 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
     moveit_msgs
     moveit_servo
     roscpp
-    separator_end_effector
     std_msgs
     tf
     tf_conversions
@@ -38,14 +37,12 @@ add_action_files(
         DIRECTORY action
         FILES
        	GoToPose.action
-       	SetupDistancer.action
        	ServoTrackPose.action
        	CollectMeasurements.action
 )
 
 generate_messages(
         DEPENDENCIES actionlib_msgs std_msgs geometry_msgs
-
 )
 
 catkin_package(
@@ -65,7 +62,6 @@ catkin_package(
     moveit_msgs
     moveit_servo
     roscpp
-    separator_end_effector      # You don't need this if you won't use separator end effector, also
     std_msgs
     tf
     tf_conversions
@@ -101,22 +97,6 @@ target_link_libraries(
 
 add_dependencies(
         gotopose_server
-        ${${PROJECT_NAME}_EXPORTED_TARGETS}
-)
-
-# SetupDistancer
-add_executable(
-    setupdistancer_server
-    src/setupdistancer_server.cpp
-)
-
-target_link_libraries(
-        setupdistancer_server
-        ${catkin_LIBRARIES}
-)
-
-add_dependencies(
-        setupdistancer_server
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
 )
 

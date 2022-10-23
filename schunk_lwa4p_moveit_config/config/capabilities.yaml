@@ -1,3 +1,0 @@
-move_group:
-  disable_capabilities: "move_group/MoveGroupCartesianPathService"
-  capabilities: "descartes_capability/MoveGroupDescartesPathService"

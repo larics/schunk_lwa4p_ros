@@ -11,6 +11,9 @@
     <!-- Load joint pid gains -->
     <rosparam file="$(find schunk_lwa4p_gazebo)/controller/pid_gains.yaml" command="load"/>
 
+    <!-- Load controller names on param server -->
+    <rosparam file="$(find schunk_lwa4p_gazebo)/controller/arm_wsg50_controller.yaml"/>
+
     <!-- Startup simulation world -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" default="worlds/empty.world"/>
@@ -18,17 +21,31 @@
         <arg name="gui" value="$(arg gui)"/>
     </include>
 
-    <!-- robot description file -->
+    <!-- Robot description file -->
     <include file="$(find schunk_lwa4p_description)/launch/lwa4p_arm_wsg50_upload.launch"/>
 
     <!-- Push robot description to factory and spawn robot in gazebo -->
     <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model lwa4p_wsg50 -z 0" respawn="false" output="screen" />
+    
+    <!-- Starts controllers -->
+    <node name="joint_trajectory_controller_spawner" ns="lwa4p" pkg="controller_manager" type="spawner"
+        args="joint_state_controller arm_controller" respawn="false" output="screen"/>
 
-    <!-- Starts robot state publisher and joint state controller -->
-    <include file="$(find schunk_lwa4p_gazebo)/launch/controller_utils.launch"/>
+    <!-- Start joint position controllers-->
+    <node name="joint_position_controller_spawner" ns="lwa4p" pkg="controller_manager" type="spawner"
+          args="--stopped joint_1_position_controller joint_2_position_controller joint_3_position_controller
+        joint_4_position_controller joint_5_position_controller joint_6_position_controller" respawn="false" output="screen"/>
 
     <!-- Load other controllers -->
     <node name="ros_control_controller_manager" ns="lwa4p" pkg="controller_manager" type="controller_manager" respawn="false" args="load joint_group_position_controller" />
 
+    <!-- Start MoveIt! -->
+    <include file="$(find schunk_lwa4p_wsg50_config)/launch/demo_planning_execution.launch">
+        <arg name="respawn_robot" value="true" />
+        <!-- joint remapping is done in move_group.launch -->
+    </include>
+
+    <!-- Start Arm control node -->
+    <include file="$(find schunk_lwa4p_control)/launch/arm_control.launch"></include>
 
 </launch>

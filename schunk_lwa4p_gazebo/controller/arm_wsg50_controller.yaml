@@ -1,0 +1,71 @@
+lwa4p:
+  arm_controller:
+    type: position_controllers/JointTrajectoryController
+    joints:
+      - lwa4p_joint1
+      - lwa4p_joint2
+      - lwa4p_joint3
+      - lwa4p_joint4
+      - lwa4p_joint5
+      - lwa4p_joint6
+    constraints:
+        goal_time: 2.0
+        stopped_velocity_tolerance: 0.1
+        lwa4p_joint1: {trajectory: 0.1, goal: 0.1}
+        lwa4p_joint2: {trajectory: 0.1, goal: 0.1}
+        lwa4p_joint3: {trajectory: 0.1, goal: 0.1}
+        lwa4p_joint4: {trajectory: 0.1, goal: 0.1}
+        lwa4p_joint5: {trajectory: 0.1, goal: 0.1}
+        lwa4p_joint6: {trajectory: 0.1, goal: 0.1}
+    stop_trajectory_duration: 1.5
+    state_publish_rate:  25
+    action_monitor_rate: 10
+
+  #### JOINT POSITION CONTROLLERS ####
+  joint_1_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint1
+
+  joint_2_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint2
+
+  joint_3_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint3
+
+  joint_4_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint4
+
+  joint_5_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint5
+
+  joint_6_position_controller:
+    type: position_controllers/JointPositionController
+    joint: lwa4p_joint6
+
+  #### JOINT GROUP POSITION CONTROLLER ####
+  joint_group_position_controller:
+    type: position_controllers/JointGroupPositionController
+    joints:
+      - lwa4p_joint1
+      - lwa4p_joint2
+      - lwa4p_joint3
+      - lwa4p_joint4
+      - lwa4p_joint5
+      - lwa4p_joint6
+
+  joint_group_velocity_controller:
+    type: velocity_controllers/JointGroupVelocityController
+    joints:
+      - lwa4p_joint1
+      - lwa4p_joint2
+      - lwa4p_joint3
+      - lwa4p_joint4
+      - lwa4p_joint5
+      - lwa4p_joint6
+
+
+
