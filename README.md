@@ -1,4 +1,4 @@
-# Schunk lwa4p moveit 
+# Fundamentals of robotics with Schunk LWA4p and WSG50 gripper
 
 Repository contains ROS packages needed for successful running Schunk LWA4P Powerball with WSG50 gripper in Gazebo. 
 Available packages are:  
