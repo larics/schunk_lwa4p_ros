@@ -4,7 +4,7 @@
     <arg name="rate" default="10" />
     <arg name="rviz_viz" default="true"/>
 
-    <rosparam command="load" file="$(find schunk_lwa4p_moveit_config)/config/joint_names.yaml"/>
+    <rosparam command="load" file="$(find schunk_lwa4p_wsg50_config)/config/joint_names.yaml"/>
 
     <include file="$(find schunk_lwa4p_wsg50_config)/launch/planning_context.launch" >
         <arg name="load_robot_description" value="$(arg respawn_robot)" />
