@@ -1,0 +1,31 @@
+<robot name="Table" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <link name="Table">
+    <visual>
+    <geometry>
+      <mesh filename="$(find or_worlds)/models/table/or_table.dae" scale="1 1 1" />
+    </geometry>
+    <material name="OR_orange">
+      <color rgba="0.4 0.0 0.3 1.0"/>
+    </material>
+    </visual>
+    <inertial>
+      <inertia ixx="10" ixy="0.0" ixz="0.0" iyy="10" iyz="0.0"
+        izz="10" />
+    <mass value="1.0" />
+
+    </inertial>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="$(find or_worlds)/models/table/or_table.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+  </link>
+
+  <gazebo>
+    <static>true</static>
+  </gazebo>
+
+</robot>
