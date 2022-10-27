@@ -10,20 +10,20 @@
   <!-- foot for arm -->
 	<link name="base_link">
 		<visual>
-		   <origin xyz="0 0 0.4" rpy="0 0 0" />
+		   <origin xyz="0 0 0.5" rpy="0 0 0" />
 		   <geometry>
-			  <cylinder radius="0.1" length="0.8"/>
+			  <cylinder radius="0.1" length="1.0"/>
 		   </geometry>
 		   <material name="Gazebo/DarkGrey" />
 		</visual>
 		<collision>
-		   <origin xyz="0 0 0.4" rpy="0 0 0" />
+		   <origin xyz="0 0 0.5" rpy="0 0 0" />
 		   <geometry>
-			  <cylinder radius="0.1" length="0.8"/>
+			  <cylinder radius="0.1" length="1.0"/>
 		   </geometry>
 		</collision>
 		<inertial>
-		   <origin xyz="0 0 0.4" rpy="0 0 0"/>
+		   <origin xyz="0 0 0.5" rpy="0 0 0"/>
 		   <mass value="10000.0"/>
 		   <inertia ixx="10000.0"  ixy="0"  ixz="0" iyy="10000.0" iyz="0" izz="10000.0" />
 		</inertial>
@@ -31,7 +31,7 @@
 
   <!-- arm -->
   <xacro:lwa4p_arm arm_id="lwa4p" parent="base_link" has_podest="true" >
-    <origin xyz="0 0 0.8" rpy="0 0 0" />
+    <origin xyz="0 0 1.0" rpy="0 0 0" />
   </xacro:lwa4p_arm>
 
 </robot>

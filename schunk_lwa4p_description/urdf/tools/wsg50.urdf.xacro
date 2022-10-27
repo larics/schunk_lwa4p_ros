@@ -53,7 +53,7 @@
   </gazebo>
 
   <joint name="${name}_center_joint" type="fixed">
-     <origin xyz="0 0 ${finger_length}" rpy="0 0 0" />      <!--origin xyz="-0.0067 0 0.049" rpy="0 0 0" /-->
+     <origin xyz="0 0 0.2" rpy="0 0 0" />      <!--origin xyz="-0.0067 0 0.049" rpy="0 0 0" /-->
      <parent link="${name}_base_link"/>
      <child link="${name}_center" />
   </joint>
@@ -72,11 +72,15 @@
      <limit effort="100" velocity="100"/>
   </joint>
 
-  <transmission name="${name}_base_trans_left" type="pr2_mechanism_model/SimpleTransmission">
-     <actuator name="${name}_base_motor_left" />
-     <joint name="${name}_base_joint_gripper_left" />
-     <mechanicalReduction>1</mechanicalReduction>
-     <motorTorqueConstant>1</motorTorqueConstant>
+  <transmission name="${name}_finger_left_joint_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${name}_finger_left_joint">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface!-->
+    </joint>
+    <actuator name="${name}_finger_left_joint_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
   </transmission>
 
   <link name="${name}_gripper_left">
@@ -171,11 +175,15 @@
      <limit effort="100" velocity="100"/>
   </joint>
 
-  <transmission name="${name}_base_trans_right" type="pr2_mechanism_model/SimpleTransmission">
-     <actuator name="${name}_base_motor_right" />
-     <joint name="${name}_base_joint_gripper_right" />
-     <mechanicalReduction>1</mechanicalReduction>
-     <motorTorqueConstant>1</motorTorqueConstant>
+ <transmission name="${name}_finger_right_joint_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${name}_finger_right_joint">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <!--hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface!-->
+    </joint>
+    <actuator name="${name}_finger_right_joint_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
   </transmission>
 
     <link name="${name}_gripper_right">

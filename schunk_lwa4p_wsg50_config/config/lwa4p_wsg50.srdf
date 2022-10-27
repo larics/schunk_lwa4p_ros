@@ -28,6 +28,8 @@
         <link name="lwa4p_link4"/>
         <link name="lwa4p_link5"/>
         <link name="lwa4p_link6"/>
+        <link name="wsg50_base_link"/>
+        <link name="wsg50_center"/>
         <joint name="lwa4p_joint1"/>
         <joint name="lwa4p_joint2"/>
         <joint name="lwa4p_joint3"/>
@@ -36,7 +38,7 @@
         <joint name="lwa4p_joint6"/>
     </group>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
-    <end_effector name="wsg50" parent_link="lwa4p_link6" group="gripper" parent_group="arm"/>
+    <end_effector name="wsg50" parent_link="wsg50_center" group="gripper"/>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="lwa4p_link1" reason="Default"/>
     <disable_collisions link1="base_link" link2="lwa4p_link2" reason="Never"/>

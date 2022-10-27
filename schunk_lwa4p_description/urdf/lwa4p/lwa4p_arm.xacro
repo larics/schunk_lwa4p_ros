@@ -226,7 +226,7 @@
     <!-- Joint 5 -->
     <!-- joint between arm_4_link and arm_5_link -->
     <joint name="${arm_id}_joint5" type="revolute">
-      <origin xyz="0 0.005263 0.305" rpy="1.5708 0 3.14159" />
+      <origin xyz="0 0.0 0.305" rpy="1.5708 0 3.14159" />
       <parent link="${arm_id}_link4"/>
       <child link="${arm_id}_link5"/>
       <axis xyz="0 0 1" />
