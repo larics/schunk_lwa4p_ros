@@ -9,6 +9,8 @@ Available packages are:
 
 Joint limits and some links to HW resources can be found [here](http://wiki.ros.org/schunk_description). 
 
+To run the simulation, you also need https://github.com/nalt/wsg50-ros-pkg to simulate the gripper correctly.
+
 ## Useful resources: 
 
 * [Brief ROS introduction](https://fzoric8.github.io/2021/05/27/ROS-in-10-minutes.html) 
