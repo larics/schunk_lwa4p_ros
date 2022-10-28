@@ -3,7 +3,7 @@
   <link name="Brick">
     <visual>
     <geometry>
-      <mesh filename="$(find or_worlds)/models/brick/brick.stl" scale="1 1 1" />
+      <mesh filename="$(find schunk_lwa4p_gazebo)/worlds/models/brick/brick.stl" scale="1 1 1" />
     </geometry>
     <material name="OR_cyan">
       <color rgba="0.2 0.0 0.7 1.0"/>
@@ -18,7 +18,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="$(find or_worlds)/models/brick/brick.stl" scale="1 1 1" />
+        <mesh filename="$(find schunk_lwa4p_gazebo)/worlds/models/brick/brick.stl" scale="1 1 1" />
       </geometry>
     </collision>
   </link>

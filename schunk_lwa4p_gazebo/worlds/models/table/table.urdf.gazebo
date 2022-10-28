@@ -3,7 +3,7 @@
   <link name="Table">
     <visual>
     <geometry>
-      <mesh filename="$(find or_worlds)/models/table/or_table.dae" scale="1 1 1" />
+      <mesh filename="$(find schunk_lwa4p_gazebo)/worlds/models/table/or_table.dae" scale="1 1 1" />
     </geometry>
     <material name="OR_orange">
       <color rgba="0.4 0.0 0.3 1.0"/>
@@ -19,7 +19,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="$(find or_worlds)/models/table/or_table.dae" scale="1 1 1" />
+        <mesh filename="$(find schunk_lwa4p_gazebo)/worlds/models/table/or_table.dae" scale="1 1 1" />
       </geometry>
     </collision>
   </link>
