@@ -29,6 +29,11 @@ You can start your can interface as follows:
 ```
 sudo ip link set can0 type can bitrate 500000
 ```
+Set up `can0` interface: 
+
+```
+sudo ip link set up can0 
+```
 
 Update frame length: 
 
