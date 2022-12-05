@@ -128,6 +128,7 @@ class ControlArm{
         ros::Publisher cmdJointGroupVelocityPublisher;
         ros::Publisher powerline0PosePublisher;
         ros::Publisher powerline1PosePublisher;
+        ros::Publisher schunkOrderPublisher;
 
         // CHRISMAS Action schunks
         ros::Publisher schunkAction1Publisher;
@@ -139,6 +140,7 @@ class ControlArm{
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
         ros::Subscriber armCmdToolOrientationSubscriber_;
+        ros::Subscriber schunkOrderSubscriber;
 
         // ROS Services
         ros::ServiceServer disableCollisionService_;
@@ -178,12 +180,8 @@ class ControlArm{
         void cmdDeltaPoseCallback(const geometry_msgs::Pose::ConstPtr& msg); 
         void cmdToolOrientationCallback(const geometry_msgs::Point::ConstPtr& msg);
 
-        // CHRISTMAS service callbacks
-        bool schunkPickSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
-        bool schunkPutSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
-        bool schunkReturnSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
-        bool schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
-
+        // CHRISTMAS topic callback
+        void orderCallback(const std_msgs::Bool::ConstPtr& msg);
 
         // ROS Services callbacks
         bool disableCollisionServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
@@ -195,6 +193,7 @@ class ControlArm{
         //https://ros-planning.github.io/moveit_tutorials/doc/trac_ik/trac_ik_tutorial.html
         bool checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKRequest &req, moveit_msgs::GetPositionIKResponse &res);
         bool executeCartesianServiceCallback(schunk_lwa4p_control::CartesianPathRequest &req, schunk_lwa4p_control::CartesianPathResponse &res);
+        bool schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
@@ -208,6 +207,7 @@ class ControlArm{
         bool planningSceneInitialized_;
         bool firstTrajectoryExecution_ = true;
         bool blockingMovement = true;
+        bool orderReciv = false;
 
         int m_schunkPickId = 0;
         int m_returnPickId = 0;
@@ -245,6 +245,8 @@ class ControlArm{
         void getJointPositions(const std::vector<std::string>& jointNames, std::vector<double> &jointGroupPositions) ;
         void getRunningControllers(std::vector<std::string> &runningControllerNames);
         bool getIK(const std::size_t attempts, double timeout);
+        bool graspCup(int desiredForceN, int desiredWidthMM, int desiredSpeedMM);
+        bool releaseCup(int releaseWidthMM);
         Eigen::MatrixXd getJacobian(Eigen::Vector3d refPointPosition);          // Can be created as void and arg passed to be changed during execution
         Eigen::MatrixXd getInertiaMatrix(Eigen::Vector3d refPointPosition);
 

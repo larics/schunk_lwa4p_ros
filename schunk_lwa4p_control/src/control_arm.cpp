@@ -139,12 +139,12 @@ void ControlArm::init() {
     gripperReleaseServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Move>("/wsg_50_driver/release");
 
     if (startChristmas_){
-        pickSugarService_ = nodeHandleWithoutNs_.advertiseService("/schunk_get_sugar", &ControlArm::schunkPickSugarServiceCallback, this);
-        putSugarService_ = nodeHandleWithoutNs_.advertiseService("/schunk_put_sugar", &ControlArm::schunkPutSugarServiceCallback, this);
-        returnSugarService_ = nodeHandleWithoutNs_.advertiseService("/schunk_return_sugar", &ControlArm::schunkReturnSugarServiceCallback, this);
         homingService_ = nodeHandleWithoutNs_.advertiseService("/schunk_go_home", &ControlArm::schunkHomingServiceCallback, this); 
 
         // Christmas publishers
+        schunkOrderSubscriber = nodeHandleWithoutNs_.subscribe<std_msgs::Bool>("/schunk_order", 1, &ControlArm::orderCallback, this);
+        schunkOrderPublisher =  nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_order", 1);
+
         schunkAction1Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_get_sugar_done", 1);
         schunkAction2Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_put_sugar_done", 1);
         schunkAction3Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_return_sugar_done", 1);
@@ -316,11 +316,12 @@ bool ControlArm::sendToCmdJoint(){
 
     moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
 
-    m_moveGroupPtr->setMaxVelocityScalingFactor(0.4);
+
+    // TODO: Add velocity scaling factor as params
+    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
     m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
 
-    //TODO: Set start state :) as it could be correctly
-
+    // Set start state
     getCurrentArmState();
 
     // Update current joint values --> This should solve problem of deviates from current state
@@ -443,14 +444,14 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     primitive.dimensions.resize(3);
     primitive.dimensions[0] = 1.5;
     primitive.dimensions[1] = 1.0;
-    primitive.dimensions[2] = 0.02;
+    primitive.dimensions[2] = 0.01;
 
     // A table pose (specified relative to frame_id)
     geometry_msgs::Pose table_pose;
     table_pose.orientation.w = 1.0;
     table_pose.position.x = -0.5;
     table_pose.position.y = 0.0;
-    table_pose.position.z = 0.75;
+    table_pose.position.z = 0.2;
 
     collisionObject1.primitives.push_back(primitive);
     collisionObject1.primitive_poses.push_back(table_pose);
@@ -466,9 +467,10 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     primitive.dimensions[2] = 2.0;
 
     geometry_msgs::Pose wall_pose;
-    wall_pose.orientation.w = 1.0;
+    wall_pose.orientation.w = 0.707;
+    wall_pose.orientation.z = 0.707;
     wall_pose.position.x = -0.70;
-    wall_pose.position.y = 0.0;
+    wall_pose.position.y = -0.5;
     wall_pose.position.z = 1.0;
 
     collisionObject2.primitives.push_back(primitive);
@@ -486,13 +488,13 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
         primitive1.dimensions.resize(3);
         primitive1.dimensions[0] = 0.38;
         primitive1.dimensions[1] = 0.38;
-        primitive1.dimensions[2] = 1.16;
+        primitive1.dimensions[2] = 0.5;
 
         geometry_msgs::Pose object_pose;
         object_pose.orientation.w = 1.0;
         object_pose.position.x = 0.0;
         object_pose.position.y = -0.6;
-        object_pose.position.z = 0.58;
+        object_pose.position.z = 0.25;
         collisionObject3.primitives.push_back(primitive1);
         collisionObject3.primitive_poses.push_back(object_pose);
         collisionObject3.operation = collisionObject3.ADD;
@@ -1142,31 +1144,7 @@ float ControlArm::round(float var){
 
 }
 
-// ChristmasServices
-bool ControlArm::schunkPickSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
 
-    m_startSchunkPick = true;
-    m_schunkPickId = req.id;
-
-    return true;
-
-}
-
-bool ControlArm::schunkPutSugarServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
-
-    m_putSchunkSugar = true;
-
-    return true;
-}
-
-bool ControlArm::schunkReturnSugarServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
-
-    m_returnSchunkSugar = true;
-    m_returnPickId = req.id;
-
-
-    return true;
-}
 
 bool ControlArm::schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
     m_homingSchunk = true;
@@ -1176,12 +1154,48 @@ bool ControlArm::schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_
     return true;
 }
 
+void ControlArm::orderCallback(const std_msgs::Bool::ConstPtr &msg) {
+
+    // Recieved schunk order
+    orderReciv = msg->data;
+}
+
+bool ControlArm::graspCup(int desiredForceN, int desiredWidthMM, int desiredSpeedMM)
+{
+    wsg_50_common::Conf setForceSrv;
+    wsg_50_common::Move graspSrv;
+
+    setForceSrv.request.val = desiredForceN;
+
+    gripperSetForceServiceClient_.call(setForceSrv.request,
+                                       setForceSrv.response);
+
+    ROS_INFO_STREAM("Grasping cup! ");
+
+    graspSrv.request.width = desiredWidthMM;
+    graspSrv.request.speed = desiredSpeedMM;
+    gripperGraspServiceClient_.call(graspSrv.request,
+                                    graspSrv.response);
+
+    return graspSrv.response.error;
+}
+
+bool ControlArm::releaseCup(int releaseWidthMM)
+{
+    wsg_50_common::Move graspSrv;
+
+    graspSrv.request.width = releaseWidthMM;
+    gripperGraspServiceClient_.call(graspSrv.request,
+                                    graspSrv.response);
+
+    return graspSrv.response.error;
+
+}
+
 void ControlArm::run() {
 
     ros::Rate r(25);
     bool executed = false;
-
-    bool grasped_object = false;
 
     while(ros::ok)
     {
@@ -1215,379 +1229,92 @@ void ControlArm::run() {
         successIK = getIK(attempts, timeout);
 
         bool magnetic_localization = false;
-        try {
-            if(magnetic_localization){
-                // TODO: Add to specific method or class to handle this, maybe create ControlArm node as virtual
-                // class and this could be MagneticArm which inherits that class
-                tf::StampedTransform transform1; tf::StampedTransform transform2; tf::StampedTransform transform3;
-                tf::StampedTransform powerline0_transform; tf::StampedTransform powerline1_transform;
-                geometry_msgs::PoseStamped powerline0Pose; geometry_msgs::PoseStamped powerline1Pose;
-                geometry_msgs::Quaternion poseQuaternion;
 
-                std::string needed_frame = "base_link";
-                std::string target_frame = "lwa4p_base_link";
-                listener.lookupTransform(needed_frame, "power_line0_n", ros::Time(0), powerline0_transform);
-                listener.lookupTransform(needed_frame, "power_line1_n", ros::Time(0), powerline1_transform);
-                listener.lookupTransform(target_frame, "power_line0_n", ros::Time(0), transform1);
-                listener.lookupTransform(target_frame, "power_line1_n", ros::Time(0), transform2);
-
-                tf::Matrix3x3 rotation_matrix(transform1.getRotation()); //getBasis
-                tf::Vector3 x_dir = rotation_matrix.getColumn(0);
-                geometry_msgs::Vector3 x_dir_converted; geometry_msgs::Vector3 line1; geometry_msgs::Vector3 line2;
-                geometry_msgs::Vector3 base; base.x = 0; base.y = 0; base.z = 0;
-                x_dir_converted.x = x_dir.x(); x_dir_converted.y = x_dir.y(); x_dir_converted.z =  x_dir.z();
-                line1.x = transform1.getOrigin().x(); line1.y = transform1.getOrigin().y(); line1.z = transform1.getOrigin().z();
-                line2.x = transform2.getOrigin().x(); line2.y = transform2.getOrigin().y(); line2.z = transform2.getOrigin().z();
-                geometry_msgs::Vector3 close1; geometry_msgs::Vector3 close2;
-                close1 = getClosestPointOnLine(line1, x_dir_converted, base);
-                close2 = getClosestPointOnLine(line2, x_dir_converted, base);
-
-                // Transform from last link (ee frame) to the end of the separator main link of the separator
-                listener.lookupTransform("lwa4p_link6", "separator_main", ros::Time(0), transform3);
-
-                //ROS_INFO_STREAM("[world] x: " << (transform1.getOrigin().x() + transform2.getOrigin().x()) / 2);
-                //ROS_INFO_STREAM("[world] y: " << transform1.getOrigin().y());
-                //ROS_INFO_STREAM("[world] z: " << transform1.getOrigin().z());
-
-                tf::Transform final_transform;
-                tf::Vector3 final_translation;
-                final_translation.setX((close1.x + close2.x)/2);
-                final_translation.setY((close1.y + close2.y)/2);
-                final_translation.setZ((close1.z + close2.z)/2 - transform3.getOrigin().z());
-                final_transform.setRotation(transform1.getRotation());
-                final_transform.setOrigin(final_translation);
-                broadcaster.sendTransform(tf::StampedTransform(final_transform, ros::Time::now(), target_frame, "goal_frame"));
-
-                powerline0Pose.pose.position.x = powerline0_transform.getOrigin().x();
-                powerline0Pose.pose.position.y = powerline0_transform.getOrigin().y();
-                powerline0Pose.pose.position.z = powerline0_transform.getOrigin().z();
-
-                powerline0Pose.pose.orientation.x = powerline0_transform.getRotation().x();
-                powerline0Pose.pose.orientation.y = powerline0_transform.getRotation().y();
-                powerline0Pose.pose.orientation.z = powerline0_transform.getRotation().z();
-                powerline0Pose.pose.orientation.w = powerline0_transform.getRotation().w();
-
-                powerline1Pose.pose.position.x = powerline1_transform.getOrigin().x();
-                powerline1Pose.pose.position.y = powerline1_transform.getOrigin().y();
-                powerline1Pose.pose.position.z = powerline1_transform.getOrigin().z();
-
-                powerline1Pose.pose.orientation.x = powerline1_transform.getRotation().x();
-                powerline1Pose.pose.orientation.y = powerline1_transform.getRotation().y();
-                powerline1Pose.pose.orientation.z = powerline1_transform.getRotation().z();
-                powerline1Pose.pose.orientation.w = powerline1_transform.getRotation().w();
-
-                powerline0Pose.header.stamp = ros::Time::now();
-                powerline0PosePublisher.publish(powerline0Pose);
-
-                powerline1Pose.header.stamp = ros::Time::now();
-                powerline1PosePublisher.publish(powerline1Pose);
-
-            }
-        }catch(const std::exception& e){
-                ROS_DEBUG_STREAM("Failed...");
-        }
-
-        if (startChristmas_){
+        if (startChristmas_ && orderReciv){
 
             wsg_50_common::Move moveSrv;
-            wsg_50_common::Conf setForceSrv;
-            wsg_50_common::Move graspSrv;
 
-                // WORKS OK!
-                // TODO: Fix service type (enable integer passing to choose pick place)
-                // TODO: Check pick place for gripper
-                if(m_startSchunkPick){
-
-                    double tolerance = m_moveGroupPtr->getGoalOrientationTolerance();
-                    //ROS_INFO_STREAM("Current orientation tolerance is:" << tolerance);
-                    double position_tolerance = m_moveGroupPtr->getGoalPositionTolerance();
-                    //ROS_INFO_STREAM("Current position tolerance is: " << position_tolerance);
-
-                    //m_moveGroupPtr->setGoalOrientationTolerance(0.3);
-                    //m_moveGroupPtr->setGoalPositionTolerance(0.1);
-                    //m_moveGroupPtr->setGoalJointTolerance(0.2);
-                    //m_moveGroupPtr->setPlanningTime(10);
-                    //m_moveGroupPtr->setNumPlanningAttempts(20);
-                    std::string PlanningFrame = m_moveGroupPtr->getPlanningFrame().c_str();
-                    //ROS_INFO_STREAM("Current planning frame is: " << PlanningFrame);
-
-                    moveSrv.request.width = 70;
-                    moveSrv.request.speed = 20;
-                    gripperMoveServiceClient_.call(moveSrv.request,
-                                                   moveSrv.response);
-
-
-                    m_cmdJoint.position = {-2.4378235393081193, 0.48694686130641796, 1.6780468093299483, 1.297687205442824, 0.9831963275259656, -1.0706198697583615};
-                    setCmdJoint();
-                    sendToCmdJoint();
-
-
-                    // FIRST CUP
-                    if(m_schunkPickId == 0){
-
-                        m_cmdJoint.position = {-2.6376986452465103, 0.5326744877086694, 1.9774754958020953, 1.4957471689591404, 1.0800795543041708, -1.3866815440020148};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-2.112459260151337, 0.2746624643863476, 1.8682353379197703, 1.6077973069371763, 0.5483126378065385, -1.5812508490143424};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-1.9779641879926535, 0.09211847792026072, 1.7232333836640814, 1.6983798951156819, 0.4154407218522103, -1.6779071829897885};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                    }
-
-                    // SECOND CUP
-                    if (m_schunkPickId == 1){
-
-                        m_cmdJoint.position = {-0.9215687516380459, 0.45505969587248146, 1.9722395080461121, -1.487526668182247, 0.6415481264480757, 1.5076677677502617};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-1.100063574239506, 0.2981895027032312, 1.8810111480443685, -1.5822107801029395, 0.4604004033835841, 1.6207127434019346};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-1.2165293952250877, 0.10721557595001167, 1.7444565873683322, -1.739691838510388, 0.349345103079185, 1.7872171540421935};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                    }
-
-                    setForceSrv.request.val = 15;
-
-                    gripperSetForceServiceClient_.call(setForceSrv.request,
-                                                       setForceSrv.response);
-
-
-                    ROS_INFO_STREAM("Grasping cup! ");
-
-                    graspSrv.request.width = 45;
-                    graspSrv.request.speed = 10;
-                    gripperGraspServiceClient_.call(graspSrv.request,
-                                                    graspSrv.response);
-                    ROS_INFO_STREAM("Grasp response is: " << graspSrv.response);
-
-                    m_startSchunkPick = false;
-                    // TODO: Put topic that declares end for each action
-                    std_msgs::Bool action1;
-                    if(graspSrv.response.error == 0)
-                    {
-
-                        if (m_schunkPickId == 0){
-                            //[]
-                            // uper pose
-                            m_cmdJoint.position = {-1.9861497821845073, 0.08281587300713093, 1.5170052792484312, 1.2634787521037352, 0.4412541414892064, -1.2008214319571384};
-                            setCmdJoint();
-                            sendToCmdJoint();
-
-                            m_cmdJoint.position = {-1.9923282477365671, 0.02808234766458876, 1.224104124178743, 0.8847073978359257, 0.5625021646252525, -0.7689397085511418};
-                            setCmdJoint();
-                            sendToCmdJoint();
-
-                            m_cmdJoint.position = {-0.9776112739195838, -0.07499679795819635, 1.0752973521537061, -0.2780833097202565, 0.42339942324130436, 0.28763026072866554};
-                            setCmdJoint();
-                            sendToCmdJoint();
-
-                        }
-
-                        if (m_schunkPickId == 1){
-
-                            m_cmdJoint.position = {-1.2268617443968939, 0.10458012877950022, 1.5461871843417765, -1.202584214501653, 0.3593109331080726, 1.217908205334163};
-                            setCmdJoint();
-                            sendToCmdJoint();
-
-                            m_cmdJoint.position = {-1.2331798362891133, 0.06825982704549823, 1.3154372039356061, -0.811927168027762, 0.46060984289382345, 0.7941946228274996};
-                            setCmdJoint();
-                            sendToCmdJoint();
-                        }
-
-                        //TODO: Add for cup 2
-
-
-
-                        action1.data = true;
-                        schunkAction1Publisher.publish(action1);
-                    }
-                    else{
-                        // TODO: Add after grasp pose
-                        action1.data = false;
-                        schunkAction1Publisher.publish(action1);
-                    }
-
-                }
-
-                // TODO: Check orientation constraints
-                if(m_putSchunkSugar){
-
-
-                    grasped_object = true;
-
-                    // SUGAR MOVEMENT
-                    m_cmdJoint.position = {-0.0007330382858376184, 0.3463605900582747, 1.329417291244081, 0.16505578736110374, 0.5575803361346285, -0.05927138139772743};
-                    setCmdJoint();
-                    sendToCmdJoint();
-
-                    m_cmdJoint.position = {0.09752899860144312, 0.4864930757008994, 1.9822227913675199, -0.2795668395844517, 0.040578905108868156, 0.3568849254478005};
-                    setCmdJoint();
-                    sendToCmdJoint();
-
-
-                    setForceSrv.request.val = 80;
-
-                    gripperSetForceServiceClient_.call(setForceSrv.request,
-                                                       setForceSrv.response);
-
-
-                    ROS_INFO_STREAM("Sugaring 1");
-
-                    graspSrv.request.width = 25;
-                    graspSrv.request.speed = 50;
-                    gripperGraspServiceClient_.call(graspSrv.request,
-                                                    graspSrv.response);
-
-                    ROS_INFO_STREAM("Service response: " << graspSrv.response);
-
-                    ros::Duration(1.0).sleep();
-                    ROS_INFO_STREAM("============================");
-                    ROS_INFO_STREAM("Releasing 1");
-                    moveSrv.request.width = 45;
-                    moveSrv.request.speed = 50;
-                    gripperReleaseServiceClient_.call(moveSrv.request,
-                                                      moveSrv.response);
-
-                    ROS_INFO_STREAM("Service response: " << moveSrv.response);
-
-                    ros::Duration(1.0).sleep();
-
-                    ROS_INFO_STREAM("============================");
-                    ROS_INFO_STREAM("Sugaring 2");
-                    graspSrv.request.width = 30;
-                    graspSrv.request.speed = 50;
-                    gripperGraspServiceClient_.call(graspSrv.request,
-                                                    graspSrv.response);
-
-                    ROS_INFO_STREAM("Service response: " << graspSrv.response);
-
-                    ros::Duration(1.0).sleep();
-
-                    ROS_INFO_STREAM("============================");
-                    ROS_INFO_STREAM("Releasing 2");
-                    moveSrv.request.width = 25;
-                    moveSrv.request.speed = 50;
-                    gripperReleaseServiceClient_.call(moveSrv.request,
-                                                      moveSrv.response);
-
-                    ROS_INFO_STREAM("Service response: " << moveSrv.response);
-
-                    // TODO: Put topic that declares end for each action
-                    m_putSchunkSugar = false;
-                    std_msgs::Bool action2;
-                    action2.data = true;
-                    schunkAction2Publisher.publish(action2);
-                }
-
-                // TODO: Check pose orientation constraints
-                if(m_returnSchunkSugar){
-
-                    ROS_INFO_STREAM("Returning sugar!");
-
-                    // Return first cup
-                    if (m_returnPickId == 0){
-
-
-                        m_cmdJoint.position = {-0.9776112739195838, -0.07499679795819635, 1.0752973521537061, -0.2780833097202565, 0.42339942324130436, 0.28763026072866554};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-1.9923282477365671, 0.02808234766458876, 1.224104124178743, 0.8847073978359257, 0.5625021646252525, -0.7689397085511418};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-1.9861497821845073, 0.08281587300713093, 1.5170052792484312, 1.2634787521037352, 0.4412541414892064, -1.2008214319571384};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-1.9779641879926535, 0.09211847792026072, 1.7232333836640814, 1.6983798951156819, 0.4154407218522103, -1.6779071829897885};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        moveSrv.request.width = 65;
-                        moveSrv.request.speed = 10;
-                        gripperReleaseServiceClient_.call(moveSrv.request,
-                                                          moveSrv.response);
-
-                        ros::Duration(1.0).sleep();
-
-                        m_cmdJoint.position = {-1.9779641879926535, 0.09211847792026072, 1.7232333836640814, 1.6983798951156819, 0.4154407218522103, -1.6779071829897885};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-2.112459260151337, 0.2746624643863476, 1.8682353379197703, 1.6077973069371763, 0.5483126378065385, -1.5812508490143424};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                    }
-                    // Return second cup
-                    if (m_returnPickId == 1){
-
-                        m_cmdJoint.position = {-1.2331798362891133, 0.06825982704549823, 1.3154372039356061, -0.811927168027762, 0.46060984289382345, 0.7941946228274996};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position =  {-1.2268617443968939, 0.10458012877950022, 1.5461871843417765, -1.202584214501653, 0.3593109331080726, 1.217908205334163};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-1.2165293952250877, 0.10721557595001167, 1.7444565873683322, -1.739691838510388, 0.349345103079185, 1.7872171540421935};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        moveSrv.request.width = 65;
-                        moveSrv.request.speed = 10;
-                        gripperReleaseServiceClient_.call(moveSrv.request,
-                                                          moveSrv.response);
-
-                        ros::Duration(1.0).sleep();
-
-                        m_cmdJoint.position = {-1.100063574239506, 0.2981895027032312, 1.8810111480443685, -1.5822107801029395, 0.4604004033835841, 1.6207127434019346};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-                        m_cmdJoint.position = {-0.9215687516380459, 0.45505969587248146, 1.9722395080461121, -1.487526668182247, 0.6415481264480757, 1.5076677677502617};
-                        setCmdJoint();
-                        sendToCmdJoint();
-
-
-                    }
-
-                    ROS_INFO_STREAM("============================");
-                    ROS_INFO_STREAM("Releasing");
-
-                    m_returnSchunkSugar = false;
-                    std_msgs::Bool action3;
-                    action3.data = true;
-                    schunkAction3Publisher.publish(action3);
-
-                }
-
-                if(m_homingSchunk){
-                    m_cmdJoint.position = {-1.63254, 0.610812, 1.638340, 0.134303, 0.552536, -0.07894124};
-                    setCmdJoint();
-                    sendToCmdJoint();
-                    
-                    m_homingSchunk = false;
-                    std_msgs::Bool action4; 
-                    action4.data = true;
-                    schunkAction4Publisher.publish(action4); 
-                }
-
-        r.sleep(); 
-    }
+            // WORKS OK!
+            // TODO: Fix service type (enable integer passing to choose pick place)
+            // TODO: Check pick place for gripper
+
+            double tolerance = m_moveGroupPtr->getGoalOrientationTolerance();
+            //ROS_INFO_STREAM("Current orientation tolerance is:" << tolerance);
+            double position_tolerance = m_moveGroupPtr->getGoalPositionTolerance();
+            //ROS_INFO_STREAM("Current position tolerance is: " << position_tolerance);
+            //m_moveGroupPtr->setGoalOrientationTolerance(0.3);
+            //m_moveGroupPtr->setGoalPositionTolerance(0.1);
+            //m_moveGroupPtr->setGoalJointTolerance(0.2);
+            //m_moveGroupPtr->setPlanningTime(10);
+            //m_moveGroupPtr->setNumPlanningAttempts(20);
+            std::string PlanningFrame = m_moveGroupPtr->getPlanningFrame().c_str();
+            //ROS_INFO_STREAM("Current planning frame is: " << PlanningFrame);
+
+            moveSrv.request.width = 70;
+            moveSrv.request.speed = 20;
+            gripperMoveServiceClient_.call(moveSrv.request,
+                                           moveSrv.response);
+
+
+            // Prepare for CUP picking up
+            m_cmdJoint.position = {-0.6569419304506656, 1.7548936562952586, 2.0952154071416325, 0.22464132802419015, -1.660000104864327, 0.09131562646434332};
+            setCmdJoint();
+            sendToCmdJoint();
+
+            // PICKUP FIRST CUP
+            if(m_schunkPickId == 0){
+
+                ROS_INFO_STREAM("Picking up CUP!");
+                m_cmdJoint.position = {0.03583160954344358, 1.288436960407254, 1.7206852029561697, -0.1436755040241732, -1.9007333685919048, -0.054017940349224504};
+                setCmdJoint();
+                sendToCmdJoint();
+
+            }
+
+            ROS_INFO_STREAM("Grasping CUP!");
+            bool grasped = graspCup(20, 70, 10);
+
+            ROS_INFO_STREAM("Grasp response is: " << grasped);
+
+            // Prepare for taking drink
+            ROS_INFO_STREAM("Going for DRINK!");
+            m_cmdJoint.position = {0.07108726043372904, -0.2014808088502254, -1.9112053441038703, 0.6311983239837493, 0.2924473694641699, -0.621424480172581};
+            setCmdJoint();
+            sendToCmdJoint();
+
+            ROS_INFO_STREAM("Sipping juice!");
+            // Sip juice to cup
+            m_cmdJoint.position = {0.06265732014659643, 0.08412486994612668, -1.605737818419823, 0.6476393255375359, 0.27160813819535756, -0.6396282642708819};
+            setCmdJoint();
+            sendToCmdJoint();
+
+            ROS_INFO_STREAM("Moving juice to the table!");
+            // Put cup to the table
+            m_cmdJoint.position = {0.8483347362243638, -0.06972590361717346, -1.5563624538809036, 1.4681709667776301, -0.698986912131209, -1.3882872469138494};
+            setCmdJoint();
+            sendToCmdJoint();
+
+            ROS_INFO_STREAM("Releasing DRINK!");
+            // wait for sipping to finish
+            bool released = releaseCup(90);
+
+            if(m_homingSchunk){
+                m_cmdJoint.position = {-1.63254, 0.610812, 1.638340, 0.134303, 0.552536, -0.07894124};
+                setCmdJoint();
+                sendToCmdJoint();
+
+                m_homingSchunk = false;
+                std_msgs::Bool action4;
+                action4.data = true;
+                schunkAction4Publisher.publish(action4);
+            }
+
+            orderReciv = false;
+
+        r.sleep();
 
 }}
+}
 
 //rosrun fkie_master_discovery master_discovery __ns:="schunk"
 
