@@ -470,7 +470,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     wall_pose.orientation.w = 0.707;
     wall_pose.orientation.z = 0.707;
     wall_pose.position.x = -0.70;
-    wall_pose.position.y = -0.5;
+    wall_pose.position.y = -0.70;
     wall_pose.position.z = 1.0;
 
     collisionObject2.primitives.push_back(primitive);
@@ -1229,6 +1229,7 @@ void ControlArm::run() {
         successIK = getIK(attempts, timeout);
 
         bool magnetic_localization = false;
+        bool grasped = 0; 
 
         if (startChristmas_ && orderReciv){
 
@@ -1250,49 +1251,69 @@ void ControlArm::run() {
             std::string PlanningFrame = m_moveGroupPtr->getPlanningFrame().c_str();
             //ROS_INFO_STREAM("Current planning frame is: " << PlanningFrame);
 
-            moveSrv.request.width = 70;
+            moveSrv.request.width = 100;
             moveSrv.request.speed = 20;
             gripperMoveServiceClient_.call(moveSrv.request,
                                            moveSrv.response);
 
 
             // Prepare for CUP picking up
-            m_cmdJoint.position = {-0.6569419304506656, 1.7548936562952586, 2.0952154071416325, 0.22464132802419015, -1.660000104864327, 0.09131562646434332};
+            m_cmdJoint.position = {-1.085629701325513, -0.30756192078644073, -2.44086041220659, -0.7443480193905416, 1.0011383122364672, 0.6986727528658501};
             setCmdJoint();
             sendToCmdJoint();
 
-            // PICKUP FIRST CUP
-            if(m_schunkPickId == 0){
+            // Prepare for CUP picking up
+            m_cmdJoint.position = {-0.392123123045566, -0.021101030656611446, -2.043134782262122, 0.4550946024575214, 1.0704453368331621, -0.26745425457561106};
+            setCmdJoint();
+            sendToCmdJoint();
 
-                ROS_INFO_STREAM("Picking up CUP!");
-                m_cmdJoint.position = {0.03583160954344358, 1.288436960407254, 1.7206852029561697, -0.1436755040241732, -1.9007333685919048, -0.054017940349224504};
-                setCmdJoint();
-                sendToCmdJoint();
+            // Prepare for CUP picking up
+            m_cmdJoint.position = {-0.392123123045566, -0.021101030656611446, -2.043134782262122, 0.4550946024575214, 1.0704453368331621, -0.26745425457561106};
+            setCmdJoint();
+            sendToCmdJoint();
 
-            }
+            m_cmdJoint.position = {-0.4376413099375781, 0.15217525748138558, -2.0546539553252847, 0.30977848893647353, 1.2243135636889821, -0.2668957492149729};
+            setCmdJoint();
+            sendToCmdJoint();
+
+            ROS_INFO_STREAM("Picking up CUP!");
+            m_cmdJoint.position = {-0.44893359019798146, 0.22153464195564024, -2.04999392622246, 0.2932153143350474, 1.283200972651271, -0.2375218579039083};
+            setCmdJoint();
+            sendToCmdJoint();
 
             ROS_INFO_STREAM("Grasping CUP!");
-            bool grasped = graspCup(20, 70, 10);
+            grasped = graspCup(1, 70, 10);
 
             ROS_INFO_STREAM("Grasp response is: " << grasped);
 
+            ros::Duration(5.0).sleep();
+
             // Prepare for taking drink
             ROS_INFO_STREAM("Going for DRINK!");
-            m_cmdJoint.position = {0.07108726043372904, -0.2014808088502254, -1.9112053441038703, 0.6311983239837493, 0.2924473694641699, -0.621424480172581};
+            m_cmdJoint.position = {0.027471482426390748, -0.5989795459919339, -1.817585883026895, 0.013334315485236678, -0.3138974659711802, -0.02235766771804736};
             setCmdJoint();
             sendToCmdJoint();
 
             ROS_INFO_STREAM("Sipping juice!");
             // Sip juice to cup
-            m_cmdJoint.position = {0.06265732014659643, 0.08412486994612668, -1.605737818419823, 0.6476393255375359, 0.27160813819535756, -0.6396282642708819};
+            m_cmdJoint.position = {-0.07363544114164076, -0.26092672317315224, -1.7831330835925265, 1.1570136677320808, -0.11503465099894626, -1.0899581178704587};
             setCmdJoint();
             sendToCmdJoint();
+            ros::Duration(10.0).sleep(); 
 
             ROS_INFO_STREAM("Moving juice to the table!");
             // Put cup to the table
-            m_cmdJoint.position = {0.8483347362243638, -0.06972590361717346, -1.5563624538809036, 1.4681709667776301, -0.698986912131209, -1.3882872469138494};
+            m_cmdJoint.position = {1.0201624010832056, -0.41125193164742385, -1.9286935432088539, 1.606994455481259, -0.5668480344627184, -1.5738855595709265};
             setCmdJoint();
             sendToCmdJoint();
+
+            m_cmdJoint.position = {1.1864748255057451, -0.20165534177542482, -1.9298280072226501, 1.872040155689118, -0.4207639760707929, -1.9102105064302337};
+            setCmdJoint();
+            sendToCmdJoint();
+
+            m_cmdJoint.position = {1.2741950737109804, -0.04359832471481835, -1.6746783238735992, 1.6781864356701077, -0.3146305042570178, -1.6930391876045796, -0.02885, 0.02885};
+            setCmdJoint();
+            sendToCmdJoint(); 
 
             ROS_INFO_STREAM("Releasing DRINK!");
             // wait for sipping to finish
