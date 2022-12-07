@@ -138,17 +138,14 @@ void ControlArm::init() {
     gripperSetForceServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Conf>("/wsg_50_driver/set_force");
     gripperReleaseServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Move>("/wsg_50_driver/release");
 
-    if (startChristmas_){
-        homingService_ = nodeHandleWithoutNs_.advertiseService("/schunk_go_home", &ControlArm::schunkHomingServiceCallback, this); 
-
+    if (startChristmas_) {
+        homingService_ = nodeHandleWithoutNs_.advertiseService("/schunk_go_home",
+                                                               &ControlArm::schunkHomingServiceCallback, this);
         // Christmas publishers
-        schunkOrderSubscriber = nodeHandleWithoutNs_.subscribe<std_msgs::Bool>("/schunk_order", 1, &ControlArm::orderCallback, this);
-        schunkOrderPublisher =  nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_order", 1);
+        schunkOrderSubscriber = nodeHandleWithoutNs_.subscribe<std_msgs::Bool>("/schunk_order_reciv", 1,
+                                                                               &ControlArm::orderCallback, this);
+        schunkOrderPublisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_order_done", 1);
 
-        schunkAction1Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_get_sugar_done", 1);
-        schunkAction2Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_put_sugar_done", 1);
-        schunkAction3Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_return_sugar_done", 1);
-        schunkAction4Publisher = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_go_home_done", 1);
     }
 
     //addCollisionObjectServiceClient_ = nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
@@ -167,7 +164,10 @@ bool ControlArm::setMoveGroup() {
     m_moveGroupPtr = new moveit::planning_interface::MoveGroupInterface(groupName); 
 
     // Allow replanning 
-    m_moveGroupPtr->allowReplanning(true); 
+    m_moveGroupPtr->allowReplanning(true);
+
+    // Set end effector frame
+    m_moveGroupPtr->setEndEffectorLink("wsg50_center");
 
     // Get current robot arm state
     getCurrentArmState(); 
@@ -226,7 +226,23 @@ void ControlArm::cmdPoseCallback(const geometry_msgs::Pose::ConstPtr& msg) {
     
     // Set CMD pose
     m_cmdPose.position = msg->position;
-    m_cmdPose.orientation = msg->orientation; 
+
+    float q_x = msg->orientation.x;
+    float q_y = msg->orientation.y;
+    float q_z = msg->orientation.z;
+    float q_w = msg->orientation.w;
+
+    float norm = std::sqrt(std::pow(q_x, 2) + std::pow(q_y, 2) + std::pow(q_z, 2) + std::pow(q_w, 2));
+
+    float q_x_normalized = q_x / norm;
+    float q_y_normalized = q_y / norm;
+    float q_z_normalized = q_z / norm;
+    float q_w_normalized = q_w / norm;
+
+    m_cmdPose.orientation.x = q_x_normalized;
+    m_cmdPose.orientation.y = q_y_normalized;
+    m_cmdPose.orientation.z = q_z_normalized;
+    m_cmdPose.orientation.w = q_w_normalized;
 
     sendToCmdPose(); 
 
@@ -284,8 +300,6 @@ bool ControlArm::sendToCmdPose(){
     m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
     m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
 
-    //TODO: Set start state :) as it could be correctly
-
     getCurrentArmState();
 
     // Update current joint values --> This should solve problem of deviates from current state
@@ -315,7 +329,6 @@ bool ControlArm::sendToCmdJoint(){
     setCmdJoint();
 
     moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
-
 
     // TODO: Add velocity scaling factor as params
     m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
@@ -1069,7 +1082,7 @@ bool ControlArm::executeDummyCartesianPath(){
 bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
     // Or use EndEffector link 
-    Eigen::Affine3d currentPose_ = m_moveGroupPtr->getCurrentState()->getFrameTransform("lwa4p_link6");
+    Eigen::Affine3d currentPose_ = m_moveGroupPtr->getCurrentState()->getFrameTransform("wsg50_center");
     geometry_msgs::Pose currentROSPose_; 
     tf::poseEigenToMsg(currentPose_, currentROSPose_);
 
@@ -1256,7 +1269,6 @@ void ControlArm::run() {
             gripperMoveServiceClient_.call(moveSrv.request,
                                            moveSrv.response);
 
-
             // Prepare for CUP picking up
             m_cmdJoint.position = {-1.085629701325513, -0.30756192078644073, -2.44086041220659, -0.7443480193905416, 1.0011383122364672, 0.6986727528658501};
             setCmdJoint();
@@ -1299,7 +1311,7 @@ void ControlArm::run() {
             m_cmdJoint.position = {-0.07363544114164076, -0.26092672317315224, -1.7831330835925265, 1.1570136677320808, -0.11503465099894626, -1.0899581178704587};
             setCmdJoint();
             sendToCmdJoint();
-            ros::Duration(10.0).sleep(); 
+            ros::Duration(10.0).sleep();
 
             ROS_INFO_STREAM("Moving juice to the table!");
             // Put cup to the table
@@ -1324,13 +1336,13 @@ void ControlArm::run() {
                 setCmdJoint();
                 sendToCmdJoint();
 
-                m_homingSchunk = false;
-                std_msgs::Bool action4;
-                action4.data = true;
-                schunkAction4Publisher.publish(action4);
             }
 
+            //std_msgs::Bool doneMsg;
+            // doneMsg = true;
+            //schunkOrderDonePublisher.publish(doneMsg);
             orderReciv = false;
+
 
         r.sleep();
 

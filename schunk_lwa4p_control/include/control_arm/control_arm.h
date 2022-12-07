@@ -129,12 +129,7 @@ class ControlArm{
         ros::Publisher powerline0PosePublisher;
         ros::Publisher powerline1PosePublisher;
         ros::Publisher schunkOrderPublisher;
-
-        // CHRISMAS Action schunks
-        ros::Publisher schunkAction1Publisher;
-        ros::Publisher schunkAction2Publisher;
-        ros::Publisher schunkAction3Publisher;
-        ros::Publisher schunkAction4Publisher;
+        ros::Publisher schunkOrderDonePublisher;
 
         // ROS Subscribers
         ros::Subscriber armCmdPoseSubscriber_;
@@ -154,9 +149,6 @@ class ControlArm{
         ros::ServiceServer executeCartesianPathService_;
 
         // CHRISTMAS Services
-        ros::ServiceServer pickSugarService_;
-        ros::ServiceServer putSugarService_;
-        ros::ServiceServer returnSugarService_;
         ros::ServiceServer homingService_;
 
         // ROS Service clients
