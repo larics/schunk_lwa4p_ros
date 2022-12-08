@@ -26,27 +26,28 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
 
+# TODO: Add message directory
 #add_message_files()
-add_service_files(
-        DIRECTORY srv
-        FILES
-       	CartesianPath.srv
-)
+
+#TODO: Add service directory
+#add_service_files(
+#        DIRECTORY srv
+#        FILES
+#)
 
 add_action_files(
         DIRECTORY action
         FILES
        	GoToPose.action
-       	ServoTrackPose.action
-       	CollectMeasurements.action
 )
 
 generate_messages(
         DEPENDENCIES actionlib_msgs std_msgs geometry_msgs
 )
 
+# TODO: Uncomment srv if you want to use services
 catkin_package(
-  INCLUDE_DIRS include action srv
+  INCLUDE_DIRS include action #srv
   LIBRARIES
     ${PROJECT_NAME}_lib
   CATKIN_DEPENDS
@@ -97,38 +98,6 @@ target_link_libraries(
 
 add_dependencies(
         gotopose_server
-        ${${PROJECT_NAME}_EXPORTED_TARGETS}
-)
-
-# ServoTrackPose
-add_executable(
-        servotrackpose_server
-        src/servotrackpose_server.cpp
-)
-
-target_link_libraries(
-        servotrackpose_server
-        ${catkin_LIBRARIES}
-)
-
-add_dependencies(
-        servotrackpose_server
-        ${${PROJECT_NAME}_EXPORTED_TARGETS}
-)
-
-# CollectMeasurements
-add_executable(
-        collectmeasurements_server
-        src/collectmeasurements_server.cpp
-)
-
-target_link_libraries(
-        collectmeasurements_server
-        ${catkin_LIBRARIES}
-)
-
-add_dependencies(
-        collectmeasurements_server
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
 )
 

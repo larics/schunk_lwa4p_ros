@@ -50,9 +50,6 @@
 // Utils
 #include <tf2/LinearMath/Quaternion.h>
 
-//#include "schunk_lwa4p_control/CartesianPathRequest.h"
-//#include "schunk_lwa4p_control/CartesianPathResponse.h"
-
 class ControlArm {
 
 public:
@@ -208,8 +205,7 @@ private:
                          std::vector<double> &jointGroupPositions);
   void getRunningControllers(std::vector<std::string> &runningControllerNames);
   bool getIK(const std::size_t attempts, double timeout);
-  Eigen::MatrixXd
-  getJacobian(Eigen::Vector3d
+  Eigen::MatrixXd getJacobian(Eigen::Vector3d
                   refPointPosition); // Can be created as void and arg passed to
                                      // be changed during execution
   Eigen::MatrixXd getInertiaMatrix(Eigen::Vector3d refPointPosition);
