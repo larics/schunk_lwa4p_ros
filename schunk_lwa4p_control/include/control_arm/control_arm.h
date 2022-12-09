@@ -131,6 +131,9 @@ class ControlArm{
         ros::Publisher schunkOrderPublisher;
         ros::Publisher schunkOrderDonePublisher;
 
+        ros::Publisher schunkGetDrinkDonePublisher_;
+        ros::Publisher schunkServeDrinkDonePublisher_;
+
         // ROS Subscribers
         ros::Subscriber armCmdPoseSubscriber_;
         ros::Subscriber armCmdDeltaPoseSubscriber_; 
@@ -147,6 +150,10 @@ class ControlArm{
         ros::ServiceServer sendArmToHomingPoseService_;
         ros::ServiceServer checkIKSolutionsService_;
         ros::ServiceServer executeCartesianPathService_;
+
+        // Christmas services
+        ros::ServiceServer getDrinkService_;
+        ros::ServiceServer leaveDrinkService_;
 
         // CHRISTMAS Services
         ros::ServiceServer homingService_;
@@ -188,7 +195,11 @@ class ControlArm{
         bool schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
-        // DisplayTrajectory
+        bool schunkLeaveDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
+        bool schunkGetDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
+
+
+    // DisplayTrajectory
         moveit_msgs::DisplayTrajectory displayTrajectory_;
 
         // Private variables
@@ -201,13 +212,10 @@ class ControlArm{
         bool blockingMovement = true;
         bool orderReciv = false;
 
-        int m_schunkPickId = 0;
-        int m_returnPickId = 0;
-
         // CHRISTMAS booleans
-        bool m_startSchunkPick = false;
-        bool m_putSchunkSugar = false;
-        bool m_returnSchunkSugar = false;
+        bool m_first = true;
+        bool m_getDrink = false;
+        bool m_leaveDrink = false;
         bool m_homingSchunk = false;
 
         geometry_msgs::Pose m_cmdPose;

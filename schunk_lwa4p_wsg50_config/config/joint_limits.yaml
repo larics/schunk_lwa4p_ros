@@ -9,11 +9,16 @@ default_acceleration_scaling_factor: 0.1
 # Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits]
 joint_limits:
   lwa4p_joint1:
+    has_position_limits: true
+    # Added limits for christmas
     has_velocity_limits: true
     max_velocity: 1.26
     has_acceleration_limits: false
     max_acceleration: 0
   lwa4p_joint2:
+    has_position_limits: true
+    min_position: -0.785398
+    max_position: 0.785398
     has_velocity_limits: true
     max_velocity: 1.26
     has_acceleration_limits: false

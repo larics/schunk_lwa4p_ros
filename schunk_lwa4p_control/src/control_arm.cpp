@@ -1,7 +1,8 @@
 #include "control_arm/control_arm.h"
 
 ControlArm::ControlArm(ros::NodeHandle nh) : nodeHandle_(nh)
-{       
+{
+
 
         ROS_INFO("[ControlArm] Node started."); 
 
@@ -49,7 +50,7 @@ void ControlArm::init() {
     int displayTrajectoryQueueSize;
     std::string currentPoseTopicName;
     int currentPoseTopicQueueSize;
-    std::string cmdPoseTopicName; 
+    std::string cmdPoseTopicName;
     int cmdPoseTopicQueueSize; 
     std::string cmdToolOrientationTopicName; 
     int cmdToolOrientationTopicQueueSize; 
@@ -138,9 +139,19 @@ void ControlArm::init() {
     gripperSetForceServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Conf>("/wsg_50_driver/set_force");
     gripperReleaseServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Move>("/wsg_50_driver/release");
 
+
+
     if (startChristmas_) {
+
         homingService_ = nodeHandleWithoutNs_.advertiseService("/schunk_go_home",
                                                                &ControlArm::schunkHomingServiceCallback, this);
+
+        getDrinkService_ = nodeHandleWithoutNs_.advertiseService("/schunk_get_drink", &ControlArm::schunkGetDrinkServiceCallback, this);
+        leaveDrinkService_ = nodeHandleWithoutNs_.advertiseService("/schunk_serve_drink", &ControlArm::schunkLeaveDrinkServiceCallback, this);
+
+        schunkGetDrinkDonePublisher_ = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_get_drink_done", 1);
+        schunkServeDrinkDonePublisher_ = nodeHandleWithoutNs_.advertise<std_msgs::Bool>("/schunk_serve_drink_done", 1);
+
         // Christmas publishers
         schunkOrderSubscriber = nodeHandleWithoutNs_.subscribe<std_msgs::Bool>("/schunk_order_reciv", 1,
                                                                                &ControlArm::orderCallback, this);
@@ -155,6 +166,23 @@ void ControlArm::init() {
 
 }
 
+
+bool ControlArm::schunkGetDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
+
+    m_getDrink = true;
+    return true;
+
+}
+
+bool ControlArm::schunkLeaveDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
+
+    m_leaveDrink = true;
+    return true;
+
+}
+
+
+
 bool ControlArm::setMoveGroup() {
 
     ROS_INFO("[ControlArm] Setting move group." );
@@ -168,6 +196,12 @@ bool ControlArm::setMoveGroup() {
 
     // Set end effector frame
     m_moveGroupPtr->setEndEffectorLink("wsg50_center");
+
+    int planningTime = 10;
+    m_moveGroupPtr->setPlanningTime(planningTime);
+    m_moveGroupPtr->setNumPlanningAttempts(10);
+
+
 
     // Get current robot arm state
     getCurrentArmState(); 
@@ -305,6 +339,9 @@ bool ControlArm::sendToCmdPose(){
     // Update current joint values --> This should solve problem of deviates from current state
     m_moveGroupPtr->setStartStateToCurrentState();
 
+    // Call inverse kinematics when pose is commanded
+    bool found_ik = getIK(10, 1);
+
     //m_currentRobotStatePtr->getJointPositions(plannedPath.start_state_.joint_state);
 
     // plan Path   
@@ -386,7 +423,7 @@ bool ControlArm::executeMovement(){
         m_moveGroupPtr->asyncMove();
     }
 
-};
+}
 
 void ControlArm::sendToCmdPoses(std::vector<geometry_msgs::Pose> poses)
 {
@@ -446,31 +483,11 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
 
     std::vector<moveit_msgs::CollisionObject> collisionObjects;
     moveit_msgs::CollisionObject collisionObject1; moveit_msgs::CollisionObject collisionObject2;
+
     collisionObject1.header.frame_id = m_moveGroupPtr->getPlanningFrame();
     collisionObject2.header.frame_id = m_moveGroupPtr->getPlanningFrame();
 
-    // Add table in basement
-    collisionObject1.id = "table";
-
     shape_msgs::SolidPrimitive primitive;
-    primitive.type = primitive.BOX;
-    primitive.dimensions.resize(3);
-    primitive.dimensions[0] = 1.5;
-    primitive.dimensions[1] = 1.0;
-    primitive.dimensions[2] = 0.01;
-
-    // A table pose (specified relative to frame_id)
-    geometry_msgs::Pose table_pose;
-    table_pose.orientation.w = 1.0;
-    table_pose.position.x = -0.5;
-    table_pose.position.y = 0.0;
-    table_pose.position.z = 0.2;
-
-    collisionObject1.primitives.push_back(primitive);
-    collisionObject1.primitive_poses.push_back(table_pose);
-    collisionObject1.operation = collisionObject1.ADD;
-
-    collisionObjects.push_back(collisionObject1);
 
     collisionObject2.id = "wall";
     primitive.type = primitive.BOX;
@@ -501,13 +518,13 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
         primitive1.dimensions.resize(3);
         primitive1.dimensions[0] = 0.38;
         primitive1.dimensions[1] = 0.38;
-        primitive1.dimensions[2] = 0.5;
+        primitive1.dimensions[2] = 0.45;
 
         geometry_msgs::Pose object_pose;
         object_pose.orientation.w = 1.0;
         object_pose.position.x = 0.0;
         object_pose.position.y = -0.6;
-        object_pose.position.z = 0.25;
+        object_pose.position.z = 0.225;
         collisionObject3.primitives.push_back(primitive1);
         collisionObject3.primitive_poses.push_back(object_pose);
         collisionObject3.operation = collisionObject3.ADD;
@@ -1081,21 +1098,41 @@ bool ControlArm::executeDummyCartesianPath(){
 
 bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
-    // Or use EndEffector link 
+    // Or use EndEffector link
+    // TODO --> use end effector link -> wsg50_center
+
+    // TODO: Get current joint values
+    // ROS_INFO_STREAM(m_moveGroupPtr->getCurrentJointValues());
+
+    // http://docs.ros.org/en/jade/api/joint_limits_interface/html/c++/index.html --> joint limits
+
+    // https://www.ri.cmu.edu/pub_files/pub4/stilman_michael_2006_4/stilman_michael_2006_4.pdf
+
     Eigen::Affine3d currentPose_ = m_moveGroupPtr->getCurrentState()->getFrameTransform("wsg50_center");
     geometry_msgs::Pose currentROSPose_; 
     tf::poseEigenToMsg(currentPose_, currentROSPose_);
 
+
+    bool debug = false;
+    if (debug == true){
+        ROS_INFO_STREAM("Current joint values target: " << m_moveGroupPtr->getJointValueTarget());
+        ROS_INFO_STREAM("Current pose target is: " << m_moveGroupPtr->getPoseTarget());
+    }
+
+    // https://github.com/ros-planning/moveit/issues/2491
     bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, currentROSPose_);
+
+    if (debug == true){
+        ROS_INFO("Found IK solution!");
+        ROS_INFO_STREAM("FOUND IK: " << found_ik);
+    }
 
     // publish current pose
     currentPosePublisher_.publish(currentROSPose_);
 
-    bool debug = false; 
-    if (debug){
-        ROS_INFO("Found IK solution!"); 
 
-    }
+
+
     
     return found_ik; 
 
@@ -1113,51 +1150,13 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
 
 }
 
-// TODO: Move this to utils.cpp
-double ControlArm::VectorSize(geometry_msgs::Vector3 vector)
-{
-    // TODO: Add this to utils method
-    return sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
-}
-double ControlArm::DotProduct(geometry_msgs::Vector3 v_A, geometry_msgs::Vector3 v_B)
-{
-    // TODO: Move this to utils method
-    return v_A.x * v_B.x + v_A.y * v_B.y + v_A.z * v_B.z;
-}
-geometry_msgs::Vector3 ControlArm::getClosestPointOnLine(geometry_msgs::Vector3 line_point,geometry_msgs::Vector3 line_vector, geometry_msgs::Vector3 point)
-{
-    // TODO: Add this to utils methods
-    double x1 = line_point.x-point.x;
-    double y1 = line_point.y-point.y;
-    double z1 = line_point.z-point.z;
-    double vx = line_vector.x;
-    double vy = line_vector.x;
-    double vz = line_vector.x;
-    geometry_msgs::Vector3 p1, vector, result;
-    p1.x = x1;
-    p1.y = y1;
-    p1.z = z1;
-    // std::cout<<"transform base power_line "<<p1;
-    vector.x = vx;
-    vector.y = vy;
-    vector.z = vz;
-    // std::cout<<"line vector "<<vector;
-    double t=-DotProduct(p1,vector)/VectorSize(vector)/VectorSize(p1);
-    //std::cout<<"t "<<t<<std::endl;
-    result.x = x1 + t * vx;
-    result.y = y1 + t * vy;
-    result.z = z1 + t * vz;
-    return result;
 
-}
 float ControlArm::round(float var){
 
     float value = (int)(var * 1000 + .5);
     return (float) value/1000;
 
 }
-
-
 
 bool ControlArm::schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
     m_homingSchunk = true;
@@ -1236,15 +1235,14 @@ void ControlArm::run() {
 
         // Call to get IK 
         std::size_t attempts = 10; 
-        double timeout = 1; 
+        double timeout = 2;
         bool successIK;
 
         successIK = getIK(attempts, timeout);
 
-        bool magnetic_localization = false;
-        bool grasped = 0; 
+        bool grasped = 0;
 
-        if (startChristmas_ && orderReciv){
+        if (startChristmas_){
 
             wsg_50_common::Move moveSrv;
 
@@ -1252,95 +1250,139 @@ void ControlArm::run() {
             // TODO: Fix service type (enable integer passing to choose pick place)
             // TODO: Check pick place for gripper
 
-            double tolerance = m_moveGroupPtr->getGoalOrientationTolerance();
-            //ROS_INFO_STREAM("Current orientation tolerance is:" << tolerance);
-            double position_tolerance = m_moveGroupPtr->getGoalPositionTolerance();
-            //ROS_INFO_STREAM("Current position tolerance is: " << position_tolerance);
-            //m_moveGroupPtr->setGoalOrientationTolerance(0.3);
-            //m_moveGroupPtr->setGoalPositionTolerance(0.1);
-            //m_moveGroupPtr->setGoalJointTolerance(0.2);
-            //m_moveGroupPtr->setPlanningTime(10);
-            //m_moveGroupPtr->setNumPlanningAttempts(20);
-            std::string PlanningFrame = m_moveGroupPtr->getPlanningFrame().c_str();
-            //ROS_INFO_STREAM("Current planning frame is: " << PlanningFrame);
+            m_moveGroupPtr->setMaxVelocityScalingFactor(0.5);
 
-            moveSrv.request.width = 100;
+            moveSrv.request.width = 110;
             moveSrv.request.speed = 20;
             gripperMoveServiceClient_.call(moveSrv.request,
                                            moveSrv.response);
+            if (m_first){
+                ROS_INFO_STREAM("Prepare for CUP picking up");
+                // Prepare for CUP picking up
+                m_cmdPose.position.x = -0.21999351791850036;
+                m_cmdPose.position.y =  0.07994923839009373;
+                m_cmdPose.position.z = 0.4000228469249295;
+                m_cmdPose.orientation.x = -0.48228078379161843;
+                m_cmdPose.orientation.y = 0.2814110443636556;
+                m_cmdPose.orientation.z = 0.6925185927769711;
+                m_cmdPose.orientation.w = 0.45676150051608233;
+                sendToCmdPose();
 
-            // Prepare for CUP picking up
-            m_cmdJoint.position = {-1.085629701325513, -0.30756192078644073, -2.44086041220659, -0.7443480193905416, 1.0011383122364672, 0.6986727528658501};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            // Prepare for CUP picking up
-            m_cmdJoint.position = {-0.392123123045566, -0.021101030656611446, -2.043134782262122, 0.4550946024575214, 1.0704453368331621, -0.26745425457561106};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            // Prepare for CUP picking up
-            m_cmdJoint.position = {-0.392123123045566, -0.021101030656611446, -2.043134782262122, 0.4550946024575214, 1.0704453368331621, -0.26745425457561106};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            m_cmdJoint.position = {-0.4376413099375781, 0.15217525748138558, -2.0546539553252847, 0.30977848893647353, 1.2243135636889821, -0.2668957492149729};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            ROS_INFO_STREAM("Picking up CUP!");
-            m_cmdJoint.position = {-0.44893359019798146, 0.22153464195564024, -2.04999392622246, 0.2932153143350474, 1.283200972651271, -0.2375218579039083};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            ROS_INFO_STREAM("Grasping CUP!");
-            grasped = graspCup(1, 70, 10);
-
-            ROS_INFO_STREAM("Grasp response is: " << grasped);
-
-            ros::Duration(5.0).sleep();
-
-            // Prepare for taking drink
-            ROS_INFO_STREAM("Going for DRINK!");
-            m_cmdJoint.position = {0.027471482426390748, -0.5989795459919339, -1.817585883026895, 0.013334315485236678, -0.3138974659711802, -0.02235766771804736};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            ROS_INFO_STREAM("Sipping juice!");
-            // Sip juice to cup
-            m_cmdJoint.position = {-0.07363544114164076, -0.26092672317315224, -1.7831330835925265, 1.1570136677320808, -0.11503465099894626, -1.0899581178704587};
-            setCmdJoint();
-            sendToCmdJoint();
-            ros::Duration(10.0).sleep();
-
-            ROS_INFO_STREAM("Moving juice to the table!");
-            // Put cup to the table
-            m_cmdJoint.position = {1.0201624010832056, -0.41125193164742385, -1.9286935432088539, 1.606994455481259, -0.5668480344627184, -1.5738855595709265};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            m_cmdJoint.position = {1.1864748255057451, -0.20165534177542482, -1.9298280072226501, 1.872040155689118, -0.4207639760707929, -1.9102105064302337};
-            setCmdJoint();
-            sendToCmdJoint();
-
-            m_cmdJoint.position = {1.2741950737109804, -0.04359832471481835, -1.6746783238735992, 1.6781864356701077, -0.3146305042570178, -1.6930391876045796, -0.02885, 0.02885};
-            setCmdJoint();
-            sendToCmdJoint(); 
-
-            ROS_INFO_STREAM("Releasing DRINK!");
-            // wait for sipping to finish
-            bool released = releaseCup(90);
-
-            if(m_homingSchunk){
-                m_cmdJoint.position = {-1.63254, 0.610812, 1.638340, 0.134303, 0.552536, -0.07894124};
-                setCmdJoint();
-                sendToCmdJoint();
+                m_first = false;
 
             }
 
-            //std_msgs::Bool doneMsg;
-            // doneMsg = true;
-            //schunkOrderDonePublisher.publish(doneMsg);
+
+            if (m_getDrink)
+            {
+
+                ROS_INFO_STREAM("Picking up CUP!");
+                m_cmdPose.position.x =  -0.2796451906994132;
+                m_cmdPose.position.y = 0.16182028293086587;
+                m_cmdPose.position.z = 0.42983691307518224;
+                m_cmdPose.orientation.x = -0.4827742754366359;
+                m_cmdPose.orientation.y = 0.2810980331084555;
+                m_cmdPose.orientation.z = 0.6924056981982725;
+                m_cmdPose.orientation.w = 0.4566040339963634;
+                sendToCmdPose();
+
+                m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
+                ROS_INFO_STREAM("Grasping CUP!");
+                grasped = graspCup(1, 70, 10);
+
+                m_cmdPose.position.x = -0.26857053829029204;
+                m_cmdPose.position.y = 0.12750812186720534;
+                m_cmdPose.position.z = 0.5178119215703323;
+                sendToCmdPose();
+
+                ROS_INFO_STREAM("Moving CUP for tanking");
+
+                m_cmdPose.position.x =  -0.38903250589363286;
+                m_cmdPose.position.y = -0.02198872538898188;
+                m_cmdPose.position.z =  0.5278316529083782;
+                m_cmdPose.orientation.x = 0.700305030404181;
+                m_cmdPose.orientation.y = -0.003283744542555414;
+                m_cmdPose.orientation.z = -0.7137208368642306;
+                m_cmdPose.orientation.w = 0.012831540757123163;
+                sendToCmdPose();
+
+                ROS_INFO_STREAM("Drink getting poured in CUP!");
+
+                m_cmdPose.position.x = -0.46327444415345753;
+                m_cmdPose.position.y = -0.03183773996215472;
+                m_cmdPose.position.z = 0.5295631418123471;
+                sendToCmdPose();
+
+                m_getDrink = false;
+                std_msgs::Bool successMsg;
+                successMsg.data = true;
+
+                schunkGetDrinkDonePublisher_.publish(successMsg);
+
+
+            }
+
+            if (m_leaveDrink) {
+
+
+                m_cmdPose.position.x =  -0.38903250589363286;
+                m_cmdPose.position.y = -0.02198872538898188;
+                m_cmdPose.position.z =  0.5278316529083782;
+                sendToCmdPose();
+
+                m_cmdPose.position.x =  -0.29151825795922875;
+                m_cmdPose.position.y = -0.2126715159860169;
+                m_cmdPose.position.z = 0.48817147602771543;
+                m_cmdPose.orientation.x = -0.6423008269885361;
+                m_cmdPose.orientation.y = -0.2388613807318374;
+                m_cmdPose.orientation.z = 0.6812359300828926;
+                m_cmdPose.orientation.w = -0.25751212788686095;
+                sendToCmdPose();
+
+                m_cmdPose.position.x = -0.11005869639614922;
+                m_cmdPose.position.y = -0.4210141033383795;
+                m_cmdPose.position.z = 0.5600720571198052;
+                m_cmdPose.orientation.x = 0.472640346696874;
+                m_cmdPose.orientation.y = 0.47220499819144507;
+                m_cmdPose.orientation.z = -0.5228792082985984;
+                m_cmdPose.orientation.w = 0.5293683744674486;
+                sendToCmdPose();
+
+                m_cmdPose.position.z = 0.5200720571198052;
+                sendToCmdPose();
+
+                ROS_INFO_STREAM("Releasing DRINK!");
+                // wait for sipping to finish
+                bool released = releaseCup(110);
+                ros::Duration(1.0).sleep();
+
+                m_cmdPose.position.z = 0.57;
+                sendToCmdPose();
+
+                std_msgs::Bool successMsg;
+                successMsg.data = true;
+                schunkServeDrinkDonePublisher_.publish(successMsg);
+
+                m_cmdPose.position.x = -0.17378113231330397;
+                m_cmdPose.position.y = 0.08158250100704804;
+                m_cmdPose.position.z = 0.5473096569815927;
+                m_cmdPose.orientation.x = -0.6497918897464642;
+                m_cmdPose.orientation.y = 9.412819160463078e-05;
+                m_cmdPose.orientation.z = 0.7601121445840632;
+                m_cmdPose.orientation.w = 0.0001371693090430865;
+                sendToCmdPose();
+
+                m_leaveDrink = false;
+                m_first = true;
+
+            }
+
+
+
+
+            //schunkOrderPublisher.publish(true);
+
+            // TODO: Tell that oredr is recieved
             orderReciv = false;
 
 
