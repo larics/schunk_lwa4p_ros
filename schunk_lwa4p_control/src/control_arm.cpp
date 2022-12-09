@@ -174,7 +174,7 @@ bool ControlArm::schunkGetDrinkServiceCallback(christmas_fair_common::StartTraje
 
 }
 
-bool ControlArm::schunkLeaveDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
+bool ControlArm::schunkLeaveDrinkServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res){
 
     m_leaveDrink = true;
     return true;

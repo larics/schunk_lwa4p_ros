@@ -195,7 +195,7 @@ class ControlArm{
         bool schunkHomingServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
-        bool schunkLeaveDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
+        bool schunkLeaveDrinkServiceCallback(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         bool schunkGetDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res);
 
 
