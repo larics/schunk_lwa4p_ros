@@ -139,8 +139,6 @@ void ControlArm::init() {
     gripperSetForceServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Conf>("/wsg_50_driver/set_force");
     gripperReleaseServiceClient_ = nodeHandleWithoutNs_.serviceClient<wsg_50_common::Move>("/wsg_50_driver/release");
 
-
-
     if (startChristmas_) {
 
         homingService_ = nodeHandleWithoutNs_.advertiseService("/schunk_go_home",
@@ -166,7 +164,6 @@ void ControlArm::init() {
 
 }
 
-
 bool ControlArm::schunkGetDrinkServiceCallback(christmas_fair_common::StartTrajectorySrvRequest &req, christmas_fair_common::StartTrajectorySrvResponse &res){
 
     m_getDrink = true;
@@ -180,8 +177,6 @@ bool ControlArm::schunkLeaveDrinkServiceCallback(std_srvs::TriggerRequest &req, 
     return true;
 
 }
-
-
 
 bool ControlArm::setMoveGroup() {
 
@@ -492,7 +487,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     wall_pose.orientation.w = 0.707;
     wall_pose.orientation.z = 0.707;
     wall_pose.position.x = -0.70;
-    wall_pose.position.y = -0.70;
+    wall_pose.position.y = -0.68;
     wall_pose.position.z = 1.0;
 
     collisionObject2.primitives.push_back(primitive);
@@ -502,16 +497,16 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     collisionObjects.push_back(collisionObject2);
 
     if(startChristmas_){
-        moveit_msgs::CollisionObject collisionObject3, valveBox, valveWall;
+        moveit_msgs::CollisionObject scoutTable, valveBox, valveWall;
 
-        collisionObject3.header.frame_id = m_moveGroupPtr->getPlanningFrame();
+        scoutTable.header.frame_id = m_moveGroupPtr->getPlanningFrame();
         valveBox.header.frame_id = m_moveGroupPtr->getPlanningFrame();
         valveWall.header.frame_id = m_moveGroupPtr->getPlanningFrame();
 
-        shape_msgs::SolidPrimitive primitive1, valveBoxPrimitive, valveWallPrimitive;
+        shape_msgs::SolidPrimitive scoutPrimitive, valveBoxPrimitive, valveWallPrimitive;
         // primitive1
-        primitive1.type = primitive.BOX; primitive1.dimensions.resize(3);
-        primitive1.dimensions[0] = 0.38; primitive1.dimensions[1] = 0.38; primitive1.dimensions[2] = 0.45;
+        scoutPrimitive.type = primitive.BOX; scoutPrimitive.dimensions.resize(3);
+        scoutPrimitive.dimensions[0] = 0.38; scoutPrimitive.dimensions[1] = 0.38; scoutPrimitive.dimensions[2] = 0.45;
         // valveBoxPrimitive
         valveBoxPrimitive.type = primitive.BOX; valveBoxPrimitive.dimensions.resize(3);
         valveBoxPrimitive.dimensions[0] = 0.12; valveBoxPrimitive.dimensions[1] = 0.2; valveBoxPrimitive.dimensions[2] = 0.12;
@@ -523,14 +518,14 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
         // primitive1
         object_pose.orientation.w = 1.0; object_pose.position.x = 0.0; object_pose.position.y = -0.6; object_pose.position.z = 0.225;
         // valveBoxPose
-        valveBoxPose.position.x = -0.56; valveBoxPose.position.y = 0.03; valveBoxPose.position.z = 0.7; valveBoxPose.orientation.w = 1.0;
+        valveBoxPose.position.x = -0.56; valveBoxPose.position.y = 0.07; valveBoxPose.position.z = 0.7; valveBoxPose.orientation.w = 1.0;
         // valveWallPose
-        valveWallPose.position.x = -0.62; valveWallPose.position.y = 0.0; valveWallPose.position.z = 1.0; valveWallPose.orientation.w = 1.0;
+        valveWallPose.position.x = -0.62; valveWallPose.position.y = 0.05; valveWallPose.position.z = 1.0; valveWallPose.orientation.w = 1.0;
         // collisionObjects
-        collisionObject3.id = "scout";
-        collisionObject3.primitives.push_back(primitive1);
-        collisionObject3.primitive_poses.push_back(object_pose);
-        collisionObject3.operation = collisionObject3.ADD;
+        scoutTable.id = "scout";
+        scoutTable.primitives.push_back(scoutPrimitive);
+        scoutTable.primitive_poses.push_back(object_pose);
+        scoutTable.operation = scoutTable.ADD;
         // valveBox
         valveBox.id = "valve_box";
         valveBox.primitives.push_back(valveBoxPrimitive);
@@ -542,7 +537,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
         valveWall.primitive_poses.push_back(valveWallPose);
         valveWall.operation = valveWall.ADD;
         // Add all collision objects to a collisionObjects vector
-        collisionObjects.push_back(collisionObject3);
+        collisionObjects.push_back(scoutTable);
         collisionObjects.push_back(valveBox);
         collisionObjects.push_back(valveWall);
     }
@@ -1118,7 +1113,6 @@ bool ControlArm::getIK(const std::size_t attempts, double timeout) {
     // ROS_INFO_STREAM(m_moveGroupPtr->getCurrentJointValues());
 
     // http://docs.ros.org/en/jade/api/joint_limits_interface/html/c++/index.html --> joint limits
-
     // https://www.ri.cmu.edu/pub_files/pub4/stilman_michael_2006_4/stilman_michael_2006_4.pdf
 
     Eigen::Affine3d currentPose_ = m_moveGroupPtr->getCurrentState()->getFrameTransform("wsg50_center");
@@ -1162,7 +1156,6 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition){
     return jacobianMatrix;
 
 }
-
 
 float ControlArm::round(float var){
 
@@ -1264,11 +1257,12 @@ void ControlArm::run() {
             // TODO: Fix service type (enable integer passing to choose pick place)
             // TODO: Check pick place for gripper
 
-            m_moveGroupPtr->setMaxVelocityScalingFactor(0.75);
+            m_moveGroupPtr->setMaxVelocityScalingFactor(0.5);
 
-
+            // First pose
             if (m_first){
-                
+
+                // Set up gripper width
                 moveSrv.request.width = 110;
                 moveSrv.request.speed = 20;
                 gripperMoveServiceClient_.call(moveSrv.request,
@@ -1286,14 +1280,15 @@ void ControlArm::run() {
                 sendToCmdPose();
 
                 m_first = false;
-
             }
 
-
+            // Get Drink cup
             if (m_getDrink)
             {
+                m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
+                m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
 
-                ROS_INFO_STREAM("Picking up CUP!");
+                ROS_INFO_STREAM("Picking up the CUP!");
                 m_cmdPose.position.x =  -0.2796451906994132;
                 m_cmdPose.position.y = 0.16182028293086587;
                 m_cmdPose.position.z = 0.42983691307518224;
@@ -1303,13 +1298,17 @@ void ControlArm::run() {
                 m_cmdPose.orientation.w = 0.4566040339963634;
                 sendToCmdPose();
 
-                m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
                 ROS_INFO_STREAM("Grasping CUP!");
                 grasped = graspCup(1, 70, 10);
 
-                m_cmdPose.position.x = -0.26857053829029204;
-                m_cmdPose.position.y = 0.12750812186720534;
-                m_cmdPose.position.z = 0.5178119215703323;
+                m_cmdPose.position.x = -0.2742056761584184;
+                m_cmdPose.position.y = 0.14472521115781078;
+                m_cmdPose.position.z = 0.47358647928966296;
+                sendToCmdPose();
+
+                m_cmdPose.position.x = -0.2531906324696087;
+                m_cmdPose.position.y = 0.10222419086346847;
+                m_cmdPose.position.z = 0.4543929724392994;
                 sendToCmdPose();
 
                 m_moveGroupPtr->setMaxVelocityScalingFactor(0.2);
@@ -1323,8 +1322,7 @@ void ControlArm::run() {
                 m_cmdPose.orientation.w = 0.012831540757123163;
                 sendToCmdPose();
 
-                ROS_INFO_STREAM("Drink getting poured in CUP!");
-
+                ROS_INFO_STREAM("Pouring drink in the CUP!");
                 m_cmdPose.position.x = -0.46327444415345753;
                 m_cmdPose.position.y = -0.03183773996215472;
                 m_cmdPose.position.z = 0.5295631418123471;
@@ -1381,7 +1379,7 @@ void ControlArm::run() {
                 sendToCmdPose();
 
                 m_moveGroupPtr->setMaxVelocityScalingFactor(0.9);
-
+                m_moveGroupPtr->setMaxAccelerationScalingFactor(0.5);
 
                 std_msgs::Bool successMsg;
                 successMsg.data = true;
