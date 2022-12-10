@@ -200,8 +200,7 @@ bool ControlArm::setMoveGroup() {
     int planningTime = 10;
     m_moveGroupPtr->setPlanningTime(planningTime);
     m_moveGroupPtr->setNumPlanningAttempts(10);
-
-
+    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
 
     // Get current robot arm state
     getCurrentArmState(); 
@@ -331,9 +330,6 @@ bool ControlArm::sendToCmdPose(){
     // Call planner, compute plan and visualize it
     moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
 
-    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
-    m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
-
     getCurrentArmState();
 
     // Update current joint values --> This should solve problem of deviates from current state
@@ -366,10 +362,6 @@ bool ControlArm::sendToCmdJoint(){
     setCmdJoint();
 
     moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
-
-    // TODO: Add velocity scaling factor as params
-    m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
-    m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
 
     // Set start state
     getCurrentArmState();
@@ -510,32 +502,53 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene& planningScene){
     collisionObjects.push_back(collisionObject2);
 
     if(startChristmas_){
-        moveit_msgs::CollisionObject collisionObject3;
+        moveit_msgs::CollisionObject collisionObject3, valveBox, valveWall;
+
         collisionObject3.header.frame_id = m_moveGroupPtr->getPlanningFrame();
+        valveBox.header.frame_id = m_moveGroupPtr->getPlanningFrame();
+        valveWall.header.frame_id = m_moveGroupPtr->getPlanningFrame();
 
-        shape_msgs::SolidPrimitive primitive1;
-        primitive1.type = primitive.BOX;
-        primitive1.dimensions.resize(3);
-        primitive1.dimensions[0] = 0.38;
-        primitive1.dimensions[1] = 0.38;
-        primitive1.dimensions[2] = 0.45;
+        shape_msgs::SolidPrimitive primitive1, valveBoxPrimitive, valveWallPrimitive;
+        // primitive1
+        primitive1.type = primitive.BOX; primitive1.dimensions.resize(3);
+        primitive1.dimensions[0] = 0.38; primitive1.dimensions[1] = 0.38; primitive1.dimensions[2] = 0.45;
+        // valveBoxPrimitive
+        valveBoxPrimitive.type = primitive.BOX; valveBoxPrimitive.dimensions.resize(3);
+        valveBoxPrimitive.dimensions[0] = 0.12; valveBoxPrimitive.dimensions[1] = 0.2; valveBoxPrimitive.dimensions[2] = 0.12;
+        // valveWallPrimitive
+        valveWallPrimitive.type= primitive.BOX; valveWallPrimitive.dimensions.resize(3);
+        valveWallPrimitive.dimensions[0] = 0.01; valveWallPrimitive.dimensions[1] = 0.8; valveWallPrimitive.dimensions[2] = 2.0;
 
-        geometry_msgs::Pose object_pose;
-        object_pose.orientation.w = 1.0;
-        object_pose.position.x = 0.0;
-        object_pose.position.y = -0.6;
-        object_pose.position.z = 0.225;
+        geometry_msgs::Pose object_pose, valveBoxPose, valveWallPose;
+        // primitive1
+        object_pose.orientation.w = 1.0; object_pose.position.x = 0.0; object_pose.position.y = -0.6; object_pose.position.z = 0.225;
+        // valveBoxPose
+        valveBoxPose.position.x = -0.56; valveBoxPose.position.y = 0.03; valveBoxPose.position.z = 0.7; valveBoxPose.orientation.w = 1.0;
+        // valveWallPose
+        valveWallPose.position.x = -0.62; valveWallPose.position.y = 0.0; valveWallPose.position.z = 1.0; valveWallPose.orientation.w = 1.0;
+        // collisionObjects
+        collisionObject3.id = "scout";
         collisionObject3.primitives.push_back(primitive1);
         collisionObject3.primitive_poses.push_back(object_pose);
         collisionObject3.operation = collisionObject3.ADD;
-
+        // valveBox
+        valveBox.id = "valve_box";
+        valveBox.primitives.push_back(valveBoxPrimitive);
+        valveBox.primitive_poses.push_back(valveBoxPose);
+        valveBox.operation = valveBox.ADD;
+        // valveWall
+        valveWall.id = "valve_wall";
+        valveWall.primitives.push_back(valveWallPrimitive);
+        valveWall.primitive_poses.push_back(valveWallPose);
+        valveWall.operation = valveWall.ADD;
+        // Add all collision objects to a collisionObjects vector
         collisionObjects.push_back(collisionObject3);
-
-
-
+        collisionObjects.push_back(valveBox);
+        collisionObjects.push_back(valveWall);
     }
 
     for(std::size_t i = 0; i < collisionObjects.size(); ++i){
+        ROS_INFO_STREAM("Adding collision " << collisionObjects.at(i).id);
         planningScene.world.collision_objects.push_back(collisionObjects.at(i));
     };
 
@@ -1197,6 +1210,7 @@ bool ControlArm::releaseCup(int releaseWidthMM)
     wsg_50_common::Move graspSrv;
 
     graspSrv.request.width = releaseWidthMM;
+    graspSrv.request.speed = 20.0;
     gripperGraspServiceClient_.call(graspSrv.request,
                                     graspSrv.response);
 
@@ -1250,13 +1264,16 @@ void ControlArm::run() {
             // TODO: Fix service type (enable integer passing to choose pick place)
             // TODO: Check pick place for gripper
 
-            m_moveGroupPtr->setMaxVelocityScalingFactor(0.5);
+            m_moveGroupPtr->setMaxVelocityScalingFactor(0.75);
 
-            moveSrv.request.width = 110;
-            moveSrv.request.speed = 20;
-            gripperMoveServiceClient_.call(moveSrv.request,
-                                           moveSrv.response);
+
             if (m_first){
+                
+                moveSrv.request.width = 110;
+                moveSrv.request.speed = 20;
+                gripperMoveServiceClient_.call(moveSrv.request,
+                                               moveSrv.response);
+
                 ROS_INFO_STREAM("Prepare for CUP picking up");
                 // Prepare for CUP picking up
                 m_cmdPose.position.x = -0.21999351791850036;
@@ -1295,8 +1312,8 @@ void ControlArm::run() {
                 m_cmdPose.position.z = 0.5178119215703323;
                 sendToCmdPose();
 
+                m_moveGroupPtr->setMaxVelocityScalingFactor(0.2);
                 ROS_INFO_STREAM("Moving CUP for tanking");
-
                 m_cmdPose.position.x =  -0.38903250589363286;
                 m_cmdPose.position.y = -0.02198872538898188;
                 m_cmdPose.position.z =  0.5278316529083782;
@@ -1319,10 +1336,11 @@ void ControlArm::run() {
 
                 schunkGetDrinkDonePublisher_.publish(successMsg);
 
-
             }
 
             if (m_leaveDrink) {
+
+                m_moveGroupPtr->setMaxVelocityScalingFactor(0.5);
 
 
                 m_cmdPose.position.x =  -0.38903250589363286;
@@ -1339,7 +1357,7 @@ void ControlArm::run() {
                 m_cmdPose.orientation.w = -0.25751212788686095;
                 sendToCmdPose();
 
-                m_cmdPose.position.x = -0.11005869639614922;
+                m_cmdPose.position.x = -0.10005869639614922;
                 m_cmdPose.position.y = -0.4210141033383795;
                 m_cmdPose.position.z = 0.5600720571198052;
                 m_cmdPose.orientation.x = 0.472640346696874;
@@ -1348,16 +1366,22 @@ void ControlArm::run() {
                 m_cmdPose.orientation.w = 0.5293683744674486;
                 sendToCmdPose();
 
+                m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
+
+
                 m_cmdPose.position.z = 0.5200720571198052;
                 sendToCmdPose();
 
                 ROS_INFO_STREAM("Releasing DRINK!");
                 // wait for sipping to finish
-                bool released = releaseCup(110);
+                bool released = releaseCup(109.0);
                 ros::Duration(1.0).sleep();
 
                 m_cmdPose.position.z = 0.57;
                 sendToCmdPose();
+
+                m_moveGroupPtr->setMaxVelocityScalingFactor(0.9);
+
 
                 std_msgs::Bool successMsg;
                 successMsg.data = true;
@@ -1376,9 +1400,6 @@ void ControlArm::run() {
                 m_first = true;
 
             }
-
-
-
 
             //schunkOrderPublisher.publish(true);
 
