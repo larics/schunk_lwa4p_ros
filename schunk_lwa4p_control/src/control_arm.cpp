@@ -1288,10 +1288,11 @@ void ControlArm::run() {
                 m_moveGroupPtr->setMaxVelocityScalingFactor(0.1);
                 m_moveGroupPtr->setMaxAccelerationScalingFactor(0.1);
 
+
                 ROS_INFO_STREAM("Picking up the CUP!");
-                m_cmdPose.position.x =  -0.2796451906994132;
-                m_cmdPose.position.y = 0.16182028293086587;
-                m_cmdPose.position.z = 0.42983691307518224;
+                m_cmdPose.position.x =  -0.3023505743106962;
+                m_cmdPose.position.y = 0.15832664345632722;
+                m_cmdPose.position.z = 0.41488242438747636;
                 m_cmdPose.orientation.x = -0.4827742754366359;
                 m_cmdPose.orientation.y = 0.2810980331084555;
                 m_cmdPose.orientation.z = 0.6924056981982725;
@@ -1299,7 +1300,7 @@ void ControlArm::run() {
                 sendToCmdPose();
 
                 ROS_INFO_STREAM("Grasping CUP!");
-                grasped = graspCup(1, 70, 10);
+                grasped = graspCup(2, 65, 10);
 
                 m_cmdPose.position.x = -0.2742056761584184;
                 m_cmdPose.position.y = 0.14472521115781078;
@@ -1325,7 +1326,7 @@ void ControlArm::run() {
                 ROS_INFO_STREAM("Pouring drink in the CUP!");
                 m_cmdPose.position.x = -0.46327444415345753;
                 m_cmdPose.position.y = -0.03183773996215472;
-                m_cmdPose.position.z = 0.5295631418123471;
+                m_cmdPose.position.z = 0.5225631418123471;
                 sendToCmdPose();
 
                 m_getDrink = false;
@@ -1339,8 +1340,7 @@ void ControlArm::run() {
             if (m_leaveDrink) {
 
                 m_moveGroupPtr->setMaxVelocityScalingFactor(0.5);
-
-
+                
                 m_cmdPose.position.x =  -0.38903250589363286;
                 m_cmdPose.position.y = -0.02198872538898188;
                 m_cmdPose.position.z =  0.5278316529083782;
@@ -1356,7 +1356,7 @@ void ControlArm::run() {
                 sendToCmdPose();
 
                 m_cmdPose.position.x = -0.10005869639614922;
-                m_cmdPose.position.y = -0.4210141033383795;
+                m_cmdPose.position.y = -0.41510141033383795;
                 m_cmdPose.position.z = 0.5600720571198052;
                 m_cmdPose.orientation.x = 0.472640346696874;
                 m_cmdPose.orientation.y = 0.47220499819144507;
@@ -1374,6 +1374,9 @@ void ControlArm::run() {
                 // wait for sipping to finish
                 bool released = releaseCup(109.0);
                 ros::Duration(1.0).sleep();
+
+                released = releaseCup(109.0);
+                ros::Duration(1.0).sleep(); 
 
                 m_cmdPose.position.z = 0.57;
                 sendToCmdPose();
