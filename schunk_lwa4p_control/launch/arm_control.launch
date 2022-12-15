@@ -9,28 +9,12 @@
     <arg name="propagate_pose_ctl" value="false"/>
     <arg name="use_action_servers" value="false"/>
     <arg name="servo" value="true"/>
-    <arg name="pose_detection_frequency" value="1"/>
     <param name="use_sim_time" value="false"/>
 
     <!-- Start arm control -->
     <node pkg="schunk_lwa4p_control"  type="schunk_lwa4p_control_node" name="control_arm_node" output="screen">
         <param name="config_path" value="$(arg config_path)" />
-        <remap if="$(arg propagate_pose_ctl)" from="/control_arm_node/arm/command/pose" to="/magnetic_est/pose"/>
     </node>
-
-    <!-- Launch servo node -->
-    <group if="$(arg servo)">
-
-        <rosparam ns="servo_server" command="load" file="$(find schunk_lwa4p_control)/config/schunk_servo_config.yaml" />
-        <rosparam ns="servo_server" command="load" file="$(find schunk_lwa4p_control)/config/pose_tracking_settings.yaml" />
-
-    </group>
-
-    <!-- Simulate magentic pose detection publisher -->
-    <group if="$(arg simulate_determined_pose)">
-        <node pkg="schunk_lwa4p_control" type="magnetic_pose_simulator_publisher.py" name="magnetic_pose_publisher_node" output="screen" args="$(arg pose_detection_frequency)">
-        </node>
-    </group>
 
     <!-- Simulate magentic pose detection publisher -->
     <group if="$(arg republish_joint_cmds)">
@@ -43,19 +27,6 @@
 
         <!-- Start GoToPoseServer -->
         <node pkg="schunk_lwa4p_control" type="gotopose_server" name="go_to_pose_server" output="screen" >
-        </node>
-
-        <!-- Start SetupDistancerServer -->
-        <node pkg="schunk_lwa4p_control" type="setupdistancer_server" name="setup_distancer_server" output="screen">
-        </node>
-
-
-        <!-- Start ServoTrackPoseServer -->
-        <node pkg="schunk_lwa4p_control" type="servotrackpose_server" name="servo_track_pose_server" output="screen">
-        </node>
-
-        <!-- Start CollectMeasurementsServer -->
-        <node pkg="schunk_lwa4p_control" type="collectmeasurements_server" name="collect_measurements_server" output="screen">
         </node>
 
     </group>

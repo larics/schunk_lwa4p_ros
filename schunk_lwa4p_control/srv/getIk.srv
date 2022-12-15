@@ -1,0 +1,4 @@
+geometry_msgs/Pose wantedPose
+geometry_msgs/Pose currentPose
+---
+sensor_msgs/JointState jointState

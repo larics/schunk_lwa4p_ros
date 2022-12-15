@@ -50,6 +50,12 @@
 // Utils
 #include <tf2/LinearMath/Quaternion.h>
 
+// Custom services
+#include "schunk_lwa4p_control/getIk.h"
+#include "schunk_lwa4p_control/getIkRequest.h"
+#include "schunk_lwa4p_control/getIkResponse.h"
+
+
 class ControlArm {
 
 public:
@@ -70,9 +76,6 @@ public:
 
   // Getters
   void getBasicInfo();
-  bool getCmdPose();
-  geometry_msgs::Point getCurrentEEPosition();
-  geometry_msgs::Pose getCurrentEEPose();
 
   // Pointer to move group
   // (https://answers.ros.org/question/344598/cant-create-movegroupinterface-object-in-my-own-class/)
@@ -131,8 +134,8 @@ private:
   ros::ServiceServer startJointGroupPositionControllerService_;
   ros::ServiceServer startJointGroupVelocityControllerService_;
   ros::ServiceServer sendArmToHomingPoseService_;
-  ros::ServiceServer checkIKSolutionsService_;
-  ros::ServiceServer executeCartesianPathService_;
+  ros::ServiceServer getIkService_;
+
 
   // ROS Service clients
   ros::ServiceClient applyPlanningSceneServiceClient_;
@@ -141,7 +144,6 @@ private:
   ros::ServiceClient switchControllerServiceClient_;
   ros::ServiceClient listControllersServiceClient_;
   ros::ServiceClient switchToPositionControllerServiceClient_;
-  ros::ServiceClient getIKSolutionsServiceClient_;
   ros::ServiceClient switchToTrajectoryControllerServiceClient_;
 
   // ROS Subscriber Callback
@@ -152,6 +154,8 @@ private:
   // ROS Services callbacks
   bool disableCollisionServiceCallback(std_srvs::TriggerRequest &req,
                                        std_srvs::TriggerResponse &res);
+
+
   bool addCollisionObjectServiceCallback(std_srvs::TriggerRequest &req,
                                          std_srvs::TriggerResponse &res);
   bool startPositionControllers(std_srvs::TriggerRequest &req,
@@ -162,13 +166,8 @@ private:
                                          std_srvs::TriggerResponse &res);
   bool startJointGroupVelocityController(std_srvs::TriggerRequest &req,
                                          std_srvs::TriggerResponse &res);
-  // https://ros-planning.github.io/moveit_tutorials/doc/trac_ik/trac_ik_tutorial.html
-  bool checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKRequest &req,
-                                       moveit_msgs::GetPositionIKResponse &res);
-  // bool executeCartesianServiceCallback(
-  //     schunk_lwa4p_control::CartesianPathRequest &req,
-  //     schunk_lwa4p_control::CartesianPathResponse &res);
-
+  bool getIkServiceCallback(schunk_lwa4p_control::getIkRequest &req,
+                            schunk_lwa4p_control::getIkResponse &res);
   bool sendArmToHomingPose(std_srvs::TriggerRequest &req,
                            std_srvs::TriggerResponse &res);
 
@@ -181,9 +180,9 @@ private:
   bool enableVisualization_;
   bool moveGroupInitialized_;
   bool planningSceneInitialized_;
-  bool firstTrajectoryExecution_ = true;
   bool blockingMovement = true;
   geometry_msgs::Pose m_cmdPose;
+  geometry_msgs::Pose m_lastCmdPose;
   geometry_msgs::Pose m_cmdDeltaPose;
 
   // Vectors and arrays
@@ -193,18 +192,13 @@ private:
   bool sendToCmdPose();
   void sendToCmdPoses(std::vector<geometry_msgs::Pose> poses);
   bool sendToDeltaCmdPose();
-  bool sendToZeroPose();
-  bool planPathToCmdPose();
-  bool planPathToZeroPose();
-  bool isNodeRunning();
-  bool executeDummyCartesianPath();
   void addCollisionObject(moveit_msgs::PlanningScene &planningScene);
   void getCurrentArmState();
   void getCurrentEndEffectorState(const std::string linkName);
   void getJointPositions(const std::vector<std::string> &jointNames,
                          std::vector<double> &jointGroupPositions);
   void getRunningControllers(std::vector<std::string> &runningControllerNames);
-  bool getIK(const std::size_t attempts, double timeout);
+  bool getIK(const geometry_msgs::Pose wantedPose, const std::size_t attempts, double timeout);
   Eigen::MatrixXd getJacobian(Eigen::Vector3d
                   refPointPosition); // Can be created as void and arg passed to
                                      // be changed during execution
@@ -212,12 +206,7 @@ private:
 
   // TODO: Move this to utils.cpp
   float round(float var);
-  double VectorSize(geometry_msgs::Vector3 vector);
-  double DotProduct(geometry_msgs::Vector3 v_A, geometry_msgs::Vector3 v_B);
-  geometry_msgs::Vector3
-  getClosestPointOnLine(geometry_msgs::Vector3 line_point,
-                        geometry_msgs::Vector3 line_vector,
-                        geometry_msgs::Vector3 point);
+
 };
 
 #endif // CONTROL_ARM_H

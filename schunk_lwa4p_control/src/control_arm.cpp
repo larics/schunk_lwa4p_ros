@@ -59,8 +59,7 @@ void ControlArm::init() {
   std::string startJointGroupPositionControllerServiceName;
   std::string startJointGroupVelocityControllerServiceName;
   std::string sendArmToHomingPoseServiceName;
-  std::string checkIKSolutionsServiceName;
-  std::string executeCartesianPathServiceName;
+  std::string getIkServiceName;
 
   nodeHandle_.param("publishers/display_trajectory_topic",
                     displayTrajectoryTopicName,
@@ -105,11 +104,9 @@ void ControlArm::init() {
   nodeHandle_.param("services/send_arm_to_homing_pose",
                     sendArmToHomingPoseServiceName,
                     std::string("arm/send_arm_to_homing_pose"));
-  nodeHandle_.param("services/check_ik_soutions", checkIKSolutionsServiceName,
-                    std::string("arm/check_ik_solutions"));
-  nodeHandle_.param("services/execute_cartesian_path",
-                    executeCartesianPathServiceName,
-                    std::string("arm/execute_cartesian_path"));
+  nodeHandle_.param("services/get_ik",
+                    getIkServiceName,
+                    std::string("get_ik"));
 
   ROS_INFO("[ControlArm] Initializing subscribers/publishers...");
   displayTrajectoryPublisher_ =
@@ -135,10 +132,6 @@ void ControlArm::init() {
   cmdJointGroupVelocityPublisher =
       nodeHandleWithoutNs_.advertise<std_msgs::Float64MultiArray>(
           std::string("lwa4p/joint_group_velocity_controller/command"), 1);
-  powerline0PosePublisher =
-      nodeHandle_.advertise<geometry_msgs::PoseStamped>("/powerline0_pose", 1);
-  powerline1PosePublisher =
-      nodeHandle_.advertise<geometry_msgs::PoseStamped>("/powerline1_pose", 1);
 
   armCmdPoseSubscriber_ = nodeHandle_.subscribe<geometry_msgs::Pose>(
       cmdPoseTopicName, cmdPoseTopicQueueSize, &ControlArm::cmdPoseCallback,
@@ -163,6 +156,8 @@ void ControlArm::init() {
   startPositionControllersService_ =
       nodeHandle_.advertiseService(startPositionControllersServiceName,
                                    &ControlArm::startPositionControllers, this);
+  getIkService_ = nodeHandle_.advertiseService(getIkServiceName, &ControlArm::getIkServiceCallback, this);
+
   startJointTrajectoryControllerService_ = nodeHandle_.advertiseService(
       startJointTrajectoryControllerServiceName,
       &ControlArm::startJointTrajectoryController, this);
@@ -174,9 +169,6 @@ void ControlArm::init() {
       &ControlArm::startJointGroupVelocityController, this);
   sendArmToHomingPoseService_ = nodeHandle_.advertiseService(
       sendArmToHomingPoseServiceName, &ControlArm::sendArmToHomingPose, this);
-  checkIKSolutionsService_ = nodeHandle_.advertiseService(
-      checkIKSolutionsServiceName, &ControlArm::checkIKSolutionsServiceCallback,
-      this);
   // executeCartesianPathService_ =
   // nodeHandle_.advertiseService(executeCartesianPathServiceName,
   // &ControlArm::executeCartesianServiceCallback, this);
@@ -204,10 +196,6 @@ void ControlArm::init() {
   switchToTrajectoryControllerServiceClient_ =
       nodeHandle_.serviceClient<std_srvs::Trigger>(
           startJointTrajectoryControllerServiceName);
-  getIKSolutionsServiceClient_ =
-      nodeHandle_.serviceClient<moveit_msgs::GetPositionIKRequest>(
-          checkIKSolutionsServiceName);
-  getIKSolutionsServiceClient_.waitForExistence();
 
   // addCollisionObjectServiceClient_ =
   // nodeHandle_.serviceClient<std_srvs::Trigger>("scene/add_collisions");
@@ -451,59 +439,6 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene &planningScene) {
   ROS_INFO("Added collisions");
 }
 
-bool ControlArm::checkIKSolutionsServiceCallback(
-    moveit_msgs::GetPositionIKRequest &req,
-    moveit_msgs::GetPositionIKResponse &res) {
-
-  // moveit_msgs::GetPositionIKRequest ik_req;
-  // moveit_msgs::GetPositionIKResponse ik_res; sensor_msgs::JointState
-  // current_joint_state;
-
-  // std::vector<std::string> joint_names;
-  // std::vector<double> joint_values;
-
-  // joint_names = m_moveGroupPtr->getJointNames();
-  // joint_values = m_moveGroupPtr->getCurrentJointValues();
-
-  // ROS_INFO_STREAM("Joint values: " << joint_values);
-  // ROS_INFO_STREAM("Joint names: " << joint_names);
-
-  // current_joint_state.name = joint_names;
-  // current_joint_state.position = joint_values;
-
-  // ik_req.ik_request.group_name = m_moveGroupPtr->getName();
-  // ik_req.ik_request.robot_state.joint_state = current_joint_state;
-  // ik_req.ik_request.ik_link_name = m_moveGroupPtr->getEndEffectorLink();
-  // ik_req.ik_request.avoid_collisions = true;
-
-  geometry_msgs::PoseStamped ik_pose;
-  ik_pose = req.ik_request.pose_stamped;
-  req.ik_request.pose_stamped = ik_pose;
-
-  ROS_INFO_STREAM("Calling IK check service: " << req);
-
-  geometry_msgs::Pose pose;
-  pose = req.ik_request.pose_stamped.pose;
-
-  getCurrentArmState();
-
-  bool found_ik =
-      m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, pose, 0.1);
-  ROS_INFO_STREAM("Found IK solution for wanted pose: " << found_ik);
-  std::vector<double> joint_values;
-  if (found_ik) {
-    m_currentRobotStatePtr->copyJointGroupPositions(m_jointModelGroupPtr,
-                                                    joint_values);
-  }
-  if (found_ik) {
-    for (std::size_t i = 0; i < joint_values.size(); ++i) {
-      ROS_INFO("Joint %i: %f", i, joint_values[i]);
-    }
-  }
-
-  return found_ik;
-}
-
 bool ControlArm::disableCollisionServiceCallback(
     std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res) {
   // TODO: Move this to specific script because it's related to magnetic
@@ -547,6 +482,24 @@ bool ControlArm::disableCollisionServiceCallback(
   } else {
     return false;
   }
+}
+
+bool ControlArm::getIkServiceCallback(schunk_lwa4p_control::getIkRequest &req,
+                                      schunk_lwa4p_control::getIkResponse &res)
+{
+    int attempts = 10;
+    int timeout = 1;
+    bool success = getIK(req.wantedPose, attempts, timeout);
+    std::vector<double> jointPositions;
+    m_currentRobotStatePtr->copyJointGroupPositions(m_jointModelGroupPtr,
+                                                    jointPositions);
+
+    sensor_msgs::JointState jointState;
+    jointState.position = jointPositions;
+    res.jointState = jointState;
+
+    return success;
+
 }
 
 void ControlArm::getRunningControllers(
@@ -892,7 +845,7 @@ void ControlArm::getJointPositions(const std::vector<std::string> &jointNames,
   m_currentRobotStatePtr->copyJointGroupPositions(m_jointModelGroupPtr,
                                                   jointGroupPositions);
 
-  bool debug = false;
+  bool debug = true;
   if (debug) {
     for (std::size_t i = 0; i < jointNames.size(); ++i) {
       ROS_INFO("Joint %s: %f", jointNames[i].c_str(), jointGroupPositions[i]);
@@ -901,97 +854,11 @@ void ControlArm::getJointPositions(const std::vector<std::string> &jointNames,
 }
 
 
-bool ControlArm::executeDummyCartesianPath() {
-  geometry_msgs::Pose startPose = m_moveGroupPtr->getCurrentPose().pose;
+bool ControlArm::getIK(const geometry_msgs::Pose wantedPose, const std::size_t attempts, double timeout) {
 
-  std::vector<geometry_msgs::Pose> waypoints;
-  startPose.position.z += 0.35;
-  waypoints.push_back(startPose);
 
-  startPose.position.x += 0.35;
-  waypoints.push_back(startPose);
+  bool found_ik = m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, wantedPose);
 
-  startPose.position.z += 0.35;
-  waypoints.push_back(startPose);
-
-  // set moveGroup scaling factor
-  m_moveGroupPtr->setMaxVelocityScalingFactor(0.10);
-
-  moveit_msgs::RobotTrajectory trajectory;
-  double eefStep = 0.01;
-  double jumpTreshold =
-      0.00; // in real-world applications this jump Threshold must be > 0;
-  double fraction = m_moveGroupPtr->computeCartesianPath(
-      waypoints, eefStep, jumpTreshold, trajectory);
-
-  ROS_INFO("Starting Cartesian path planning execution.");
-
-  // Call planner, compute plan and visualize it
-  moveit::planning_interface::MoveGroupInterface::Plan plannedPath;
-
-  bool tracIK = true;
-  // Remove first element if tracIK used for this
-  if (tracIK) {
-    // Nothing for now
-  }
-
-  plannedPath.trajectory_.joint_trajectory.header =
-      trajectory.joint_trajectory.header;
-  plannedPath.trajectory_.joint_trajectory.joint_names =
-      trajectory.joint_trajectory.joint_names;
-  plannedPath.trajectory_.multi_dof_joint_trajectory.header =
-      trajectory.multi_dof_joint_trajectory.header;
-  plannedPath.trajectory_.multi_dof_joint_trajectory.joint_names =
-      trajectory.multi_dof_joint_trajectory.joint_names;
-
-  std::vector<int>::size_type size = trajectory.joint_trajectory.points.size();
-  // ROS_INFO("Number of points for trajectory is: %i", size);
-
-  bool descartesPlanning = true;
-  // Remove first element
-  // (https://answers.ros.org/question/253004/moveit-problem-error-trajectory-message-contains-waypoints-that-are-not-strictly-increasing-in-time/)
-  if (descartesPlanning) {
-    for (std::size_t i = 0; i < trajectory.joint_trajectory.points.size();
-         ++i) {
-      if (i > 0) {
-        plannedPath.trajectory_.joint_trajectory.points.push_back(
-            trajectory.joint_trajectory.points[i]);
-      }
-    }
-    for (std::size_t i = 0;
-         i < trajectory.multi_dof_joint_trajectory.points.size(); ++i) {
-      if (i > 0) {
-        plannedPath.trajectory_.multi_dof_joint_trajectory.points.push_back(
-            trajectory.multi_dof_joint_trajectory.points[i]);
-      }
-    }
-  } else {
-    plannedPath.trajectory_.joint_trajectory.points =
-        trajectory.joint_trajectory.points;
-    plannedPath.trajectory_.multi_dof_joint_trajectory.points =
-        trajectory.multi_dof_joint_trajectory.points;
-  }
-
-  m_moveGroupPtr->execute(plannedPath);
-
-  sleep(15);
-
-  return true;
-}
-
-bool ControlArm::getIK(const std::size_t attempts, double timeout) {
-
-  // Or use EndEffector link
-  Eigen::Affine3d currentPose_ =
-      m_moveGroupPtr->getCurrentState()->getFrameTransform("lwa4p_link6");
-  geometry_msgs::Pose currentROSPose_;
-  tf::poseEigenToMsg(currentPose_, currentROSPose_);
-
-  bool found_ik =
-      m_currentRobotStatePtr->setFromIK(m_jointModelGroupPtr, currentROSPose_);
-
-  // publish current pose
-  currentPosePublisher_.publish(currentROSPose_);
 
   bool debug = false;
   if (debug) {
@@ -1013,7 +880,6 @@ Eigen::MatrixXd ControlArm::getJacobian(Eigen::Vector3d refPointPosition) {
   return jacobianMatrix;
 }
 
-
 float ControlArm::round(float var) {
 
   float value = (int)(var * 1000 + .5);
@@ -1025,37 +891,19 @@ void ControlArm::run() {
   ros::Rate r(25);
 
   while (ros::ok) {
-    // ROS_INFO("[ControlArm] Running...");
-    // getCurrentArmState();
-    // ROS_INFO("[ControlArm] Current arm state is ", *m_currentRobotStatePtr);
-    // ROS_INFO("Running!");
-
     // Get current joint position for every joint in robot arm
     getCurrentArmState();
 
     // Get all joints
     m_jointModelGroupPtr = m_currentRobotStatePtr->getJointModelGroup("arm");
 
-    // Get current joint positions
-    getJointPositions(m_jointModelGroupPtr->getVariableNames(),
-                      m_jointPositions_);
+    // Or use EndEffector link
+    Eigen::Affine3d currentPose_ = m_moveGroupPtr->getCurrentState()->getFrameTransform("wsg50_center");
+    geometry_msgs::Pose currentROSPose_; tf::poseEigenToMsg(currentPose_, currentROSPose_);
+    currentPosePublisher_.publish(currentROSPose_);
 
-    if (!firstTrajectoryExecution_) {
-      firstTrajectoryExecution_ = executeDummyCartesianPath();
-    }
-
-    // Call get current end effector state to setup pointer of variable which is
-    // used in get Inverse Kinematics getCurrentEndEffectorState("lwa4p_link6");
-
-    // Call to get IK
-    std::size_t attempts = 10;
-    double timeout = 1;
-    bool successIK;
-    successIK = getIK(attempts, timeout);
-
-    // TODO: Compare outputs of moveit_servo from jacobian (tracking pose) and
-    // this!
-
+    // Sleep
     r.sleep();
+
   }
 }

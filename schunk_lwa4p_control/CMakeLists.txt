@@ -29,11 +29,11 @@ find_package(Eigen3 REQUIRED)
 # TODO: Add message directory
 #add_message_files()
 
-#TODO: Add service directory
-#add_service_files(
-#        DIRECTORY srv
-#        FILES
-#)
+add_service_files(
+        DIRECTORY srv
+        FILES
+        getIk.srv
+)
 
 add_action_files(
         DIRECTORY action
@@ -42,7 +42,7 @@ add_action_files(
 )
 
 generate_messages(
-        DEPENDENCIES actionlib_msgs std_msgs geometry_msgs
+        DEPENDENCIES actionlib_msgs std_msgs geometry_msgs sensor_msgs
 )
 
 # TODO: Uncomment srv if you want to use services

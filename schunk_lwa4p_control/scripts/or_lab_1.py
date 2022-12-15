@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Pose, Point
@@ -39,7 +39,6 @@ def TfromDH(theta, d, alpha, a):
 	T[2,3] = d
 	return T
 
-
 def forwardKinematics(q_s):
 	q1 = q_s[0]
 	q2 = q_s[1]
@@ -49,16 +48,27 @@ def forwardKinematics(q_s):
 	q6 = q_s[5]
 
 	## insert your kinematic parameters here
-	# T_0_1 = TfromDH(q1+theta1_0, d1, alpha1, a1)
-	# T_1_2 = TfromDH(q2+theta2_0, d2, alpha2, a2)
-	# T_2_3 = TfromDH(q3+theta3_0, d3, alpha3, a3)
-	# T_3_4 = TfromDH(q4+theta4_0, d4, alpha4, a4)
-	# T_4_5 = TfromDH(q5+theta5_0, d5, alpha5, a5)
-	# T_5_A = TfromDH(q6+theta6_0, d6, alpha6, a6)
-
+	T_0_1 = TfromDH(q1+0, 1.15, np.pi/2, 0)
+	T_1_2 = TfromDH(q2+np.pi/2, 0, np.pi, 0.35)
+	T_2_3 = TfromDH(q3+np.pi/2, 0, np.pi/2, 0)
+	T_3_4 = TfromDH(q4+0, 0.305, -np.pi/2, 0)
+	T_4_5 = TfromDH(q5+0, 0.005263, np.pi/2, 0)
+	T_5_A = TfromDH(q6+np.pi, 0.2, 0, 0)
 	T_0_A = np.dot(T_0_1, np.dot(T_1_2, np.dot(T_2_3, np.dot(T_3_4, np.dot(T_4_5, T_5_A)))))
 
 	return np.asarray([T_0_A[0,3],T_0_A[1,3], T_0_A[2,3]])
+
+def init_pose(self):
+	init_pose_goal = Pose()
+	init_pose_goal.position.x = 0.
+	init_pose_goal.position.y = 0.25
+	init_pose_goal.position.z = 1.75
+	init_pose_goal.orientation.x = -0.5
+	init_pose_goal.orientation.y = 0.5
+	init_pose_goal.orientation.z = 0.5
+	init_pose_goal.orientation.w = 0.5
+	self.pose_pub.publish(init_pose_goal)
+	rospy.sleep(5)
 
 def draw(points_gazebo, points_fk):
 	fig = plt.figure()
@@ -75,29 +85,64 @@ def draw(points_gazebo, points_fk):
 	plt.show()
 
 
-class OrLab1():
+class OrLab2():
 	def __init__(self):
 		rospy.init_node("orlab1", anonymous=True, log_level=rospy.DEBUG)
 		self.pose_list = []
-		self.pose_pub = rospy.Publisher("/control_arm_node/arm/command/pose", Pose, queue_size=10, latch=True)
 		self.tf_listener = TransformListener()
-		rospy.Subscriber("/lwa4p/joint_states",JointState,self.cb, queue_size=1)
+		self._init_subs()
+		self._init_pubs()
 		self.ee_points = []
 		self.ee_points_fk = []
 		rospy.sleep(0)
 
-	def init_pose(self):
-		init_pose_goal = Pose()
-		init_pose_goal.position.x = 0.
-		init_pose_goal.position.y = 0.25
-		init_pose_goal.position.z = 1.75
-		init_pose_goal.orientation.x = -0.5
-		init_pose_goal.orientation.y = 0.5
-		init_pose_goal.orientation.z = 0.5
-		init_pose_goal.orientation.w = 0.5
+	def _init_pubs(self):
+		self.pose_pub = rospy.Publisher("/control_arm_node/arm/command/pose", Pose, queue_size=10, latch=True)
+		rospy.loginfo("Initialize publishers!")
 
-		self.pose_pub.publish(init_pose_goal)
-		rospy.sleep(5)
+	def _init_subs(self):
+		self.pose_sub = rospy.Subscriber("/control_arm_node/tool/current_pose", Pose, self.tool_cb, queue_size=1)
+		self.joint_states_sub = rospy.Subscriber("/lwa4p/joint_states",JointState, self.cb, queue_size=1)
+		rospy.loginfo("Initialized subscribers!")
+
+
+	def tool_cb(self, msg):
+
+		self.current_pose.pose.position = msg.pose.position
+		self.current_pose.pose.orientation = msg.pose.orientation
+
+	def taylor_interpolation(self, start_pose, end_pose, epsilon):
+
+		p_ = self.get_cartesian_mid_pose(start_pose, end_pose)
+
+		q_ = self.get_ik(p_)
+
+		wM = self.forwardKinematics(q_)
+
+		norm_ = 
+
+
+
+
+		pass
+
+	def get_cartesian_mid_pose(self, start_pose, end_pose):
+
+		mid_pose = start_pose + end_pose/2
+
+		return mid_pose
+
+	def check_pose_norm(self, pose1, pose2):
+
+		np.linalg.norm(pose1, )
+
+	def get_ik(self, pose):
+
+		# TODO: Think how to get inverse kinematics for it
+
+
+
+
 
 	def cb(self, msg):
 		q_s = msg.position
@@ -126,41 +171,62 @@ class OrLab1():
 		## construct T_world_table
 		# this creates a 4x4 identity matrix
 		T_world_table = np.eye(4)
-		# you can set each value in a matrix
-		# unlike Matlab, indexing starts at 0
-		# first value is T_world_table[0,0]
 		# T_world_table[i,j] = value
+		T_world_table[0,3] = -1.0
+		T_world_table[1,3] = 0.25
+		T_world_table[2,3] = 1.0
+
 
 		## reconstruct T_table_bottle
-		# you can also put all 16 values in an array
-		T_table_bottle = np.asarray([1, 0, 0, 0,
-			                         0, 1, 0, 0,
-			                         0, 0, 1, 0,
-			                         0, 0, 0, 1])
-		# use reshape to create a 4x4 matrix
+		T_table_bottle = np.asarray([0, -1, 0, 1.25,
+									 0, 0, 1, 0.2,
+									 -1, 0, 0, 0.11,
+									 0, 0, 0, 1])
 		T_table_bottle = np.reshape(T_table_bottle, (4,4))
+
+		T_table_bottle2 = np.asarray([0, -1, 0, 1.25,
+									  0, 0, 1, 0.2,
+									  -1, 0, 0, 0.27,
+									  0, 0, 0, 1])
+		T_table_bottle2 = np.reshape(T_table_bottle2, (4,4))
 
 		## reconstruct T_bottle_bottlegrasp
 
-
 		## reconstruct T_table_brick
+		T_table_brick = np.asarray([ 1, 0, 0, 0.6,
+									 0, -1, 0, 0.05,
+									 0, 0, -1, 0.15,
+									 0, 0, 0, 1])
+		T_table_brick = np.reshape(T_table_brick, (4,4))
 
+		T_table_brick2 = np.asarray([ 1, 0, 0, 0.6,
+									  0, -1, 0, 0.05,
+									  0, 0, -1, 0.3,
+									  0, 0, 0, 1])
+		T_table_brick2 = np.reshape(T_table_brick2, (4,4))
 
 		## reconstruct T_brick_brickgrasp
 
 		## calculate grasp poses
-		# multiply matrices to get the final pose of the grasp required to pick the object up
-		# it's best to use np.dot to multiply matrices T3 = np.dot(T1,T2)
+		T_world_brickapp = np.dot(T_world_table, T_table_brick2)
+		T_world_bottleapp = np.dot(T_world_table, T_table_bottle2)
+		T_world_brickgrasp = np.dot(T_world_table, T_table_brick)
+		T_world_bottlegrasp = np.dot(T_world_table, T_table_bottle)
 
-		T_world_brickgrasp = 
-		T_world_bottlegrasp = 
+		# self.pose_pub.publish(poseFromMatrix(T_world_brickgrasp))
+		# rospy.sleep(5)
+		# self.pose_pub.publish(poseFromMatrix(T_world_bottlegrasp))
 
 		while not rospy.is_shutdown():
-			## send the robot through all needed poses by using the matrices you calculated earlier
+			self.sendRobotToPose(T_world_brickapp)
 			self.sendRobotToPose(T_world_brickgrasp)
+			self.sendRobotToPose(T_world_bottleapp)
 			self.sendRobotToPose(T_world_bottlegrasp)
-			break
 
+			print(T_world_brickgrasp)
+			print(T_world_bottlegrasp)
+			break
+		self.init_pose()
 		## send robot back to init pose
 		self.init_pose()
 		## draw graph
