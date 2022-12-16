@@ -583,8 +583,6 @@ bool ControlArm::startJointGroupPositionController(
   // TODO: Add enabling stuff for different controller type
   ROS_INFO("Sending all joints to zero");
 
-  // activateJoints();
-  sendZeros("group"); // Enables sending of commands to jointGroupController
   ros::Duration(0.5).sleep();
   // TODO: Add method for sending current joint states
 

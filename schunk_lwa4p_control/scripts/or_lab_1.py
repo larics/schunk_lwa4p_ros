@@ -111,20 +111,7 @@ class OrLab2():
 		self.current_pose.pose.position = msg.pose.position
 		self.current_pose.pose.orientation = msg.pose.orientation
 
-	def taylor_interpolation(self, start_pose, end_pose, epsilon):
 
-		p_ = self.get_cartesian_mid_pose(start_pose, end_pose)
-
-		q_ = self.get_ik(p_)
-
-		wM = self.forwardKinematics(q_)
-
-		norm_ = 
-
-
-
-
-		pass
 
 	def get_cartesian_mid_pose(self, start_pose, end_pose):
 
