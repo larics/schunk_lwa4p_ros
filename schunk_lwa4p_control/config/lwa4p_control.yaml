@@ -7,7 +7,7 @@ lwa4p:
     publish_rate: 25
 
   arm_controller:
-    type: position_controllers/JointTrajectoryController
+    type: effort_controllers/JointTrajectoryController
     joints: 
       - lwa4p_joint1
       - lwa4p_joint2

@@ -91,14 +91,15 @@ def forwardKinematics(q_s):
 
 def createGoalPose(x, y, z, qx, qy, qz, qw):
     wanted_pose = Pose()
-    wanted_pose.position.x = x;
-    wanted_pose.position.y = y;
-    wanted_pose.position.z = z;
-    wanted_pose.orientation.x = qx;
-    wanted_pose.orientation.y = qy;
-    wanted_pose.orientation.z = qz;
-    wanted_pose.orientation.w = qw;
+    wanted_pose.position.x = x
+    wanted_pose.position.y = y
+    wanted_pose.position.z = z
+    wanted_pose.orientation.x = qx
+    wanted_pose.orientation.y = qy
+    wanted_pose.orientation.z = qz
+    wanted_pose.orientation.w = qw
     return wanted_pose
+
 
 def draw(points_gazebo, points_fk, cart_points, eps):
     fig = plt.figure()
@@ -176,6 +177,7 @@ class OrLab2():
             if np.linalg.norm(new_p-last_p) > 0.0001:
                 self.ee_points.append(new_p)
                 self.ee_points_fk.append(forwardKinematics(q_s))
+
     def init_pose(self):
         init_pose_goal = Pose()
         init_pose_goal.position.x = 0.
@@ -188,17 +190,40 @@ class OrLab2():
         self.pose_pub.publish(init_pose_goal)
         rospy.sleep(5)
 
-    def get_ik(self, wanted_pose):
+    def execute_cmds(self, q_list):
+        # Publish calculated joint values
+        for i, q in enumerate(q_list):
+            qMsg = Float64MultiArray()
+            qMsg.data = q
+            self.q_cmd_pub.publish(qMsg)
+            norm_ = self.norm(q, np.asarray(self.q_curr))
+            while norm_ > self.cmd_eps:
+                norm_ = self.norm(q, np.asarray(self.q_curr))
+                rospy.loginfo_throttle(2, "Executing {} joint cmd".format(i))
+                if norm_ < self.cmd_eps:
+                    rospy.loginfo("Norm condition satisfied: {}".format(norm_))
+                    break
 
-        if isinstance(wanted_pose, np.ndarray):
-            wanted_pose = arrayToPose(wanted_pose)
-        try:
-            response = self.get_ik_client(wanted_pose, self.current_pose)
-            q_ = np.array(response.jointState.position)
-            return q_
-        except rospy.ServiceException as e:
-            rospy.logwarn("Service call failed: {}".format(e))
-            return False
+    def calc_cartesian_midpoint(self, start_pose, end_pose):
+
+        # Calculate position average
+        x = (start_pose.position.x + end_pose.position.x)/2
+        y = (start_pose.position.y + end_pose.position.y)/2
+        z = (start_pose.position.z + end_pose.position.z)/2
+        # Keep orientation the same as in starting points
+        qx = (start_pose.orientation.x)
+        qy = (start_pose.orientation.y)
+        qz = (start_pose.orientation.z)
+        qw = (start_pose.orientation.w)
+
+        return np.asarray([x, y, z, qx, qy, qz, qw])
+
+    def calc_joint_midpoint(self, start_joint, end_joint):
+        return (start_joint + end_joint)/2
+
+    def norm(self, q_cmd, q_curr):
+        norm = np.sqrt(np.sum((q_cmd - q_curr)**2))
+        return norm
 
     def execute_cmds(self, q_list):
         # Publish calculated joint values
@@ -211,6 +236,7 @@ class OrLab2():
                 if norm_ < self.cmd_eps:
                     rospy.loginfo("Norm condition satisfied: {}".format(norm_))
                     break
+
     def execute_cmd(self, q):
         qMsg = Float64MultiArray()
         qMsg.data = q
@@ -227,6 +253,60 @@ class OrLab2():
         except rospy.ServiceException as e:
             rospy.logwarn("Service call failed: {}".format(e))
             return False
+
+    def taylor_interpolate_point(self, start_pose, end_pose, epsilon):
+        # Get q0, q1
+        q0 = self.get_ik(start_pose)
+        q1 = self.get_ik(end_pose)
+        # get qm
+        qm = self.calc_joint_midpoint(q0, q1)
+        # calculate w_m
+        p_wm = forwardKinematics(qm)
+        # calculate w_M
+        p_wM = self.calc_cartesian_midpoint(start_pose, end_pose)
+        # calcukate norm between w_m and w_M
+        if (self.norm(p_wm, p_wM) < epsilon):
+            rospy.loginfo("Taylor interpolation finished")
+            return [start_pose, p_wM, end_pose]
+        else:
+            rospy.loginfo("Taylor interpolation, condition not satisfied")
+            return self.taylor_interpolate_list([poseToArray(start_pose), p_wM, poseToArray(end_pose)], epsilon)
+
+    def taylor_interpolate_points(self, poses_list, epsilon):
+        # IK/FK Poses
+        ik_poses = []
+        calc_epsilons = []
+        cartesian_points = []
+        added_joints = []
+        added_points = []
+
+        for i, pose in enumerate(poses_list):
+            if i == 0:
+                cartesian_points.append(pose)
+            if i > 0 and i < len(poses_list):
+                avg_pt = self.calc_cartesian_midpoint(arrayToPose(poses_list[i - 1]), arrayToPose(pose))
+                avg_joint = self.calc_joint_midpoint(self.get_ik(poses_list[i - 1]), self.get_ik(pose))
+                cartesian_points.append(avg_pt)
+                added_points.append(avg_pt)
+                added_joints.append(avg_joint)
+            if i == len(poses_list) - 1:
+                cartesian_points.append(pose)
+
+        for i, pose in enumerate(added_points):
+            ik_pose = self.get_ik(pose)
+            ik_poses.append(ik_pose)
+
+        fk_pos1 = [forwardKinematics(q) for q in added_joints]
+        fk_pos2 = [forwardKinematics(ik_pose) for ik_pose in ik_poses]
+
+        for i, (fk_p1, fk_p2) in enumerate(zip(fk_pos1, fk_pos2)):
+            calc_epsilons.append(self.norm(fk_p1, fk_p2) < epsilon)
+
+        # Check if norm condition has been satisfied
+        if all(calc_epsilons):
+            return cartesian_points
+        else:
+            return self.taylor_interpolate_points(cartesian_points, epsilon)
 
     def go_to_pose_taylor(self, goal_pose, eps):
         # Reset saved ee_points and fk points
@@ -250,41 +330,10 @@ class OrLab2():
         q_start = self.get_ik(start_pose)
         self.execute_cmd(q_start)
 
-    def calc_cartesian_midpoint(self, start_pose, end_pose):
-        # 1. zadatak
-        # Implementiraj pronalazenje medjutocke u prostoru alata
-        # Zbog jednostavnosti zadrzi orijentaciju pocetne tocke
-        # Metoda vraca np.array medjutocke u prostoru alata
-        pass
+    def sendRobotToPose(self, matrix):
+        self.pose_pub.publish(poseFromMatrix(matrix))
+        rospy.sleep(5)
 
-    def calc_joint_midpoint(self, q_start, q_end):
-        # 2. zadatak
-        # Implementiraj pronalazenje medjutocke u prostoru zglobova
-        # Metoda vraca np.array medjutocke u prostoru zglobova
-        pass
-
-    def norm(self, v1, v2):
-        # 3. zadatak
-        # Implementiraj pronalazenje Frobeniusove norme
-        # za jednodimenzionalne vektore proizvoljne duljine
-        # metoda vraca skalarnu vrijednost norme
-        pass
-
-    def taylor_interpolate_point(self, start_pose, end_pose, epsilon):
-        # 4. zadatak
-        # Implementiraj Taylorovu metodu odstupanja od tocke koristeci predefinirane argumente
-        # Ukoliko je odstupanje (epsilon) manje od zeljenog - metoda treba vratiti listu [start_pose, p_wM, end_pose]
-        # Ukoliko odstupanje nije manje od zeljenog, metoda vraca False
-        pass
-
-    def taylor_interpolate_points(self, poses_list, epsilon):
-        # 5. zadatak
-        # U ovoj metodi potrebno je implementirati algoritam Taylorovog odstupanja u cijelosti
-        # Metoda kao argumente prima listu poza kroz koje zelimo proci s alatom
-        # Radi jednostavnosti implementacije, orijentacija alata u svim tockama mora biti ista
-        # Ako je zadano odstupanje epsilon zadovoljeno, metoda vraca listu tocaka u prostoru alata kroz koje robot treba proci
-        # Ako odstupanje nije zadovoljeno, metoda se rekurzivno poziva
-        pass
 
     def run(self):
         # Initialize starting pose
@@ -307,55 +356,56 @@ class OrLab2():
                 self.go_to_start_pose(start_pose)
                 rospy.sleep(1.0)
 
-                #eps = 0.5
-                #self.go_to_pose_taylor(wanted_pose1, eps)
-                #rospy.sleep(1.0)
+                eps = 0.5
+                self.go_to_pose_taylor(wanted_pose1, eps)
+                rospy.sleep(1.0)
 
-                #self.go_to_start_pose(start_pose)
-                #rospy.sleep(3.0)
+                self.go_to_start_pose(start_pose)
+                rospy.sleep(3.0)
 
-                #eps = 0.25
-                #self.go_to_pose_taylor(wanted_pose1, eps)
-                #rospy.sleep(1.0)
+                eps = 0.25
+                self.go_to_pose_taylor(wanted_pose1, eps)
+                rospy.sleep(1.0)
 
-                #self.go_to_start_pose(start_pose)
-                #rospy.sleep(3.0)
+                self.go_to_start_pose(start_pose)
+                rospy.sleep(3.0)
 
-                #eps = 0.1
-                #self.go_to_pose_taylor(wanted_pose1, eps)
-                #rospy.sleep(1.0)
+                eps = 0.1
+                self.go_to_pose_taylor(wanted_pose1, eps)
+                rospy.sleep(1.0)
 
-                #self.go_to_start_pose(start_pose)
-                #rospy.sleep(3.0)
+                self.go_to_start_pose(start_pose)
+                rospy.sleep(3.0)
 
-                #eps = 0.05
-                #self.go_to_pose_taylor(wanted_pose1, eps)
-                #rospy.sleep(1.0)
+                eps = 0.05
+                self.go_to_pose_taylor(wanted_pose1, eps)
+                rospy.sleep(1.0)
 
-                #self.go_to_start_pose(start_pose)
-                #rospy.sleep(3.0)
+                self.go_to_start_pose(start_pose)
+                rospy.sleep(3.0)
 
-                #eps = 0.02
-                #self.go_to_pose_taylor(wanted_pose1, eps)
-                #rospy.sleep(3.0)
+                eps = 0.02
+                self.go_to_pose_taylor(wanted_pose1, eps)
+                rospy.sleep(3.0)
 
-                #eps = 0.5
-                #self.go_to_pose_taylor(wanted_pose2, eps)
-                #rospy.sleep(1.0)
+                eps = 0.5
+                self.go_to_pose_taylor(wanted_pose2, eps)
+                rospy.sleep(1.0)
 
-                #self.go_to_start_pose(start_pose)
-                #rospy.sleep(3.0)
+                self.go_to_start_pose(start_pose)
+                rospy.sleep(3.0)
 
-                #eps = 0.5
-                #self.go_to_pose_taylor(wanted_pose2, eps)
-                #rospy.sleep(1.0)
+                eps = 0.15
+                self.go_to_pose_taylor(wanted_pose2, eps)
+                rospy.sleep(1.0)
 
-                #self.go_to_start_pose(wanted_pose1)
-                #rospy.sleep(3.0)
+                self.go_to_start_pose(wanted_pose1)
+                rospy.sleep(3.0)
 
-                #eps = 0.2
-                #self.go_to_pose_taylor(wanted_pose2, eps)
-                #rospy.sleep(1.0)
+                eps = 0.05
+                self.go_to_pose_taylor(wanted_pose2, eps)
+                rospy.sleep(1.0)
+
 
                 break
 
@@ -365,5 +415,3 @@ class OrLab2():
 if __name__ == "__main__":
     lab2 = OrLab2()
     lab2.run()
-
-
