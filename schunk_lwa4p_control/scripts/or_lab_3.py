@@ -246,6 +246,7 @@ class OrLab3():
     def sendRobotToPose(self, matrix):
         self.pose_pub.publish(poseFromMatrix(matrix))
         rospy.sleep(5)
+
     def init_pose(self):
         init_pose_goal = Pose()
         init_pose_goal.position.x = 0.
@@ -492,7 +493,6 @@ class OrLab3():
 
         return dQ
 
-
     def ho_cook(self, cartesian):
         # 6. Zadatak
 
@@ -561,7 +561,6 @@ class OrLab3():
         self.execute_cmds(ik_poses)
         # draw_path
         draw(self.ee_points, self.ee_points_fk, points, eps)
-
 
 
     def run(self):
