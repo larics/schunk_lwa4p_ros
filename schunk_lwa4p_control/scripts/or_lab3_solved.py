@@ -182,6 +182,53 @@ class OrLab3():
                 self.ee_points.append(new_p)
                 self.ee_points_fk.append(forwardKinematics(q_s))
 
+    def init_pose(self):
+        init_pose_goal = Pose()
+        init_pose_goal.position.x = 0.
+        init_pose_goal.position.y = 0.25
+        init_pose_goal.position.z = 1.75
+        init_pose_goal.orientation.x = -0.5
+        init_pose_goal.orientation.y = 0.5
+        init_pose_goal.orientation.z = 0.5
+        init_pose_goal.orientation.w = 0.5
+        self.pose_pub.publish(init_pose_goal)
+        rospy.sleep(5)
+
+    def execute_cmds(self, q_list):
+        # Publish calculated joint values
+        for i, q in enumerate(q_list):
+            qMsg = Float64MultiArray()
+            qMsg.data = q
+            self.q_cmd_pub.publish(qMsg)
+            norm_ = self.norm(q, np.asarray(self.q_curr))
+            while norm_ > self.cmd_eps:
+                norm_ = self.norm(q, np.asarray(self.q_curr))
+                rospy.loginfo_throttle(2, "Executing {} joint cmd".format(i))
+                if norm_ < self.cmd_eps:
+                    rospy.loginfo("Norm condition satisfied: {}".format(norm_))
+                    break
+
+    def calc_cartesian_midpoint(self, start_pose, end_pose):
+
+        # Calculate position average
+        x = (start_pose.position.x + end_pose.position.x)/2
+        y = (start_pose.position.y + end_pose.position.y)/2
+        z = (start_pose.position.z + end_pose.position.z)/2
+        # Keep orientation the same as in starting points
+        qx = (start_pose.orientation.x)
+        qy = (start_pose.orientation.y)
+        qz = (start_pose.orientation.z)
+        qw = (start_pose.orientation.w)
+
+        return np.asarray([x, y, z, qx, qy, qz, qw])
+
+    def calc_joint_midpoint(self, start_joint, end_joint):
+        return (start_joint + end_joint)/2
+
+    def norm(self, q_cmd, q_curr):
+        norm = np.sqrt(np.sum((q_cmd - q_curr)**2))
+        return norm
+
     def execute_cmds(self, q_list):
         # Publish calculated joint values
         for i, q in enumerate(q_list):
@@ -199,34 +246,6 @@ class OrLab3():
         qMsg.data = q
         self.q_cmd_pub.publish(qMsg)
 
-    def createTrajectory(self, q, dq, t):
-
-        joint_names =  ["lwa4p_joint1", "lwa4p_joint2", "lwa4p_joint3", "lwa4p_joint4", "lwa4p_joint5", "lwa4p_joint6"]
-
-        trajectoryMsg = JointTrajectory()
-        trajectoryMsg.joint_names = joint_names
-
-        dq = list(dq.T)
-        i = 0
-        print("t is: {}".format(t))
-        for k, (q, dq) in enumerate(zip(q, dq)):
-            try:
-                i += t[k]
-                t_ = rospy.Time.from_sec(i)
-            except Exception as e:
-                t_ = rospy.Time.from_sec(np.ceil(i))
-            trajectoryPoint = JointTrajectoryPoint()
-            trajectoryPoint.positions = q
-            trajectoryPoint.velocities = dq
-            trajectoryPoint.time_from_start.secs = t_.secs
-            trajectoryPoint.time_from_start.nsecs = t_.nsecs
-            #trajectoryPoint.time_from_start.nsecs = (k*inc * 1e9)
-            trajectoryMsg.points.append(trajectoryPoint)
-
-        print(trajectoryMsg)
-
-        return trajectoryMsg
-
     def get_ik(self, wanted_pose):
 
         if isinstance(wanted_pose, np.ndarray):
@@ -239,26 +258,142 @@ class OrLab3():
             rospy.logwarn("Service call failed: {}".format(e))
             return False
 
-    def go_to_start_pose(self, start_pose):
-        q_start = self.get_ik(start_pose)
-        self.execute_cmd(q_start)
+    def taylor_interpolate_point(self, start_pose, end_pose, epsilon):
+        # Get q0, q1
+        q0 = self.get_ik(start_pose)
+        q1 = self.get_ik(end_pose)
+        # get qm
+        qm = self.calc_joint_midpoint(q0, q1)
+        # calculate w_m
+        p_wm = forwardKinematics(qm)
+        # calculate w_M
+        p_wM = self.calc_cartesian_midpoint(start_pose, end_pose)
+        # calcukate norm between w_m and w_M
+        if (self.norm(p_wm, p_wM) < epsilon):
+            rospy.loginfo("Taylor interpolation finished")
+            return [start_pose, p_wM, end_pose]
+        else:
+            rospy.loginfo("Taylor interpolation, condition not satisfied")
+            return self.taylor_interpolate_list([poseToArray(start_pose), p_wM, poseToArray(end_pose)], epsilon)
 
-    def sendRobotToPose(self, matrix):
-        self.pose_pub.publish(poseFromMatrix(matrix))
-        rospy.sleep(5)
+    def taylor_interpolate_points(self, poses_list, epsilon):
+        # IK/FK Poses
+        ik_poses = []
+        calc_epsilons = []
+        cartesian_points = []
+        added_joints = []
+        added_points = []
 
-    def init_pose(self):
-        init_pose_goal = Pose()
-        init_pose_goal.position.x = 0.
-        init_pose_goal.position.y = 0.25
-        init_pose_goal.position.z = 1.75
-        init_pose_goal.orientation.x = -0.5
-        init_pose_goal.orientation.y = 0.5
-        init_pose_goal.orientation.z = 0.5
-        init_pose_goal.orientation.w = 0.5
-        self.pose_pub.publish(init_pose_goal)
-        rospy.sleep(5)
+        for i, pose in enumerate(poses_list):
+            if i == 0:
+                cartesian_points.append(pose)
+            if i > 0 and i < len(poses_list):
+                avg_pt = self.calc_cartesian_midpoint(arrayToPose(poses_list[i - 1]), arrayToPose(pose))
+                avg_joint = self.calc_joint_midpoint(self.get_ik(poses_list[i - 1]), self.get_ik(pose))
+                cartesian_points.append(avg_pt)
+                added_points.append(avg_pt)
+                added_joints.append(avg_joint)
+            if i == len(poses_list) - 1:
+                cartesian_points.append(pose)
 
+        for i, pose in enumerate(added_points):
+            ik_pose = self.get_ik(pose)
+            ik_poses.append(ik_pose)
+
+        fk_pos1 = [forwardKinematics(q) for q in added_joints]
+        fk_pos2 = [forwardKinematics(ik_pose) for ik_pose in ik_poses]
+
+        for i, (fk_p1, fk_p2) in enumerate(zip(fk_pos1, fk_pos2)):
+            calc_epsilons.append(self.norm(fk_p1, fk_p2) < epsilon)
+
+        # Check if norm condition has been satisfied
+        if all(calc_epsilons):
+            return cartesian_points
+        else:
+            return self.taylor_interpolate_points(cartesian_points, epsilon)
+
+    def get_time_parametrization(self, q):
+
+        t = []
+        for k, qk in enumerate(q):
+            try: 
+                tk_1 = np.sqrt(np.sum((q[k+1] - q[k])**2))
+                t.append(tk_1)
+            except Exception as e: 
+                pass
+
+        rospy.loginfo("Finished time parametrization, segment num, m-1: {}".format(len(t)))
+
+        return t
+
+    def createMpmatrix(self, t): 
+        # Matrix dimensions are (m - 2) x (m - 4)
+        # t dimensions are m-1
+
+        m_1 = len(t)
+        Mp = np.zeros((m_1 - 1, m_1 - 3))
+        for i, t_ in enumerate(t):
+            try: 
+                Mp[i, i] =  t[i+2]
+                Mp[i + 1, i] = 2*(t[i+1] + t[i+2])
+                Mp[i + 2, i] = t[i+1] 
+
+            except Exception as e: 
+                pass        
+        
+        rospy.loginfo("Finished adding elements to the Mp matrix, dimensions (m-2) x (m-4) : {}".format(Mp.shape))
+
+        return Mp 
+
+    def createMmatrix(self, Mp, t): 
+        # Matrix dimensions are (m - 2) x (m - 2)
+
+        m_1 = len(t) 
+        M1col = np.zeros((m_1 - 1, 1))
+        Mlcol = np.zeros((m_1 - 1, 1))
+
+        M1col[0, 0] = 3 /t[0] + 2/t[1]
+        M1col[1, 0] = 1 /t[1]
+        Mlcol[-2, 0] = 1 /t[-2]
+        Mlcol[-1, 0] = 2/t[-2] + 3/t[-1]
+
+        M = np.hstack((M1col, Mp))
+        M = np.hstack((M, Mlcol))
+        
+        return M 
+
+    def createApmatrix(self, q, t):
+        # Matrix dimensions are n x (m - 4)
+        # t dimensions are m-1
+
+        n = q[0].shape[0]
+        m_1 = len(t)
+        Ap = np.zeros((n, m_1 - 3))
+        for i , t_ in enumerate(t):
+            try: 
+                c = 3/(t[i+1] * t[i+2]) 
+                bracket = t[i+1]**2*(q[i+2] - q[i+1]) + t[i+2]**2*(q[i+1] - q[i])
+                Ap[:, i] = c * bracket
+            except Exception as e: 
+                pass
+                
+        rospy.loginfo("Finished adding elements to the Ap matrix, dimensions n x (m-4) : {}".format(Ap.shape))
+
+        return Ap
+
+    def createAmatrix(self, q, t, Ap):
+        # Matrix dimensions are n x (m - 2)
+        # t dimensions are m-1
+
+        A1col = 6/t[0]**2 * (q[1] - q[0]) + 3/t[1] * (q[2] - q[1])
+        Alcol = 3/t[-1]**2 * (q[-1] - q[-2]) + 6/t[-1]**2*(q[-1] - q[-2])
+
+        A = np.hstack((A1col.reshape(6, 1), Ap))
+        A = np.hstack((A, Alcol.reshape(6, 1)))
+
+        return A
+
+    # Get B matrices
     def getBfirstSeg(self, q, dq, t):
 
         T = np.zeros((4, 5))
@@ -312,189 +447,35 @@ class OrLab3():
 
         return q_dot_max
 
-    # 2. Zadaća implementirana
-    def calc_cartesian_midpoint(self, start_pose, end_pose):
+    def createTrajectory(self, q, dq, t):
 
-        # Calculate position average
-        x = (start_pose.position.x + end_pose.position.x)/2
-        y = (start_pose.position.y + end_pose.position.y)/2
-        z = (start_pose.position.z + end_pose.position.z)/2
-        # Keep orientation the same as in starting points
-        qx = (start_pose.orientation.x)
-        qy = (start_pose.orientation.y)
-        qz = (start_pose.orientation.z)
-        qw = (start_pose.orientation.w)
+        joint_names =  ["lwa4p_joint1", "lwa4p_joint2", "lwa4p_joint3", "lwa4p_joint4", "lwa4p_joint5", "lwa4p_joint6"]
 
-        return np.asarray([x, y, z, qx, qy, qz, qw])
+        trajectoryMsg = JointTrajectory()
+        trajectoryMsg.joint_names = joint_names
 
-    def calc_joint_midpoint(self, start_joint, end_joint):
-        return (start_joint + end_joint)/2
-
-    def norm(self, q_cmd, q_curr):
-        norm = np.sqrt(np.sum((q_cmd - q_curr)**2))
-        return norm
-
-    def taylor_interpolate_point(self, start_pose, end_pose, epsilon):
-        # Get q0, q1
-        q0 = self.get_ik(start_pose)
-        q1 = self.get_ik(end_pose)
-        # get qm
-        qm = self.calc_joint_midpoint(q0, q1)
-        # calculate w_m
-        p_wm = forwardKinematics(qm)
-        # calculate w_M
-        p_wM = self.calc_cartesian_midpoint(start_pose, end_pose)
-        # calcukate norm between w_m and w_M
-        if (self.norm(p_wm, p_wM) < epsilon):
-            rospy.loginfo("Taylor interpolation finished")
-            return [start_pose, p_wM, end_pose]
-        else:
-            rospy.loginfo("Taylor interpolation, condition not satisfied")
-            return False
-
-    def taylor_interpolate_points(self, poses_list, epsilon):
-        # IK/FK Poses
-        ik_poses = []
-        calc_epsilons = []
-        cartesian_points = []
-        added_joints = []
-        added_points = []
-
-        for i, pose in enumerate(poses_list):
-            if i == 0:
-                cartesian_points.append(pose)
-            if i > 0 and i < len(poses_list):
-                avg_pt = self.calc_cartesian_midpoint(arrayToPose(poses_list[i - 1]), arrayToPose(pose))
-                avg_joint = self.calc_joint_midpoint(self.get_ik(poses_list[i - 1]), self.get_ik(pose))
-                cartesian_points.append(avg_pt)
-                added_points.append(avg_pt)
-                added_joints.append(avg_joint)
-            if i == len(poses_list) - 1:
-                cartesian_points.append(pose)
-
-        for i, pose in enumerate(added_points):
-            ik_pose = self.get_ik(pose)
-            ik_poses.append(ik_pose)
-
-        fk_pos1 = [forwardKinematics(q) for q in added_joints]
-        fk_pos2 = [forwardKinematics(ik_pose) for ik_pose in ik_poses]
-
-        for i, (fk_p1, fk_p2) in enumerate(zip(fk_pos1, fk_pos2)):
-            calc_epsilons.append(self.norm(fk_p1, fk_p2) < epsilon)
-
-        # Check if norm condition has been satisfied
-        if all(calc_epsilons):
-            return cartesian_points
-        else:
-            return self.taylor_interpolate_points(cartesian_points, epsilon)
-
-    def get_time_parametrization(self, q):
-        # 1. Zadatak
-        # Implementiraj vremensku parametrizaciju za Ho-Cookovu metodu
-        # interpolacije polinoma (jednadžba 5.24 na str 85 u knjizi
-        # Osnove robotike od profesora Kovačića
-        # prima: listu s pozicijama zglobova dobivenih taylorovom interpolacijom
-        # Vraća: listu trajanja pojedinog segmenta putanje (duljine m-1)
-
-        rospy.loginfo("Finished time parametrization, segment num, m-1: {}".format(len(t)))
-
-        return t
-
-    def createMpmatrix(self, t):
-        # 2. Zadatak
-        # Kako bi mogli izračunati brzine alata u zadanim
-        # međutočkama krivulje, potrebno je odrediti matricu Mp
-        # Matrica Mp ovisi o vremenskoj parametrizaciji te se odnosi na
-        # sve segmente planirane krivulje osim prvog i zadnjeg
-        # U navedenoj metodi potrebno je napraviti matricu (np.array)
-        # dimenzija (m-2) X (m-4) koristeći već izračunatu vremensku parametrizaciju
-        # Prima: listu trajanja pojedinog segmenta putanje
-        # Vraća: Matric Mp dimenzija (m-2) x (m-4)
-        # Napomena: Jednadžba 5.29 u knjizi profesora Kovačića
-
-        m_1 = len(t)
-        Mp = np.zeros((m_1 - 1, m_1 - 3))
-        for i, t_ in enumerate(t):
+        dq = list(dq.T)
+        i = 0
+        print("t is: {}".format(t))
+        for k, (q, dq) in enumerate(zip(q, dq)):
             try:
-               # TODO: Add your code here
+                i += t[k]
+                t_ = rospy.Time.from_sec(i)
             except Exception as e:
-                pass
+                t_ = rospy.Time.from_sec(np.ceil(i))
+            trajectoryPoint = JointTrajectoryPoint()
+            trajectoryPoint.positions = q
+            trajectoryPoint.velocities = dq
+            trajectoryPoint.time_from_start.secs = t_.secs
+            trajectoryPoint.time_from_start.nsecs = t_.nsecs
+            #trajectoryPoint.time_from_start.nsecs = (k*inc * 1e9)
+            trajectoryMsg.points.append(trajectoryPoint)
 
-        rospy.loginfo("Finished adding elements to the Mp matrix, dimensions (m-2) x (m-4) : {}".format(Mp.shape))
+        print(trajectoryMsg)
 
-        return Mp
-
-    def createMmatrix(self, Mp, t):
-        # 3. zadatak
-        # Kako bi mogli izračunati brzine alata u svim točkama putanje (na svim segmentima)
-        # potrebno je proširiti već dobivenu Mp matricu da uzima u obzir prvi i zadnji
-        # segment putanje
-        # prima: matricu Mp dimenzija (m-2) x (m-4), listu trajanja pojedinog segmenta putanje
-        # vraća: matricu M dimenzija (m-2) x (m-2)
-        # Napomena: Jednadžba 5.50 u knjizi profesora Kovačića (koristite hstack)
-
-        m_1 = len(t)
-        M1col = np.zeros((m_1 - 1, 1))
-        Mlcol = np.zeros((m_1 - 1, 1))
-
-        # TODO: Add your code here
-
-        return M
-
-    def createApmatrix(self, q, t):
-        # 4. Zadatak
-        # Kako bi mogli izračunati brzine alata u zadanim
-        # međutočkama krivulje, potrebno je odrediti matricu Ap
-        # Matrica Ap ovisi o vremenskoj parametrizaciji i poziciji
-        # zglobova u pojedinim međutočkama krivulje. Kao i Mp, uzima
-        # u obzir sve segmente krivulje osim prvog i zadnjeg.
-        # U navedenoj metodi potrebno je napraviti matricu (np.array)
-        # dimenzija n X (m-4)
-        # Prima: listu pozicija zglobova u međutočkama, listu trajanja pojedinog segmenta putanje
-        # Vraća: Matrica Ap dimenzija np x (m-4)
-        # Napomena: Jednadžba 5.29 u knjizi profesora Kovačića
-
-        n = q[0].shape[0]
-        m_1 = len(t)
-        Ap = np.zeros((n, m_1 - 3))
-        for i , t_ in enumerate(t):
-            try:
-                # TODO: Add your code here
-            except Exception as e:
-                pass
-
-        rospy.loginfo("Finished adding elements to the Ap matrix, dimensions n x (m-4) : {}".format(Ap.shape))
-
-        return Ap
-
-    def createAmatrix(self, q, t, Ap):
-        # 5. zadatak
-        # Kako bi mogli izračunati brzine alata u svim točkama putanje (na svim segmentima)
-        # potrebno je proširiti već dobivenu Ap matricu da uzima u obzir prvi i zadnji
-        # segment putanje
-        # prima: matricu Ap dimenzija n x (m-4), listu trajanja pojedinog segmenta putanje
-        # vraća: matricu A dimenzija n x (m-2)
-        # Napomena: Jednadžba 5.50 u knjizi profesora Kovačića (koristite hstack)
-
-        # TODO: Add your code here
-
-        return A
-
-    def calcultate_dq(self, A, M):
-        # 6. zadatak
-        # Koristeći izračunate A i M matrice, izračunajte brzine
-        # zglobova u svim međutočkama (5.50)
-        # Nakon toga dodajte prvu i posljednju točku čije
-        # su brzine zglobova jednake 0, (primjer 5.6.2)
-        # prima: matricu A dimenztija n X (m-2), matricu M dimenzija (m-2) x (m-2)
-        # vraća: matricu Dq dimenzija n x (m)
-
-        # TODO: Add your code here
-
-        return dQ
+        return trajectoryMsg
 
     def ho_cook(self, cartesian):
-        # 6. Zadatak
 
         # List of joint positions that must be visited
         q =  [self.get_ik(pos) for pos in cartesian]
@@ -511,8 +492,11 @@ class OrLab3():
         print("A [{}] is: {}".format(A.shape, A))
         M = self.createMmatrix(Mp, t)
         print("M [{}] is: {}".format(M.shape, M))
-        dq = self.calculate_dq()
-        print("dq [{}] is: {}".format(dq.shape, dq))
+        dq = np.matmul(A, np.linalg.inv(M))
+        #print("dq [{}] is: {}".format(dq.shape, dq))
+        zeros = np.zeros((6, 1))
+        dq = np.hstack((zeros, dq))
+        dq = np.hstack((dq, zeros))
 
         Bk = []
         for k, t_ in enumerate(t):
@@ -531,7 +515,10 @@ class OrLab3():
         #print(trajectory)
         self.trajectory_pub.publish(trajectory)
 
-    def go_to_pose_ho_cook(self, goal_pose, eps):
+        # TODO: Add dq elements (first and last)
+        return q, dq
+
+    def go_to_pose_ho_cook(self, goal_pose, eps): 
 
         # Reset saved ee_points and fk points
         self.ee_points = []; self.ee_points_fk = []
@@ -541,7 +528,7 @@ class OrLab3():
         # Add time parametrization
         q, dq = self.ho_cook(points)
 
-        draw(self.ee_points, self.ee_points_fk, points, eps)
+        #draw(self.ee_points, self.ee_points_fk, points, eps)
 
     def go_to_pose_taylor(self, goal_pose, eps):
         # Reset saved ee_points and fk points
@@ -561,6 +548,13 @@ class OrLab3():
         # draw_path
         draw(self.ee_points, self.ee_points_fk, points, eps)
 
+    def go_to_start_pose(self, start_pose):
+        q_start = self.get_ik(start_pose)
+        self.execute_cmd(q_start)
+
+    def sendRobotToPose(self, matrix):
+        self.pose_pub.publish(poseFromMatrix(matrix))
+        rospy.sleep(5)
 
     def run(self):
         # Initialize starting pose
@@ -568,10 +562,10 @@ class OrLab3():
         # Sleep for 5. seconds
         rospy.sleep(10.0)
         # Initialize goal pose
-        start_pose = createGoalPose(0.2, 0.25, 1.6, -0.5, 0.5, 0.5, 0.5)
+        start_pose = createGoalPose(0.2, 0.25, 1.65, -0.5, 0.5, 0.5, 0.5)
         wanted_pose1 = createGoalPose(0.2, 0.25, 1.4, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose2 = createGoalPose(0.3, 0.25, 1.4, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose3 = createGoalPose(0.2, 0.25, 1.6, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose2 = createGoalPose(0.33, 0.25, 1.4, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose3 = createGoalPose(0.2, 0.25, 1.65, -0.5, 0.5, 0.5, 0.5)
 
         self.change_to_pos_client.call()
         while not rospy.is_shutdown():
@@ -592,9 +586,6 @@ class OrLab3():
 
                 eps = 0.002
                 self.go_to_pose_ho_cook(wanted_pose3, eps)
-
-                #eps = 0.05
-                #self.go_to_pose_ho_cook(wanted_pose2, eps)
 
                 break
 
