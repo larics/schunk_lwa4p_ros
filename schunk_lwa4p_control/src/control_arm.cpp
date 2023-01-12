@@ -116,7 +116,6 @@ void ControlArm::init() {
     startJointGroupVelocityControllerService_ = nodeHandle_.advertiseService(startJointGroupVelocityControllerServiceName, &ControlArm::startJointGroupVelocityController, this);
     sendArmToHomingPoseService_ = nodeHandle_.advertiseService(sendArmToHomingPoseServiceName, &ControlArm::sendArmToHomingPose, this);
     checkIKSolutionsService_ = nodeHandle_.advertiseService(checkIKSolutionsServiceName, &ControlArm::checkIKSolutionsServiceCallback, this);
-    executeCartesianPathService_ = nodeHandle_.advertiseService(executeCartesianPathServiceName, &ControlArm::executeCartesianServiceCallback, this);
     ROS_INFO("[ControlArm] Initialized services.");
 
     // Initialize Clients for other services
@@ -807,125 +806,8 @@ void ControlArm::getJointPositions(const std::vector<std::string>& jointNames, s
   
 }
 
-bool ControlArm::executeCartesianServiceCallback(schunk_lwa4p_control::CartesianPath::Request &req, schunk_lwa4p_control::CartesianPath::Response &res)
-{
-
-    ROS_INFO_STREAM("Request is: " << req);
-
-    //for(int i=0; i<req.waypoints.size())
-
-    m_moveGroupPtr->setMaxVelocityScalingFactor(0.2);
-    double eefStep = 0.01; double jumpThreshold = 0.01;
-    moveit_msgs::RobotTrajectory trajectory;
-    double fraction = m_moveGroupPtr->computeCartesianPath(req.waypoints,
-                                                           eefStep,
-                                                           jumpThreshold,
-                                                           trajectory);
-
-    //stuff for cartesian path planning
-    //if (cartesian){
-    //    if(first){
-    //        points.push_back(currentPose);
-    //       geometry_msgs::Pose mid_pose;
-    //      int num_points = 10;
-    //     for (int i=0; i<num_points; ++i){
-    /*        geometry_msgs::Pose tmp_pose;
-            tmp_pose.position = currentPose.position; mid_pose.orientation = currentPose.orientation;
-            tmp_pose.position.z = currentPose.position.z + i * (target_pose.pose.position.z - currentPose.position.z)/num_points;
-            points.push_back(tmp_pose);
-        }
-        points.push_back(target_pose.pose);
-        first = false;
-        schunk_lwa4p_control::CartesianPath cp;
-        cp.request.waypoints = points;
-        executeCartesianPathClient_.call(cp);
-    }
-    //ROS_INFO_STREAM("Cartesian path execution:" << cp.response.succedded);
-}*/
 
 
-
-
-    ROS_INFO_NAMED("tutorial", "Visualizing plan  (Cartesian path) (%.2f%% acheived)", fraction * 100.0);
-
-
-    //m_moveGroupPtr->execute(plannedPath);
-
-    return true;
-
-
-
-}
-
-bool ControlArm::executeDummyCartesianPath(){
-    geometry_msgs::Pose startPose = m_moveGroupPtr->getCurrentPose().pose; 
-    
-    std::vector<geometry_msgs::Pose> waypoints;
-    startPose.position.z += 0.35;
-    waypoints.push_back(startPose);
-
-    startPose.position.x += 0.35; 
-    waypoints.push_back(startPose); 
-
-    startPose.position.z += 0.35; 
-    waypoints.push_back(startPose); 
-
-    // set moveGroup scaling factor
-    m_moveGroupPtr->setMaxVelocityScalingFactor(0.10);  
-
-    moveit_msgs::RobotTrajectory trajectory; 
-    double eefStep = 0.01; double jumpTreshold = 0.00; // in real-world applications this jump Threshold must be > 0; 
-    double fraction = m_moveGroupPtr->computeCartesianPath(waypoints,
-                                                           eefStep, 
-                                                           jumpTreshold, 
-                                                           trajectory);
-
-
-    ROS_INFO ("Starting Cartesian path planning execution.");
-    
-    // Call planner, compute plan and visualize it
-    moveit::planning_interface::MoveGroupInterface::Plan plannedPath; 
-
-    bool tracIK = true; 
-    // Remove first element if tracIK used for this 
-    if (tracIK){
-        //Nothing for now
-    }
-
-    plannedPath.trajectory_.joint_trajectory.header = trajectory.joint_trajectory.header; 
-    plannedPath.trajectory_.joint_trajectory.joint_names = trajectory.joint_trajectory.joint_names;
-    plannedPath.trajectory_.multi_dof_joint_trajectory.header = trajectory.multi_dof_joint_trajectory.header;
-    plannedPath.trajectory_.multi_dof_joint_trajectory.joint_names = trajectory.multi_dof_joint_trajectory.joint_names; 
-
-    std::vector<int>::size_type size = trajectory.joint_trajectory.points.size(); 
-    //ROS_INFO("Number of points for trajectory is: %i", size); 
-    
-    bool descartesPlanning = true; 
-    // Remove first element (https://answers.ros.org/question/253004/moveit-problem-error-trajectory-message-contains-waypoints-that-are-not-strictly-increasing-in-time/)    
-    if (descartesPlanning) {
-        for (std::size_t i = 0; i < trajectory.joint_trajectory.points.size() ; ++i) {
-            if ( i > 0 ) {
-                plannedPath.trajectory_.joint_trajectory.points.push_back(trajectory.joint_trajectory.points[i]);   
-
-            }
-        } 
-        for (std::size_t i = 0; i < trajectory.multi_dof_joint_trajectory.points.size() ; ++i) {   
-            if ( i > 0 ) {
-            plannedPath.trajectory_.multi_dof_joint_trajectory.points.push_back(trajectory.multi_dof_joint_trajectory.points[i]);            
-            } 
-        }    
-    }else {
-        plannedPath.trajectory_.joint_trajectory.points = trajectory.joint_trajectory.points; 
-        plannedPath.trajectory_.multi_dof_joint_trajectory.points = trajectory.multi_dof_joint_trajectory.points; 
-    }
-
-    m_moveGroupPtr->execute(plannedPath); 
-
-    sleep(15);
-
-    return true; 
-
-}
 
 bool ControlArm::getIK(const std::size_t attempts, double timeout) {
 
@@ -1025,11 +907,6 @@ void ControlArm::run() {
 
         // Get current joint positions 
         getJointPositions(m_jointModelGroupPtr->getVariableNames(), m_jointPositions_);
-
-        if (!firstTrajectoryExecution_) {
-            firstTrajectoryExecution_ =  executeDummyCartesianPath(); 
-        }
-
 
         // Call get current end effector state to setup pointer of variable which is used in get Inverse Kinematics
         // getCurrentEndEffectorState("lwa4p_link6"); 

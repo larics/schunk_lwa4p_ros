@@ -53,7 +53,6 @@
 // Utils
 #include <tf2/LinearMath/Quaternion.h>
 
-#include "schunk_lwa4p_control/CartesianPath.h"
 
 
 
@@ -165,7 +164,6 @@ class ControlArm{
         bool startJointGroupVelocityController(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
         //https://ros-planning.github.io/moveit_tutorials/doc/trac_ik/trac_ik_tutorial.html
         bool checkIKSolutionsServiceCallback(moveit_msgs::GetPositionIKRequest &req, moveit_msgs::GetPositionIKResponse &res);
-        bool executeCartesianServiceCallback(schunk_lwa4p_control::CartesianPathRequest &req, schunk_lwa4p_control::CartesianPathResponse &res);
         bool sendArmToHomingPose(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
         // DisplayTrajectory
@@ -193,7 +191,6 @@ class ControlArm{
         bool planPathToCmdPose();
         bool planPathToZeroPose();
         bool isNodeRunning();
-        bool executeDummyCartesianPath();
         void addCollisionObject(moveit_msgs::PlanningScene& planningScene);
         void getCurrentArmState(); 
         void getCurrentEndEffectorState(const std::string linkName);
