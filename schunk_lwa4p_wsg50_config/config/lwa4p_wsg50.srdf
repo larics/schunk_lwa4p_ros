@@ -21,6 +21,17 @@
         <joint name="wsg50_finger_right_joint"/>
         <joint name="wsg50_guide_joint_finger_right"/>
     </group>
+
+     <group_state name="zero_pose" group="arm">
+                <joint name="lwa4p_joint1" value="0"/>
+                <joint name="lwa4p_joint2" value="0"/>
+                <joint name="lwa4p_joint3" value="0"/>
+                <joint name="lwa4p_joint4" value="0"/>
+                <joint name="lwa4p_joint5" value="0"/>
+                <joint name="lwa4p_joint6" value="0"/>
+
+     </group_state>
+
     <group name="arm">
         <link name="lwa4p_link1"/>
         <link name="lwa4p_link2"/>
