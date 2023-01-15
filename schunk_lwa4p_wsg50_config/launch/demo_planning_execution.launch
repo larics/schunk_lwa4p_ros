@@ -23,8 +23,7 @@
         <arg name="publish_monitored_planning_scene" value="true" />
     </include>
 
-    <!-- Laggy stuff -->
-<!--     <group if="$(arg rviz_viz)">
+    <group if="$(arg rviz_viz)">
         <include file="$(find schunk_lwa4p_wsg50_config)/launch/moveit_rviz.launch">
         </include>
     </group> -->
