@@ -16,8 +16,6 @@ from schunk_lwa4p_control.srv import getIk
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-np.printoptions(precision=3, suppress=True)
-
 def poseFromMatrix(matrix):
     goal_pose = Pose()
     quat = quaternion_from_matrix(matrix)
@@ -80,7 +78,7 @@ def forwardKinematics(q_s):
     q5 = q_s[4]
     q6 = q_s[5]
 
-    T_0_1 = TfromDH(q1+0, 1.15, np.pi/2, 0)
+    T_0_1 = TfromDH(q1+0, 0.6, np.pi/2, 0)
     T_1_2 = TfromDH(q2+np.pi/2, 0, np.pi, 0.35)
     T_2_3 = TfromDH(q3+np.pi/2, 0, np.pi/2, 0)
     T_3_4 = TfromDH(q4+0, 0.305, -np.pi/2, 0)
@@ -121,17 +119,18 @@ def draw(points_gazebo, points_fk, cart_points, eps):
 
 class OrLab3():
     def __init__(self):
-        rospy.init_node("orlab2", anonymous=True, log_level=rospy.INFO)
+        rospy.init_node("orlab3", anonymous=True, log_level=rospy.INFO)
         self.tf_listener = TransformListener()
-        # Init methods
-        self._init_subs()
-        self._init_pubs()
-        self._init_srv_clients()
         # Helper vars
         self.ee_points = []
         self.ee_points_fk = []
         self.current_pose = Pose()
         self.cmd_eps = 0.002
+        self.real_robot = True
+        # Init methods
+        self._init_subs()
+        self._init_pubs()
+        self._init_srv_clients()
         # Change controller
         rospy.sleep(0)
         np.printoptions(precision=3, suppress=True)
@@ -156,6 +155,10 @@ class OrLab3():
         self.change_to_pos_client = rospy.ServiceProxy("/control_arm_node/controllers/start_joint_group_position_controller", Trigger)
         rospy.wait_for_service("/control_arm_node/controllers/start_joint_trajectory_controller")
         self.change_to_traj_client = rospy.ServiceProxy("/control_arm_node/controllers/start_joint_trajectory_controller", Trigger)
+        if self.real_robot:
+            rospy.wait_for_service("/lwa4p/driver/init")
+            self.init_driver = rospy.ServiceProxy("/lwa4p/driver/init", Trigger)
+            self.init_driver.call()
         rospy.loginfo("Initialized services/clients!")
 
     def tool_cb(self, msg):
@@ -183,15 +186,17 @@ class OrLab3():
                 self.ee_points_fk.append(forwardKinematics(q_s))
 
     def init_pose(self):
+
         init_pose_goal = Pose()
-        init_pose_goal.position.x = 0.
-        init_pose_goal.position.y = 0.25
-        init_pose_goal.position.z = 1.75
+        init_pose_goal.position.x = 0.0
+        init_pose_goal.position.y = 0.0
+        init_pose_goal.position.z = 1.30
         init_pose_goal.orientation.x = -0.5
         init_pose_goal.orientation.y = 0.5
         init_pose_goal.orientation.z = 0.5
         init_pose_goal.orientation.w = 0.5
         self.pose_pub.publish(init_pose_goal)
+
         rospy.sleep(5)
 
     def execute_cmds(self, q_list):
@@ -548,9 +553,14 @@ class OrLab3():
         # draw_path
         draw(self.ee_points, self.ee_points_fk, points, eps)
 
-    def go_to_start_pose(self, start_pose):
-        q_start = self.get_ik(start_pose)
-        self.execute_cmd(q_start)
+    def go_to_start_pose(self, start_pose, ctl="traj"):
+
+        if ctl == "joint":
+            q_start = self.get_ik(start_pose)
+            self.execute_cmd(q_start)
+
+        if ctl =="traj":
+            self.pose_pub.publish(start_pose)
 
     def sendRobotToPose(self, matrix):
         self.pose_pub.publish(poseFromMatrix(matrix))
@@ -561,15 +571,18 @@ class OrLab3():
         self.init_pose()
         # Sleep for 5. seconds
         rospy.sleep(10.0)
-        # Initialize goal pose
-        start_pose = createGoalPose(0.2, 0.25, 1.65, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose1 = createGoalPose(0.2, 0.25, 1.4, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose2 = createGoalPose(0.33, 0.25, 1.4, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose3 = createGoalPose(0.2, 0.25, 1.65, -0.5, 0.5, 0.5, 0.5)
+        # Initialize goal pose --> Fixed initial positions
+        start_pose = createGoalPose(0.0, 0.15, 1.3, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose1 = createGoalPose(0.0, 0.2, 1.15, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose2 = createGoalPose(0.25, 0.2, 1.15, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose3 = createGoalPose(0.0, 0.15, 1.25, -0.5, 0.5, 0.5, 0.5)
 
-        self.change_to_pos_client.call()
+        #self.change_to_pos_client.call()
         while not rospy.is_shutdown():
-            test = True
+
+            rospy.sleep(1.0)
+
+            test = False
             if test:
 
                 self.go_to_start_pose(start_pose)
