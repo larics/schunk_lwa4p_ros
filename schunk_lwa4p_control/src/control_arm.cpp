@@ -405,7 +405,7 @@ void ControlArm::addCollisionObject(moveit_msgs::PlanningScene &planningScene) {
   table_pose.orientation.w = 1.0;
   table_pose.position.x = -0.5;
   table_pose.position.y = 0.0;
-  table_pose.position.z = 0.75;
+  table_pose.position.z = 0.5;
 
   collisionObject1.primitives.push_back(primitive);
   collisionObject1.primitive_poses.push_back(table_pose);

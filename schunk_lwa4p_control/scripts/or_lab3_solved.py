@@ -126,7 +126,8 @@ class OrLab3():
         self.ee_points_fk = []
         self.current_pose = Pose()
         self.cmd_eps = 0.002
-        self.real_robot = True
+        self.real_robot = False
+        self.joint_max = 15.0
         # Init methods
         self._init_subs()
         self._init_pubs()
@@ -321,39 +322,39 @@ class OrLab3():
 
         t = []
         for k, qk in enumerate(q):
-            try: 
+            try:
                 tk_1 = np.sqrt(np.sum((q[k+1] - q[k])**2))
                 t.append(tk_1)
-            except Exception as e: 
+            except Exception as e:
                 pass
 
         rospy.loginfo("Finished time parametrization, segment num, m-1: {}".format(len(t)))
 
         return t
 
-    def createMpmatrix(self, t): 
+    def createMpmatrix(self, t):
         # Matrix dimensions are (m - 2) x (m - 4)
         # t dimensions are m-1
 
         m_1 = len(t)
         Mp = np.zeros((m_1 - 1, m_1 - 3))
         for i, t_ in enumerate(t):
-            try: 
+            try:
                 Mp[i, i] =  t[i+2]
                 Mp[i + 1, i] = 2*(t[i+1] + t[i+2])
-                Mp[i + 2, i] = t[i+1] 
+                Mp[i + 2, i] = t[i+1]
 
-            except Exception as e: 
-                pass        
-        
+            except Exception as e:
+                pass
+
         rospy.loginfo("Finished adding elements to the Mp matrix, dimensions (m-2) x (m-4) : {}".format(Mp.shape))
 
-        return Mp 
+        return Mp
 
-    def createMmatrix(self, Mp, t): 
+    def createMmatrix(self, Mp, t):
         # Matrix dimensions are (m - 2) x (m - 2)
 
-        m_1 = len(t) 
+        m_1 = len(t)
         M1col = np.zeros((m_1 - 1, 1))
         Mlcol = np.zeros((m_1 - 1, 1))
 
@@ -364,8 +365,8 @@ class OrLab3():
 
         M = np.hstack((M1col, Mp))
         M = np.hstack((M, Mlcol))
-        
-        return M 
+
+        return M
 
     def createApmatrix(self, q, t):
         # Matrix dimensions are n x (m - 4)
@@ -375,13 +376,13 @@ class OrLab3():
         m_1 = len(t)
         Ap = np.zeros((n, m_1 - 3))
         for i , t_ in enumerate(t):
-            try: 
-                c = 3/(t[i+1] * t[i+2]) 
+            try:
+                c = 3/(t[i+1] * t[i+2])
                 bracket = t[i+1]**2*(q[i+2] - q[i+1]) + t[i+2]**2*(q[i+1] - q[i])
                 Ap[:, i] = c * bracket
-            except Exception as e: 
+            except Exception as e:
                 pass
-                
+
         rospy.loginfo("Finished adding elements to the Ap matrix, dimensions n x (m-4) : {}".format(Ap.shape))
 
         return Ap
@@ -406,10 +407,12 @@ class OrLab3():
         T[1, 3] = 4/t[0]**3;    T[1, 4] = -3/t[0]**4;
         T[3, 3] = -1/t[0]**2;   T[3, 4] = 1/t[0]**3;
 
-        Q = np.array((q[0], q[1], dq[:, 0], dq[:, 1])).T
+        Q = np.array((q[0], q[1], dq[:, 0], dq[:, 1])).T # 6 x 4
 
-
+        # (6 x 4) x (4 x 5)
         BfirstSeg = np.matmul(Q, T) # 6 x 5 dimensions
+
+        print("Bfirst: {}".format(BfirstSeg))
 
         return BfirstSeg
 
@@ -421,6 +424,8 @@ class OrLab3():
         T[2, 1] = 1;            T[2, 2] = -2/t[k];      T[2, 3] = 1/t[k]**2;
         T[3, 2] = -1/t[k];      T[3, 3] = 1/t[k]**2;
 
+        # Fix indexing (First seg, k=1, q[k-1] = q[0], but has to be q[1], q[2])
+        k = k + 1
         Q = np.array((q[k-1], q[k], dq[:, k-1], dq[:, k])).T
 
         BkSeg = np.matmul(Q, T)
@@ -440,9 +445,21 @@ class OrLab3():
 
         return BlastSeg
 
-    def getMaxSpeed(self, B, t):
+    def getMaxSpeedFirstSeg(self, B, t):
 
-        q_max = B[:, 1] + 2*B[:, 2]*t + 3*B[:, 3]*t**2
+        q_max = B[:, 1] + 2 * B[:, 2]*t[0] + 3*B[:, 3]*t[0]**2 + 4*B[:, 4]*t[0]**3
+
+        return q_max
+
+    def getMaxSpeedAnySeg(self, B, t, k):
+
+        q_max = B[:, 1] + 2*B[:, 2]*t[k] + 3*B[:, 3]*t[k]**2
+
+        return q_max
+
+    def getMaxSpeedLastSeg(self, B, t):
+
+        q_max = B[:, 1] + 2*B[:, 2]*t[-1] + 3*B[:, 3]*t[-1]**2 + 4*B[:, 4]*t[-1]**3
 
         return q_max
 
@@ -461,7 +478,6 @@ class OrLab3():
 
         dq = list(dq.T)
         i = 0
-        print("t is: {}".format(t))
         for k, (q, dq) in enumerate(zip(q, dq)):
             try:
                 i += t[k]
@@ -473,57 +489,79 @@ class OrLab3():
             trajectoryPoint.velocities = dq
             trajectoryPoint.time_from_start.secs = t_.secs
             trajectoryPoint.time_from_start.nsecs = t_.nsecs
-            #trajectoryPoint.time_from_start.nsecs = (k*inc * 1e9)
             trajectoryMsg.points.append(trajectoryPoint)
 
-        print(trajectoryMsg)
 
         return trajectoryMsg
 
-    def ho_cook(self, cartesian):
+    def get_dq_max(self, q, dq, t):
+
+        Bk = []; dqmax = []
+        for k, t_ in enumerate(t):
+            if k == 0:
+                Bfirst = self.getBfirstSeg(q, dq, t)
+                dqmax_ = self.getMaxSpeedFirstSeg(Bfirst, t)
+                dqmax.append(dqmax_)
+            # Calculate stuff for all segments without first > 0 and last len(t) - 1
+            if k > 0 and k < len(t) - 1:
+                Bk_ = self.getBanySeg(q, dq, t, k)
+                Bk.append(Bk_)
+                dqmax_ = self.getMaxSpeedAnySeg(Bk_, t,  k)
+                dqmax.append(dqmax_)
+            if k == len(t) - 1 :
+                Blast = self.getBLastSeg(q, dq, t)
+                dqmax_ = self.getMaxSpeedLastSeg(Blast, t)
+                dqmax.append(dqmax_)
+
+
+        dqmax = np.asarray(dqmax).T                     # Returns indices (np.argmax(dq_max, axis=1))
+        dqmax = np.amax(dqmax, axis=1)                  # Returns values axis = 0 -> column-wise, axis=1, row-wise
+                                                        # print(np.amax(dq_max, axis=1))
+        return dqmax
+
+
+    def ho_cook(self, cartesian, t = None, q=None, first = True):
 
         # List of joint positions that must be visited
-        q =  [self.get_ik(pos) for pos in cartesian]
-        print("Inverse kinematics q is: {}".format(q))
-        # Time parametrization
-        t = self.get_time_parametrization(q)
-        print(t)
+        if first:
+            q = [self.get_ik(pos) for pos in cartesian]
+            #print("Inverse kinematics q is: {}".format(q))
+            # Time parametrization
+            t = self.get_time_parametrization(q)
         # Ap matrix
         Ap = self.createApmatrix(q, t)
-        print("Ap [{}] is: {}".format(Ap.shape, Ap))
+        #print("Ap [{}] is: {}".format(Ap.shape, Ap))
         Mp = self.createMpmatrix(t)
-        print("Mp [{}] is: {}".format(Mp.shape, Mp))
+        #print("Mp [{}] is: {}".format(Mp.shape, Mp))
         A = self.createAmatrix(q, t, Ap)
-        print("A [{}] is: {}".format(A.shape, A))
+        #print("A [{}] is: {}".format(A.shape, A))
         M = self.createMmatrix(Mp, t)
-        print("M [{}] is: {}".format(M.shape, M))
+        #print("M [{}] is: {}".format(M.shape, M))
         dq = np.matmul(A, np.linalg.inv(M))
         #print("dq [{}] is: {}".format(dq.shape, dq))
-        zeros = np.zeros((6, 1))
-        dq = np.hstack((zeros, dq))
-        dq = np.hstack((dq, zeros))
+        zeros = np.zeros((6, 1)); dq = np.hstack((zeros, dq)); dq = np.hstack((dq, zeros))
+        print("q len is: {}".format(len(q)))
+        dq_max = self.get_dq_max(q, dq, t)
+        dq_max_val = np.max(dq_max)
+        print("Current max var is:", dq_max_val)
+        scaling_factor = dq_max_val/self.joint_max
+        # Scale to accomodate limits
+        t = [t_*scaling_factor for t_ in t]
 
-        Bk = []
-        for k, t_ in enumerate(t):
-            if k == 1:
-                Bfirst = self.getBfirstSeg(q, dq, t)
-            if k > 1 and k < len(t) - 1:
-                Bk.append(self.getBanySeg(q, dq, t, k))
-            else:
-                Blast = self.getBLastSeg(q, dq, t)
+        if scaling_factor > 1.0:
+            return self.ho_cook(cartesian, t, q, first=False)
 
-        #print("Bfirst: {}".format(Bfirst))
-        #print("Bk: {}".format(Bk))
-        #print("Blast: {}".format(Blast))
+        else:
+            trajectory = self.createTrajectory(q, dq, t)
+            rospy.loginfo("Publishing trajectory!")
+            self.trajectory_pub.publish(trajectory)
+            sum_t = sum(t)
+            print("sum_t is : ", sum_t)
+            return sum_t
 
-        trajectory = self.createTrajectory(q, dq, t)
-        #print(trajectory)
-        self.trajectory_pub.publish(trajectory)
 
-        # TODO: Add dq elements (first and last)
-        return q, dq
 
-    def go_to_pose_ho_cook(self, goal_pose, eps): 
+    def go_to_pose_ho_cook(self, goal_pose, eps):
 
         # Reset saved ee_points and fk points
         self.ee_points = []; self.ee_points_fk = []
@@ -531,8 +569,9 @@ class OrLab3():
         # Calculate Taylor points
         points = self.taylor_interpolate_points([poseToArray(self.current_pose), poseToArray(goal_pose)], eps)
         # Add time parametrization
-        q, dq = self.ho_cook(points)
-
+        exec_duration = self.ho_cook(points)
+        print(exec_duration)
+        return exec_duration
         #draw(self.ee_points, self.ee_points_fk, points, eps)
 
     def go_to_pose_taylor(self, goal_pose, eps):
@@ -573,16 +612,16 @@ class OrLab3():
         rospy.sleep(10.0)
         # Initialize goal pose --> Fixed initial positions
         start_pose = createGoalPose(0.0, 0.15, 1.3, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose1 = createGoalPose(0.0, 0.2, 1.15, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose2 = createGoalPose(0.25, 0.2, 1.15, -0.5, 0.5, 0.5, 0.5)
-        wanted_pose3 = createGoalPose(0.0, 0.15, 1.25, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose1 = createGoalPose(0.0, 0.15, 1.15, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose2 = createGoalPose(-0.125, 0.075, 1.15, -0.5, 0.5, 0.5, 0.5)
+        wanted_pose3 = createGoalPose(0.0, 0.15, 1.3, -0.5, 0.5, 0.5, 0.5)
 
         #self.change_to_pos_client.call()
         while not rospy.is_shutdown():
 
             rospy.sleep(1.0)
 
-            test = False
+            test = True
             if test:
 
                 self.go_to_start_pose(start_pose)
@@ -590,15 +629,21 @@ class OrLab3():
 
                 self.change_to_traj_client.call()
                 eps = 0.002
-                self.go_to_pose_ho_cook(wanted_pose1, eps)
-                rospy.sleep(3.0)
+                self.joint_max = 10
+                duration = self.go_to_pose_ho_cook(wanted_pose1, eps)
+                rospy.loginfo("Visiting point A: est_dur: {}".format(duration))
+                rospy.sleep(duration)
 
                 eps = 0.002
-                self.go_to_pose_ho_cook(wanted_pose2, eps)
-                rospy.sleep(3.0)
+                self.joint_max = 200
+                duration = self.go_to_pose_ho_cook(wanted_pose2, eps)
+                rospy.loginfo("Visiting point B: est_dur: {}".format(duration))
+                rospy.sleep(duration)
 
                 eps = 0.002
-                self.go_to_pose_ho_cook(wanted_pose3, eps)
+                duration = self.go_to_pose_ho_cook(wanted_pose3, eps)
+                rospy.loginfo("Visiting point C: est_dur: {}".format(duration))
+                rospy.sleep(duration)
 
                 break
 
