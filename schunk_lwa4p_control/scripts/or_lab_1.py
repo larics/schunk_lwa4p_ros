@@ -113,24 +113,6 @@ class OrLab2():
 
 
 
-	def get_cartesian_mid_pose(self, start_pose, end_pose):
-
-		mid_pose = start_pose + end_pose/2
-
-		return mid_pose
-
-	def check_pose_norm(self, pose1, pose2):
-
-		np.linalg.norm(pose1, )
-
-	def get_ik(self, pose):
-
-		# TODO: Think how to get inverse kinematics for it
-
-
-
-
-
 	def cb(self, msg):
 		q_s = msg.position
 		try:
