@@ -43,6 +43,40 @@ Command difference from current pose
 control_arm_node/arm/delta_pose
 ```
 
+## Fundamentals of robotics laboratory exercises 
+
+### First exercise 
+
+Purpose of the first exercise is to get familiar with direct kinematics and simple pick-and-place operation using real robot 
+in a simulation. 
+
+Goal is to implement Forward kinematics and correctly use homogenous transformation matrices and matrix multiplication to 
+send robot from pose to pose and simulate robot for grasping and retrieving object. 
+
+Script that is used as a starting point is `or_lab_1.py` script. 
+
+### Second exercise 
+
+Purpose of the second exercise is to practice algorithm implementation. In the scope of the second exercise, students 
+have to implement Taylor method for planning straight paths in Cartesian space. 
+
+Goal of the exercise is to learn how to manipulate ROS messages and different data types, as well as implementing recursion 
+in order to calculate straight path that depends on deviation parameter. 
+
+Script that is used as starting point is `or_lab_2.py` script. 
+
+### Third exercise 
+
+Purpose of the third exercise is to practice programming and algorithm implementation for trajectory planning/execution. 
+Third exercise depends on the path planned in the second exercise and students have to implement HoCook trajectory planning 
+method. 
+
+Goal of the exercise is to learn clear differentation between path and trajectory and to implement first step 
+of the HoCook trajectory planning method. End goal is robot that follows triangular pattern with fixed orientation end effector. 
+
+Script that is used as starting point is `or_lab_3.py` script. 
+
+
 
 ## Read current arm state 
 
