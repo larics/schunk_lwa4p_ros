@@ -513,12 +513,10 @@ class OrLab3():
                 dqmax_ = self.getMaxSpeedLastSeg(Blast, t)
                 dqmax.append(dqmax_)
 
-
         dqmax = np.asarray(dqmax).T                     # Returns indices (np.argmax(dq_max, axis=1))
         dqmax = np.amax(dqmax, axis=1)                  # Returns values axis = 0 -> column-wise, axis=1, row-wise
                                                         # print(np.amax(dq_max, axis=1))
         return dqmax
-
 
     def ho_cook(self, cartesian, t = None, q=None, first = True):
 
@@ -540,10 +538,9 @@ class OrLab3():
         dq = np.matmul(A, np.linalg.inv(M))
         #print("dq [{}] is: {}".format(dq.shape, dq))
         zeros = np.zeros((6, 1)); dq = np.hstack((zeros, dq)); dq = np.hstack((dq, zeros))
-        print("q len is: {}".format(len(q)))
+        #print("q len is: {}".format(len(q)))
         dq_max = self.get_dq_max(q, dq, t)
-        dq_max_val = np.max(dq_max)
-        print("Current max var is:", dq_max_val)
+        dq_max_val = np.max(dq_max) #print("Current max var is:", dq_max_val)
         scaling_factor = dq_max_val/self.joint_max
         # Scale to accomodate limits
         t = [t_*scaling_factor for t_ in t]
@@ -559,8 +556,6 @@ class OrLab3():
             print("sum_t is : ", sum_t)
             return sum_t
 
-
-
     def go_to_pose_ho_cook(self, goal_pose, eps):
 
         # Reset saved ee_points and fk points
@@ -570,8 +565,6 @@ class OrLab3():
         points = self.taylor_interpolate_points([poseToArray(self.current_pose), poseToArray(goal_pose)], eps)
         # Add time parametrization
         exec_duration = self.ho_cook(points)
-        print(exec_duration)
-        return exec_duration
         #draw(self.ee_points, self.ee_points_fk, points, eps)
 
     def go_to_pose_taylor(self, goal_pose, eps):
@@ -629,18 +622,19 @@ class OrLab3():
 
                 self.change_to_traj_client.call()
                 eps = 0.002
-                self.joint_max = 10
+                self.joint_max = 5
                 duration = self.go_to_pose_ho_cook(wanted_pose1, eps)
                 rospy.loginfo("Visiting point A: est_dur: {}".format(duration))
                 rospy.sleep(duration)
 
                 eps = 0.002
-                self.joint_max = 200
+                self.joint_max = 5
                 duration = self.go_to_pose_ho_cook(wanted_pose2, eps)
                 rospy.loginfo("Visiting point B: est_dur: {}".format(duration))
                 rospy.sleep(duration)
 
                 eps = 0.002
+                self.joint_max = 25
                 duration = self.go_to_pose_ho_cook(wanted_pose3, eps)
                 rospy.loginfo("Visiting point C: est_dur: {}".format(duration))
                 rospy.sleep(duration)
@@ -648,7 +642,6 @@ class OrLab3():
                 break
 
         exit()
-
 
 if __name__ == "__main__":
     lab3 = OrLab3()
