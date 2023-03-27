@@ -81,7 +81,7 @@ Check following resources to familliarize yourself with CAN communication protoc
 
 Official presentation from Schunk about available [drivers](https://usermanual.wiki/Document/ManualPowerballCANOpenDriver.312884843/view) 
 
-Schunk [inverse kinematics and calibration].(https://foswiki.cs.rpi.edu/foswiki/pub/RoboticsWeb/LabPublications/bradley_ROBOTIC_ARM_CALIBRATION__CTRL_report.pdf)
+Schunk [inverse kinematics and calibration](https://foswiki.cs.rpi.edu/foswiki/pub/RoboticsWeb/LabPublications/bradley_ROBOTIC_ARM_CALIBRATION__CTRL_report.pdf)
 
 Info about [CAN] for Schunk LWA4P. 
 
@@ -112,8 +112,8 @@ Following nodes are started:
  * move_group --> moveit_node for manipulating robotic arm 
 
 # System requirements 
-Following packages have been used with ROS melodic, Gazebo 11 on Ubuntu 18.04. 
-There is available [Dockerfile](https://github.com/larics/docker_files/blob/master/ros-melodic/moveit_ros/Dockerfile) for installing all dependencies/requirements.
+Following packages have been used with ROS noetic, Gazebo 11 on Ubuntu 18.04. 
+There is available [Dockerfile](https://github.com/larics/docker_files/blob/master/ros-noetic/moveit_ros/Dockerfile) for installing all dependencies/requirements.
 
 # Dependencies 
 
@@ -129,45 +129,3 @@ Rest of the GAZEBO plugins from workspace is located in:
 <path_to_catkin_ws>/catkin_ws/devel/lib
 ```
 Currently is not used! 
-
-# TODO:
- - [x] Add separator to moveit configuration (weird separator main BUG)
- - [x] Fix model coloring
- - [x] Plan and move arm from RVIZ in Gazebo
- - [x] Decouple models for separator tool and separator distancer to enable setting it up  
- - [x] Reconfigure separator holder collisions 
- - [x] Init separator distancer in separator holder
- - [x] Add powerline to robot model for collisions
- - [x] Write node for dummy pose sending (send pose, reach goal, hardcode at first)
- - [x] Create action server for GoToPoseServer, setUpDistancerServer -> moveGroup already has those
- - [x] Think of a way to decouple separator from holder after setting it up (prismatic joint, possible move arm freely, dynamically change robot description? not advised).
- - [x] Check Path Tolerance Violated (Changed dynamic joint params, error reduced/PID params fixed) 
- - [x] Create Gazebo world with powerlines (robot model) 
- - [x] Integrate descartes cartesian planner
- - [x] use TracIK for IK
- - [x] Build and use OpenRAVE
- - [x] Reconfigured schunk_robots to match new joint names
- - [x] Added MoveToPose action server  
- - [x] Create configuration for FastIK (analytical inverse kinematics for Descartes) 
- - [x] Add moveit_servo 
-
-
-TODO: 
- - [ ] Add to ros_utils some plotting methods
- - [ ] Add gravity compensation controller in gazebo [TBD]
- - [ ] Create node for continuous replanning [TBD] 
- - [ ] Add force sensor link for better planning [TBD] 
- - [x] Add current check for dynamixels for setting up distancer [1200]
- - [x] Try out servoing for setting up separator 
- - [x] Find PID params for servoing (pose_tracking config) 
- - [x] Integrate everything and test on real robot
- 
-# Possible improvements 
-
- - [x] Add powerline as Git submodule into schunk_ros_package, and use it if neccessary (not neccessary) 
- - [ ] Think of algorithm for removing separator distancer (information about powerline location is not enough)  
- - [ ] Add Cartesian path plannig to control_arm_node
- - [ ] Add topic/service for cartesian path planning 
- - [ ] Remove deprecation warnings from moveit for noetic 
- - [ ] Add [SMACC](git@github.com:reelrbtx/SMACC.git) state machine instead of smach 
- 
